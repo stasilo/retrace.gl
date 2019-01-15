@@ -13,10 +13,12 @@ varying vec2 uv;
 #define T_MAX FLT_MAX
 
 #define MAX_HIT_DEPTH 50//50
-#define NUM_SAMPLES 5
+#define NUM_SAMPLES 20
 #define NUM_SPHERES 5
 
 #define PI 3.141592653589793
+#define DEG_TO_RAD(deg) deg * PI / 180.;
+#define RAD_TO_DEG(rad) rad * 180. / PI;
 
 // #pragma glslify: random = require(glsl-random);
 
@@ -24,39 +26,38 @@ varying vec2 uv;
  * utils
  */
 
+ // deterministic rand
+ // http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
+
+ float random(vec2 co) {
+     highp float a = 12.9898;
+     highp float b = 78.233;
+     highp float c = 43758.5453;
+     highp float dt = dot(co.xy ,vec2(a,b));
+     highp float sn = mod(dt,3.14);
+
+     return fract(sin(sn) * c);
+ }
+
+ // stateful non-deterministic rand => [0, 1]
+
+ vec2 gRandSeed;
+ float rand() {
+     // gRandSeed.x  = fract(sin(dot(gRandSeed.xy + 0., vec2(12.9898, 78.233))) * 43758.5453);
+     // gRandSeed.y  = fract(sin(dot(gRandSeed.xy + 0., vec2(12.9898, 78.233))) * 43758.5453);;
+
+     gRandSeed.x = random(gRandSeed);
+     gRandSeed.y = random(gRandSeed);
+
+     return gRandSeed.x;
+}
+
 vec3 deNan(vec3 v) {
     return (v.x < 0.0 || 0.0 < v.x || v.x == 0.0)
         && (v.y < 0.0 || 0.0 < v.y || v.y == 0.0)
         && (v.z < 0.0 || 0.0 < v.z || v.z == 0.0)
             ? v
             : vec3(1.);
-}
-
-
-// deterministic rand
-// http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
-
-float random(vec2 co) {
-    highp float a = 12.9898;
-    highp float b = 78.233;
-    highp float c = 43758.5453;
-    highp float dt = dot(co.xy ,vec2(a,b));
-    highp float sn = mod(dt,3.14);
-
-    return fract(sin(sn) * c);
-}
-
-// stateful non-deterministic rand => [0, 1]
-
-vec2 gRandSeed;
-float rand() {
-    // gRandSeed.x  = fract(sin(dot(gRandSeed.xy + 0., vec2(12.9898, 78.233))) * 43758.5453);
-    // gRandSeed.y  = fract(sin(dot(gRandSeed.xy + 0., vec2(12.9898, 78.233))) * 43758.5453);;
-
-    gRandSeed.x = random(gRandSeed);
-    gRandSeed.y = random(gRandSeed);
-
-    return gRandSeed.x;
 }
 
 /*
@@ -69,6 +70,38 @@ struct Camera {
     vec3 vertical;
     vec3 lowerLeft;
 };
+
+
+// lookFrom - eye origin point
+// lookAt - point camera here
+// vUp - camera tilt vector (use world up (0, 1, 0) for normal level view)
+// vfov - vertical field of view
+// aspect ratio
+
+Camera getCamera(vec3 lookFrom, vec3 lookAt, vec3 vUp, float vfov, float aspect) {
+    // vfov is top to bottom in degs
+    float theta = vfov * PI / 180.;
+    float halfHeight = tan(theta/2.); // pythagorean theorem
+    float halfWidth = aspect * halfHeight;
+
+    // calc camera basis
+    vec3 w = normalize(lookFrom - lookAt);
+    vec3 u = normalize(cross(vUp, w));
+    // vec3 u = normalize(cross(vUp, w));
+    vec3 v = cross(w, u);
+
+    vec3 origin = lookFrom;
+    vec3 lowerLeft = origin - halfWidth*u - halfHeight*v - w;
+    vec3 horizontal = 2.*halfWidth*u;
+    vec3 vertical = 2.*halfHeight*v;
+
+    return Camera(
+        origin,
+        horizontal,
+        vertical,
+        lowerLeft
+    );
+}
 
 /*
  * Materials
@@ -87,7 +120,7 @@ struct Material {
 
 Material LambertMaterial = Material(
     LAMBERT,
-    vec3(0.5),
+    vec3(1.),
     0.,
     0.
 );
@@ -341,7 +374,8 @@ vec3 trace(Camera camera, Sphere spheres[NUM_SPHERES]) {
         );
 
         Ray ray = Ray(camera.origin, getRayDirection(camera, rUv));
-        color += deNan(paint(ray, spheres));
+        // color += deNan(paint(ray, spheres));
+        color += paint(ray, spheres);
     }
 
     color /= float(NUM_SAMPLES);
@@ -354,45 +388,56 @@ void main () {
     // set initial seed for stateful rng
     gRandSeed = uv;
 
-    Camera camera = Camera(
-        vec3(0.), // origin
-        vec3(4., 0., 0.), // horizontal
-        vec3(0., 2., 0.), // vertical
-        vec3(-2., -1., -1.) // lower left corner
+    // getCamera(vec3 lookFrom, vec3 lookAt, vec3 vUp, float vfov, float aspect)
+    // Camera camera = getCamera(
+    //     vec3(0., -1., 2.), // lookFrom
+    //     vec3(0., 0., -1.), // look at
+    //     vec3(0., 1., 0.), // camera up
+    //     90., // vfov
+    //     uResolution.x/uResolution.y // aspect ratio
+    // );
+
+    Camera camera = getCamera(
+        vec3(0.1, 0.2, 0.2), // lookFrom
+        vec3(0., -2.0, -5.), //-1.), // look at
+        vec3(0., 1., 0.), // camera up
+        60., // vfov
+        uResolution.x/uResolution.y // aspect ratio
     );
 
     Sphere spheres[NUM_SPHERES];
     {
         spheres[0] = Sphere(
-            vec3(-0.1, -0.25 + 0.25*0.5*abs(sin(uTime*3.)), -1.), // sphere center
+            // vec3(-0.1, -0.25 + 0.25*0.5*abs(sin(uTime*3.)), -1.), // sphere center
+            vec3(-0.1, -0.3 + abs(sin(uTime*3.))*0.5, -1.), // sphere center
             0.25, // radius
             ShinyMetalMaterial, // material
             vec3(1.) // color
         );
         spheres[1] = Sphere(
-            vec3(1., 0. + 0.25*0.5*abs(cos(uTime*3.+1.3*PI)), -1.), // sphere center
+            vec3(1., 0., -1.), // sphere center
             0.5, // radius
             LambertMaterial, //ShinyMetalMaterial, // material
             vec3(0.2, 0.331, 0.5) // color
         );
 
         spheres[3] = Sphere(
-            vec3(0.1, 0.25 + 0.25*0.5*abs(sin(uTime*3.)), -1.7), // sphere center
+            vec3(0.12, 0.3, -1.7), // sphere center
             0.5, // radius
             FuzzyMetalMaterial, // material
             vec3(0.9, 0.9, 0.9) // color
         );
 
         spheres[2] = Sphere(
-            vec3(-1., 0.25*abs(sin(uTime*3.+1.5*PI)), -1.25), // sphere center
+            vec3(-1., -0.221, -1.25), // sphere center
             0.5, // radius
             GlassMaterial,
             vec3(1.)
 
         );
         spheres[4] = Sphere(
-            vec3(0., -100.5, -1.),
-            100.0,
+            vec3(0., -300.5, -5.),
+            300.0,
             LambertMaterial,
             vec3(0.9, 0.3, 0.6)
         );
