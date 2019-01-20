@@ -1,7 +1,7 @@
 // impl. in webgl2: https://codepen.io/kakaxi0618/pen/BOqvNj
 
-// precision mediump float;
-precision highp float;
+// precision highp float;
+precision mediump float;
 
 uniform vec2 uResolution;
 uniform float uTime;
@@ -9,12 +9,12 @@ uniform float uTime;
 varying vec2 uv;
 
 #define FLT_MAX 3.402823466e+38
-#define T_MIN .001
-#define T_MAX FLT_MAX
+#define T_MIN .01
+#define T_MAX 15. //FLT_MAX
 
 #define MAX_HIT_DEPTH 50//50
-#define NUM_SAMPLES 20
-#define NUM_SPHERES 5
+#define NUM_SAMPLES 30
+#define NUM_SPHERES 6
 
 #define PI 3.141592653589793
 #define DEG_TO_RAD(deg) deg * PI / 180.;
@@ -30,11 +30,17 @@ varying vec2 uv;
  // http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
 
  float random(vec2 co) {
-     highp float a = 12.9898;
-     highp float b = 78.233;
-     highp float c = 43758.5453;
-     highp float dt = dot(co.xy ,vec2(a,b));
-     highp float sn = mod(dt,3.14);
+     // highp float a = 12.9898;
+     // highp float b = 78.233;
+     // highp float c = 43758.5453;
+     // highp float dt = dot(co.xy ,vec2(a,b));
+     // highp float sn = mod(dt,3.14);
+
+     float a = 12.9898;
+     float b = 78.233;
+     float c = 43758.5453;
+     float dt = dot(co.xy ,vec2(a,b));
+     float sn = mod(dt,3.14);
 
      return fract(sin(sn) * c);
  }
@@ -69,8 +75,10 @@ struct Camera {
     vec3 horizontal;
     vec3 vertical;
     vec3 lowerLeft;
+    float lensRadius;
+    // camera basis
+    vec3 w, u, v;
 };
-
 
 // lookFrom - eye origin point
 // lookAt - point camera here
@@ -79,27 +87,65 @@ struct Camera {
 // aspect ratio
 
 Camera getCamera(vec3 lookFrom, vec3 lookAt, vec3 vUp, float vfov, float aspect) {
-    // vfov is top to bottom in degs
-    float theta = vfov * PI / 180.;
+    float theta = DEG_TO_RAD(vfov); // vfov is top to bottom in degs
     float halfHeight = tan(theta/2.); // pythagorean theorem
     float halfWidth = aspect * halfHeight;
 
     // calc camera basis
     vec3 w = normalize(lookFrom - lookAt);
     vec3 u = normalize(cross(vUp, w));
-    // vec3 u = normalize(cross(vUp, w));
     vec3 v = cross(w, u);
 
     vec3 origin = lookFrom;
     vec3 lowerLeft = origin - halfWidth*u - halfHeight*v - w;
     vec3 horizontal = 2.*halfWidth*u;
     vec3 vertical = 2.*halfHeight*v;
+    float lensRadius = -1.;
 
     return Camera(
         origin,
         horizontal,
         vertical,
-        lowerLeft
+        lowerLeft,
+        lensRadius,
+        // camera basis
+        w, u, v
+    );
+}
+
+// https://programming.guide/random-point-within-circle.html
+
+vec2 randomPointOnUnitDisc() {
+    float a = rand() * 2. * PI;
+    float r = sqrt(rand());
+    // to cartesian coordinates
+    return vec2(r * cos(a), r * sin(a));
+}
+
+Camera getCameraWithAperture(vec3 lookFrom, vec3 lookAt, vec3 vUp, float vfov, float aspect, float aperture, float focusDist) {
+    float lensRadius = aperture/2.;
+    float theta = DEG_TO_RAD(vfov); // vfov is top to bottom in degs
+    float halfHeight = tan(theta/2.); // pythagorean theorem
+    float halfWidth = aspect * halfHeight;
+
+    // calc camera basis
+    vec3 w = normalize(lookFrom - lookAt);
+    vec3 u = normalize(cross(vUp, w));
+    vec3 v = cross(w, u);
+
+    vec3 origin = lookFrom;
+    vec3 lowerLeft = origin - halfWidth*focusDist*u - halfHeight*focusDist*v - w*focusDist;
+    vec3 horizontal = 2.*focusDist*halfWidth*u;
+    vec3 vertical = 2.*focusDist*halfHeight*v;
+
+    return Camera(
+        origin,
+        horizontal,
+        vertical,
+        lowerLeft,
+        lensRadius,
+        // camera basis
+        w, u, v
     );
 }
 
@@ -120,7 +166,7 @@ struct Material {
 
 Material LambertMaterial = Material(
     LAMBERT,
-    vec3(1.),
+    vec3(1.0),
     0.,
     0.
 );
@@ -146,29 +192,39 @@ Material GlassMaterial = Material(
     1.5 //1.7
 );
 
-// random direction in unit sphere (i.e. lambert brdf)
+// random direction in unit sphere
 // from: https://codepen.io/kakaxi0618/pen/BOqvNj
 // this uses spherical coords, see:
 // https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/geometry/spherical-coordinates-and-trigonometric-functions
 
+// vec3 randomPointInUnitSphere() {
+//     float phi = 2.0 * PI * rand();
+//     // random in range [0, 1] => random in range [-1, 1]
+//     float cosTheta = 2.0 * rand() - 1.0;
+//     float u = rand();
+//
+//     float theta = acos(cosTheta);
+//     float r = pow(u, 1.0 / 3.0);
+//
+//     // convert from spherical to cartesian
+//     float x = r * sin(theta) * cos(phi);
+//     float y = r * sin(theta) * sin(phi);
+//     float z = r * cos(theta);
+//
+//     return vec3(x, y, z);
+// }
+
+// better algo from: https://karthikkaranth.me/blog/generating-random-points-in-a-sphere/
+// (generates a more uniform distribution)
+
 vec3 randomPointInUnitSphere() {
-    float phi = 2.0 * PI * rand();
-    // random in range [0, 1] => random in range [-1, 1]
-    float cosTheta = 2.0 * rand() - 1.0;
     float u = rand();
-
-    float theta = acos(cosTheta);
-    float r = pow(u, 1.0 / 3.0);
-
-    // convert from spherical to cartesian
-    float x = r * sin(theta) * cos(phi);
-    float y = r * sin(theta) * sin(phi);
-    float z = r * cos(theta);
-
-    return vec3(x, y, z);
+    vec3 x = normalize(vec3(rand(), rand(), rand()));
+    float c = pow(u, 1./3.); //cbrt(u);
+    return deNan(x*c);
 }
 
-// polynomial approx. of glass reflectivity by angle
+// polynomial approximation of reflectivity by angle
 // by cristophe  schlick
 
 float schlick(float cosine, float refIdx) {
@@ -187,12 +243,30 @@ struct Ray {
     vec3 dir;
 };
 
+vec3 pointOnRay(Ray ray, float t) {
+    return ray.origin + t*ray.dir;
+}
+
 vec3 getRayDirection(Camera camera, vec2 uv) {
     return camera.lowerLeft + uv.x * camera.horizontal + uv.y * camera.vertical;
 }
 
-vec3 pointOnRay(Ray ray, float t) {
-    return ray.origin + t*ray.dir;
+Ray getRay(Camera camera, vec2 uv) {
+    vec3 p = vec3(randomPointOnUnitDisc(), 0.) - vec3(1., 1., 0);
+    vec3 rd = camera.lensRadius * p;
+    vec3 offset = camera.u * rd.x + camera.v * rd.y;
+
+    if(camera.lensRadius > 0.) { // camera with aperture
+        return Ray(
+            camera.origin + offset,
+            camera.lowerLeft + uv.x * camera.horizontal + uv.y * camera.vertical - camera.origin - offset
+        );
+    } else { // regular camera
+        return Ray(
+            camera.origin,
+            camera.lowerLeft + uv.x * camera.horizontal + uv.y * camera.vertical
+        );
+    }
 }
 
 struct HitRecord {
@@ -204,14 +278,18 @@ struct HitRecord {
     vec3 color;
 };
 
-// scatter ray on material
+// amass color and scatter ray on material
+void shadeAndScatter(HitRecord hitRecord, inout vec3 color, inout Ray ray) {
 
-void scatter(HitRecord hitRecord, inout vec3 color, inout Ray ray) {
+    // LAMBERT / DIFFUSE
+
     if(hitRecord.material.type == LAMBERT) {
         // get lambertian random reflection direction
         ray.dir = hitRecord.normal + randomPointInUnitSphere();
         color *= hitRecord.material.albedo * hitRecord.color;
     }
+
+    // REFLECTIVE / METAL
 
     if(hitRecord.material.type == METAL) {
         vec3 reflected = reflect(normalize(ray.dir), hitRecord.normal);
@@ -223,6 +301,8 @@ void scatter(HitRecord hitRecord, inout vec3 color, inout Ray ray) {
             color *= hitRecord.material.albedo * hitRecord.color;
         }
     }
+
+    // DIALECTRIC / GLASS
 
     if(hitRecord.material.type == DIALECTRIC) {
         float cosine;
@@ -356,7 +436,7 @@ vec3 paint(Ray ray, Sphere spheres[NUM_SPHERES]) {
 
         ray.origin = hitRecord.hitPoint;
 
-        scatter(hitRecord, /* out => */ color, /* out => */ ray);
+        shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray);
         hitWorld(ray, spheres, /* out => */ hitRecord);
     }
 
@@ -368,52 +448,59 @@ vec3 trace(Camera camera, Sphere spheres[NUM_SPHERES]) {
 
     // trace
     for(int i = 0; i < NUM_SAMPLES; i++) {
-        vec2 rUv = vec2( // jitter for anti-aliasing
+        vec2 rUv = vec2( // jitter pixel location for anti-aliasing effect
             uv.x + (rand() / uResolution.x),
             uv.y + (rand() / uResolution.y)
         );
 
-        Ray ray = Ray(camera.origin, getRayDirection(camera, rUv));
+        Ray ray = getRay(camera, rUv);
+
         // color += deNan(paint(ray, spheres));
         color += paint(ray, spheres);
     }
 
     color /= float(NUM_SAMPLES);
 
-    return color;
+    return deNan(color);
 }
 
 void main () {
-    vec3 color;
     // set initial seed for stateful rng
     gRandSeed = uv;
 
-    // getCamera(vec3 lookFrom, vec3 lookAt, vec3 vUp, float vfov, float aspect)
     // Camera camera = getCamera(
-    //     vec3(0., -1., 2.), // lookFrom
-    //     vec3(0., 0., -1.), // look at
+    //     vec3(0.03, 0.4, 0.4), // look from
+    //     vec3(0., -3.0, -5.3), // look at
     //     vec3(0., 1., 0.), // camera up
-    //     90., // vfov
+    //     30., // vfov
     //     uResolution.x/uResolution.y // aspect ratio
     // );
 
-    Camera camera = getCamera(
-        vec3(0.1, 0.2, 0.2), // lookFrom
-        vec3(0., -2.0, -5.), //-1.), // look at
+
+    vec3 lookFrom = vec3(0.03, 0.9, 1.9);
+    vec3 lookAt = vec3(0., 0., -0.8);
+    float focusDist = length(lookFrom - lookAt);
+    float aperture = 0.25;
+
+    Camera camera = getCameraWithAperture(
+        lookFrom, // look from
+        lookAt, // look at
         vec3(0., 1., 0.), // camera up
-        60., // vfov
-        uResolution.x/uResolution.y // aspect ratio
+        40., // vfov
+        uResolution.x/uResolution.y, // aspect ratio
+        aperture,
+        focusDist
     );
 
     Sphere spheres[NUM_SPHERES];
     {
         spheres[0] = Sphere(
-            // vec3(-0.1, -0.25 + 0.25*0.5*abs(sin(uTime*3.)), -1.), // sphere center
-            vec3(-0.1, -0.3 + abs(sin(uTime*3.))*0.5, -1.), // sphere center
+            vec3(-0.1, -0.3 + abs(sin(uTime*3.))*0.4, -0.8), // sphere center
             0.25, // radius
             ShinyMetalMaterial, // material
             vec3(1.) // color
         );
+
         spheres[1] = Sphere(
             vec3(1., 0., -1.), // sphere center
             0.5, // radius
@@ -428,23 +515,32 @@ void main () {
             vec3(0.9, 0.9, 0.9) // color
         );
 
-        spheres[2] = Sphere(
-            vec3(-1., -0.221, -1.25), // sphere center
+        //
+        spheres[5] = Sphere(
+            vec3(-0.22, 0.3, -1.7), // sphere center
             0.5, // radius
-            GlassMaterial,
-            vec3(1.)
-
+            FuzzyMetalMaterial, // material
+            vec3(0.9, 0.9, 0.9) // color
         );
+        //
+
+        spheres[2] = Sphere(
+            vec3(-1., -0.0, -1.25), // sphere center
+            0.5, // radius
+            GlassMaterial, // material
+            vec3(1.) // color
+        );
+
         spheres[4] = Sphere(
-            vec3(0., -300.5, -5.),
-            300.0,
-            LambertMaterial,
-            vec3(0.9, 0.3, 0.6)
+            vec3(0., -300.5, -5.), // sphere center
+            300.0, // radius
+            LambertMaterial, // material
+            vec3(0.9, 0.3, 0.6) // color
         );
     }
 
-    color = trace(camera, spheres);
-    color = sqrt(color);
+    vec3 color = trace(camera, spheres);
+    color = sqrt(color); // correct gamma
 
     gl_FragColor = vec4(color, 1.);
 }
