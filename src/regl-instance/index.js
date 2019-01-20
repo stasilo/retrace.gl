@@ -4,6 +4,7 @@ import {definedNotNull} from '../utils';
 let instance = null;
 let instancePromise = null;
 
+// singleton instance factory
 const getInstance = async (opts = {canvasId: _}) =>
     instancePromise
         ? instance
@@ -19,7 +20,7 @@ const getInstance = async (opts = {canvasId: _}) =>
                 if(definedNotNull(instance)) {
                     resolve(instance);
                 } else {
-                    rejeect(instance);
+                    reject(instance);
                 }
             });
         });
