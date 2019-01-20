@@ -3,8 +3,9 @@
 // precision highp float;
 precision mediump float;
 
-uniform vec2 uResolution;
 uniform float uTime;
+uniform vec2 uResolution;
+uniform vec3 uBgGradientColors[2];
 
 varying vec2 uv;
 
@@ -225,7 +226,7 @@ vec3 randomPointInUnitSphere() {
 }
 
 // polynomial approximation of reflectivity by angle
-// by cristophe  schlick
+// by cristophe schlick
 
 float schlick(float cosine, float refIdx) {
     float r0 = (1. - refIdx) / (1. + refIdx);
@@ -272,6 +273,7 @@ Ray getRay(Camera camera, vec2 uv) {
 struct HitRecord {
     bool hasHit;
     vec3 hitPoint;
+    float hitT;
     vec3 normal;
 
     Material material;
@@ -350,7 +352,7 @@ struct Sphere {
     vec3 color;
 };
 
-bool hitSphere(Ray ray, Sphere sphere, out HitRecord hitRecord) {
+void hitSphere(Ray ray, Sphere sphere, float tMax, out HitRecord hitRecord) {
     vec3 oc = ray.origin - sphere.center;
 
     float a = dot(ray.dir, ray.dir);
@@ -363,8 +365,9 @@ bool hitSphere(Ray ray, Sphere sphere, out HitRecord hitRecord) {
         float t;
 
         t = (-b - sqrt(discriminant)) / (2. * a);
-        if(t < T_MAX && t > T_MIN) {
+        if(t < tMax && t > T_MIN) {
             hitRecord.hasHit = true;
+            hitRecord.hitT = t;
             hitRecord.hitPoint = pointOnRay(ray, t);
             hitRecord.normal = normalize(
                 (hitRecord.hitPoint - sphere.center) / sphere.radius
@@ -373,12 +376,13 @@ bool hitSphere(Ray ray, Sphere sphere, out HitRecord hitRecord) {
             hitRecord.material = sphere.material;
             hitRecord.color = sphere.color;
 
-            return true;
+            return;
         }
 
         t = (-b + sqrt(discriminant)) / (2. * a);
-        if(t < T_MAX && t > T_MIN) {
+        if(t < tMax && t > T_MIN) {
             hitRecord.hasHit = true;
+            hitRecord.hitT = t;
             hitRecord.hitPoint = pointOnRay(ray, t);
             hitRecord.normal = normalize(
                 (hitRecord.hitPoint - sphere.center) / sphere.radius
@@ -387,26 +391,29 @@ bool hitSphere(Ray ray, Sphere sphere, out HitRecord hitRecord) {
             hitRecord.material = sphere.material;
             hitRecord.color = sphere.color;
 
-            return true;
+            return;
         }
     }
 
     hitRecord.hasHit = false;
-    return false;
+    hitRecord.hitT = tMax;
 }
 
 /*
  * World
  */
 
-bool hitWorld(Ray ray, Sphere spheres[NUM_SPHERES], out HitRecord hitRecord) {
+void hitWorld(Ray ray, Sphere spheres[NUM_SPHERES], float tMax, out HitRecord hitRecord) {
+    hitRecord.hasHit = false;
+
+    HitRecord record;
     for(int i = 0; i < NUM_SPHERES; i++) {
-        if(hitSphere(ray, spheres[i], /* out */ hitRecord)) {
-            return true;
+        hitSphere(ray, spheres[i], tMax, /* out */ record);
+        if(record.hasHit) {
+            hitRecord = record;
+            tMax = record.hitT; // handle depth! ("z-index" :))
         }
     }
-
-    return false;
 }
 
 /*
@@ -417,16 +424,17 @@ vec3 background(vec3 rayDir) {
     vec3 normedDir = normalize(rayDir);
     // transpose y range from [-1, 1] to [0, 1]
     float t = .5*(normedDir.y + 1.);
-    // do linear interpolation of color
-    return (1. - t)*vec3(1.) + t*vec3(.4, .4, .7); //vec3(.5, .7, 1.);
+    // do linear interpolation of colors
+    return (1. - t)*uBgGradientColors[0] + t*uBgGradientColors[1];
 }
 
 // colorize
 vec3 paint(Ray ray, Sphere spheres[NUM_SPHERES]) {
     vec3 color = vec3(1.0);
-    HitRecord hitRecord;
+    float tMax = T_MAX;
 
-    hitWorld(ray, spheres, /* out => */ hitRecord);
+    HitRecord hitRecord;
+    hitWorld(ray, spheres, tMax, /* out => */ hitRecord);
 
     for(int hitCounts = 0; hitCounts < MAX_HIT_DEPTH; hitCounts++) {
         if(!hitRecord.hasHit) {
@@ -437,7 +445,7 @@ vec3 paint(Ray ray, Sphere spheres[NUM_SPHERES]) {
         ray.origin = hitRecord.hitPoint;
 
         shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray);
-        hitWorld(ray, spheres, /* out => */ hitRecord);
+        hitWorld(ray, spheres, tMax, /* out => */ hitRecord);
     }
 
     return color;
@@ -454,20 +462,19 @@ vec3 trace(Camera camera, Sphere spheres[NUM_SPHERES]) {
         );
 
         Ray ray = getRay(camera, rUv);
-
-        // color += deNan(paint(ray, spheres));
         color += paint(ray, spheres);
+        // color += deNan(paint(ray, spheres));
     }
 
     color /= float(NUM_SAMPLES);
-
-    return deNan(color);
+    return color;
 }
 
 void main () {
     // set initial seed for stateful rng
     gRandSeed = uv;
 
+    // regular camera
     // Camera camera = getCamera(
     //     vec3(0.03, 0.4, 0.4), // look from
     //     vec3(0., -3.0, -5.3), // look at
@@ -475,7 +482,6 @@ void main () {
     //     30., // vfov
     //     uResolution.x/uResolution.y // aspect ratio
     // );
-
 
     vec3 lookFrom = vec3(0.03, 0.9, 1.9);
     vec3 lookAt = vec3(0., 0., -0.8);
@@ -508,22 +514,6 @@ void main () {
             vec3(0.2, 0.331, 0.5) // color
         );
 
-        spheres[3] = Sphere(
-            vec3(0.12, 0.3, -1.7), // sphere center
-            0.5, // radius
-            FuzzyMetalMaterial, // material
-            vec3(0.9, 0.9, 0.9) // color
-        );
-
-        //
-        spheres[5] = Sphere(
-            vec3(-0.22, 0.3, -1.7), // sphere center
-            0.5, // radius
-            FuzzyMetalMaterial, // material
-            vec3(0.9, 0.9, 0.9) // color
-        );
-        //
-
         spheres[2] = Sphere(
             vec3(-1., -0.0, -1.25), // sphere center
             0.5, // radius
@@ -531,7 +521,21 @@ void main () {
             vec3(1.) // color
         );
 
+        spheres[3] = Sphere(
+            vec3(0.12, 0.3, -1.7), // sphere center
+            0.5, // radius
+            FuzzyMetalMaterial, // material
+            vec3(0.9, 0.9, 0.9) // color
+        );
+
         spheres[4] = Sphere(
+            vec3(-0.22, 0.3, -1.7), // sphere center
+            0.5, // radius
+            FuzzyMetalMaterial, // material
+            vec3(0.9, 0.9, 0.9) // color
+        );
+
+        spheres[5] = Sphere(
             vec3(0., -300.5, -5.), // sphere center
             300.0, // radius
             LambertMaterial, // material

@@ -20,8 +20,10 @@ import './styles/index.scss';
             ]
         },
         uniforms: {
-            uTime: ({tick}) => 0.01 * tick,
-            uResolution: ({viewportWidth, viewportHeight}) => [viewportWidth, viewportHeight]
+            'uBgGradientColors[0]': [1, 1, 1],
+            'uBgGradientColors[1]': [0.4, 0.4, 0.7],
+            'uTime': ({tick}) => 0.01 * tick,
+            'uResolution': ({viewportWidth, viewportHeight}) => [viewportWidth, viewportHeight]
         },
         count: 3
     });
