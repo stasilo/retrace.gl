@@ -20,7 +20,11 @@ module.exports = {
                 loader: 'babel-loader',
                 options: {
                     presets: ['env'],
-                    plugins: ['transform-decorators-legacy', 'transform-class-properties', 'babel-plugin-transform-object-rest-spread']
+                    plugins: [
+                        'transform-decorators-legacy',
+                        'transform-class-properties',
+                        'babel-plugin-transform-object-rest-spread'
+                    ]
                 }
             }, {
                 test: /\.(scss|css)$/,
