@@ -1,15 +1,12 @@
-// import shaderIncludes from './includes.glsl';
-// ${shaderIncludes}
+import {definedNotNull} from '../utils';
 
-const getSource = ({options, sphereList}) => `
+    // #define GLSL_CAMERA ${definedNotNull(options.glslCamera)
+    //     ? options.glslCamera
+    //     : false
+    // }
+const getSource = ({options, objectList}) => `
     precision highp float;
     // precision mediump float;
-
-    uniform float uTime;
-    uniform vec2 uResolution;
-    uniform vec3 uBgGradientColors[2];
-
-    varying vec2 uv;
 
     #define FLT_MAX 3.402823466e+38
     #define T_MIN .001
@@ -19,8 +16,35 @@ const getSource = ({options, sphereList}) => `
     #define NUM_SAMPLES ${options.numSamples} //10
 
     #define PI 3.141592653589793
+
     #define DEG_TO_RAD(deg) deg * PI / 180.;
     #define RAD_TO_DEG(rad) rad * 180. / PI;
+
+    ${options.glslCamera
+        ? '#define GLSL_CAMERA'
+        : ''
+    }
+
+    uniform float uTime;
+    uniform vec2 uSeed;
+    uniform vec2 uResolution;
+    uniform vec3 uBgGradientColors[2];
+
+    varying vec2 uv;
+
+    struct Camera {
+        vec3 origin;
+        vec3 horizontal;
+        vec3 vertical;
+        vec3 lowerLeft;
+        float lensRadius;
+        // camera basis
+        vec3 w, u, v;
+    };
+
+    #ifndef GLSL_CAMERA
+        uniform Camera camera;
+    #endif
 
     /*
      * utils
@@ -55,59 +79,6 @@ const getSource = ({options, sphereList}) => `
         return random(gRandSeed);
     }
 
-    /*
-     * Textures
-     */
-
-    ${sphereList.getTextureDefinitions()}
-
-    /*
-     * Camera
-     */
-
-    struct Camera {
-        vec3 origin;
-        vec3 horizontal;
-        vec3 vertical;
-        vec3 lowerLeft;
-        float lensRadius;
-        // camera basis
-        vec3 w, u, v;
-    };
-
-    // lookFrom - eye origin point
-    // lookAt - point camera here
-    // vUp - camera tilt vector (use world up (0, 1, 0) for normal level view)
-    // vfov - vertical field of view
-    // aspect ratio
-
-    Camera getCamera(vec3 lookFrom, vec3 lookAt, vec3 vUp, float vfov, float aspect) {
-        float theta = DEG_TO_RAD(vfov); // vfov is top to bottom in degs
-        float halfHeight = tan(theta/2.); // pythagorean theorem
-        float halfWidth = aspect * halfHeight;
-
-        // calc camera basis
-        vec3 w = normalize(lookFrom - lookAt);
-        vec3 u = normalize(cross(vUp, w));
-        vec3 v = normalize(cross(w, u));
-
-        vec3 origin = lookFrom;
-        vec3 lowerLeft = origin - halfWidth*u - halfHeight*v - w;
-        vec3 horizontal = 2.*halfWidth*u;
-        vec3 vertical = 2.*halfHeight*v;
-        float lensRadius = -1.;
-
-        return Camera(
-            origin,
-            horizontal,
-            vertical,
-            lowerLeft,
-            lensRadius,
-            // camera basis
-            w, u, v
-        );
-    }
-
     // https://programming.guide/random-point-within-circle.html
 
     vec2 randomPointOnUnitDisc() {
@@ -117,32 +88,99 @@ const getSource = ({options, sphereList}) => `
         return vec2(r * cos(a), r * sin(a));
     }
 
-    Camera getCameraWithAperture(vec3 lookFrom, vec3 lookAt, vec3 vUp, float vfov, float aspect, float aperture, float focusDist) {
-        float lensRadius = aperture/2.;
-        float theta = DEG_TO_RAD(vfov); // vfov is top to bottom in degs
-        float halfHeight = tan(theta/2.); // pythagorean theorem
-        float halfWidth = aspect * halfHeight;
+    // random direction in unit sphere
+    // from: https://codepen.io/kakaxi0618/pen/BOqvNj
+    // this uses spherical coords, see:
+    // https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/geometry/spherical-coordinates-and-trigonometric-functions
 
-        // calc camera basis
-        vec3 w = normalize(lookFrom - lookAt);
-        vec3 u = normalize(cross(vUp, w));
-        vec3 v = cross(w, u);
+    vec3 randomPointInUnitSphere() {
+        float phi = 2.0 * PI * rand();
+        // random in range [0, 1] => random in range [-1, 1]
+        float cosTheta = 2.0 * rand() - 1.0;
+        float u = rand();
 
-        vec3 origin = lookFrom;
-        vec3 lowerLeft = origin - halfWidth*focusDist*u - halfHeight*focusDist*v - w*focusDist;
-        vec3 horizontal = 2.*focusDist*halfWidth*u;
-        vec3 vertical = 2.*focusDist*halfHeight*v;
+        float theta = acos(cosTheta);
+        float r = pow(u, 1.0 / 3.0);
 
-        return Camera(
-            origin,
-            horizontal,
-            vertical,
-            lowerLeft,
-            lensRadius,
-            // camera basis
-            w, u, v
-        );
+        // convert from spherical to cartesian
+        float x = r * sin(theta) * cos(phi);
+        float y = r * sin(theta) * sin(phi);
+        float z = r * cos(theta);
+
+        return vec3(x, y, z);
     }
+
+    /*
+     * Textures
+     */
+
+    ${objectList.getTextureDefinitions()}
+
+    /*
+     * Camera (mostly left for reference)
+     */
+
+    #ifdef GLSL_CAMERA
+        // lookFrom - eye origin point
+        // lookAt - point camera here
+        // vUp - camera tilt vector (use world up (0, 1, 0) for normal level view)
+        // vfov - vertical field of view
+        // aspect ratio
+
+        Camera getCamera(vec3 lookFrom, vec3 lookAt, vec3 vUp, float vfov, float aspect) {
+            float theta = DEG_TO_RAD(vfov); // vfov is top to bottom in degs
+            float halfHeight = tan(theta/2.); // pythagorean theorem
+            float halfWidth = aspect * halfHeight;
+
+            // calc camera basis
+            vec3 w = normalize(lookFrom - lookAt);
+            vec3 u = normalize(cross(vUp, w));
+            vec3 v = normalize(cross(w, u));
+
+            vec3 origin = lookFrom;
+            vec3 lowerLeft = origin - halfWidth*u - halfHeight*v - w;
+            vec3 horizontal = 2.*halfWidth*u;
+            vec3 vertical = 2.*halfHeight*v;
+            float lensRadius = -1.;
+
+            return Camera(
+                origin,
+                horizontal,
+                vertical,
+                lowerLeft,
+                lensRadius,
+                // camera basis
+                w, u, v
+            );
+        }
+
+        Camera getCameraWithAperture(vec3 lookFrom, vec3 lookAt, vec3 vUp, float vfov, float aspect, float aperture, float focusDist) {
+            float lensRadius = aperture/2.;
+            float theta = DEG_TO_RAD(vfov); // vfov is top to bottom in degs
+            float halfHeight = tan(theta/2.); // pythagorean theorem
+            float halfWidth = aspect * halfHeight;
+
+            // calc camera basis
+            vec3 w = normalize(lookFrom - lookAt);
+            vec3 u = normalize(cross(vUp, w));
+            vec3 v = cross(w, u);
+
+            vec3 origin = lookFrom;
+            vec3 lowerLeft = origin - halfWidth*focusDist*u - halfHeight*focusDist*v - w*focusDist;
+            vec3 horizontal = 2.*focusDist*halfWidth*u;
+            vec3 vertical = 2.*focusDist*halfHeight*v;
+
+            return Camera(
+                origin,
+                horizontal,
+                vertical,
+                lowerLeft,
+                lensRadius,
+                // camera basis
+                w, u, v
+            );
+        }
+    #endif
 
     /*
      * Materials
@@ -177,7 +215,7 @@ const getSource = ({options, sphereList}) => `
     Material FuzzyMetalMaterial = Material(
         METAL,
         vec3(0.9),
-        0.7,
+        0.45,
         0.
     );
 
@@ -185,32 +223,17 @@ const getSource = ({options, sphereList}) => `
         DIALECTRIC,
         vec3(1.),
         0.,
-        1.4 //1.7
+        1.8 //1.7
     );
 
-    // random direction in unit sphere
-    // from: https://codepen.io/kakaxi0618/pen/BOqvNj
-    // this uses spherical coords, see:
-    // https://www.scratchapixel.com/lessons/mathematics-physics-for-computer-graphics/geometry/spherical-coordinates-and-trigonometric-functions
+    Material LightMaterial = Material(
+        EMISSIVE,
+        vec3(1.),
+        0.,
+        0. //1.7
+    );
 
-    vec3 randomPointInUnitSphere() {
-        float phi = 2.0 * PI * rand();
-        // random in range [0, 1] => random in range [-1, 1]
-        float cosTheta = 2.0 * rand() - 1.0;
-        float u = rand();
-
-        float theta = acos(cosTheta);
-        float r = pow(u, 1.0 / 3.0);
-
-        // convert from spherical to cartesian
-        float x = r * sin(theta) * cos(phi);
-        float y = r * sin(theta) * sin(phi);
-        float z = r * cos(theta);
-
-        return vec3(x, y, z);
-    }
-
-    // better algo from: https://karthikkaranth.me/blog/generating-random-points-in-a-sphere/
+    // better algo from: https://karthikkaranth.me/blog/generating-random-points-in-a-hitable/
     // (generates a more uniform distribution)
 
     // vec3 randomPointInUnitSphere() {
@@ -335,29 +358,29 @@ const getSource = ({options, sphereList}) => `
             color *= hitRecord.material.albedo * hitRecord.color;
         }
 
-        // // EMISSIVE 
-        // if(hitRecord.material.type == EMISSIVE) {
-        //     color *=hitRecord.material.albedo  hitRecord.material.albedo * hitRecord.color;
-        // }
+        // EMISSIVE
+        if(hitRecord.material.type == EMISSIVE) {
+           color *= hitRecord.color;
+        }
     }
 
     /*
-     * Sphere handling
+     * Hitable handling
      */
 
-    struct Sphere {
+    struct Hitable {
         vec3 center;
         float radius;
         Material material;
         vec3 color;
     };
 
-    void hitSphere(Ray ray, Sphere sphere, float tMax, out HitRecord hitRecord) {
-        vec3 oc = ray.origin - sphere.center;
+    void hitSphere(Ray ray, Hitable hitable, float tMax, out HitRecord hitRecord) {
+        vec3 oc = ray.origin - hitable.center;
 
         float a = dot(ray.dir, ray.dir);
         float b = 2. * dot(oc, ray.dir);
-        float c = dot(oc, oc) - sphere.radius * sphere.radius;
+        float c = dot(oc, oc) - hitable.radius * hitable.radius;
 
         float discriminant = b*b - 4.*a*c;
 
@@ -370,10 +393,10 @@ const getSource = ({options, sphereList}) => `
                 hitRecord.hitT = t;
                 hitRecord.hitPoint = pointOnRay(ray, t);
                 hitRecord.normal = normalize(
-                    (hitRecord.hitPoint - sphere.center) / sphere.radius
+                    (hitRecord.hitPoint - hitable.center) / hitable.radius
                 );
 
-                hitRecord.material = sphere.material;
+                hitRecord.material = hitable.material;
 
                 return;
             }
@@ -384,10 +407,10 @@ const getSource = ({options, sphereList}) => `
                 hitRecord.hitT = t;
                 hitRecord.hitPoint = pointOnRay(ray, t);
                 hitRecord.normal = normalize(
-                    (hitRecord.hitPoint - sphere.center) / sphere.radius
+                    (hitRecord.hitPoint - hitable.center) / hitable.radius
                 );
 
-                hitRecord.material = sphere.material;
+                hitRecord.material = hitable.material;
 
                 return;
             }
@@ -401,16 +424,16 @@ const getSource = ({options, sphereList}) => `
      * World
      */
 
-    void hitWorld(Ray ray, Sphere spheres[${sphereList.length()}], float tMax, out HitRecord hitRecord) {
+    void hitWorld(Ray ray, Hitable hitables[${objectList.length()}], float tMax, out HitRecord hitRecord) {
         hitRecord.hasHit = false;
 
         HitRecord record;
-        for(int i = 0; i < ${sphereList.length()}; i++) {
-            hitSphere(ray, spheres[i], tMax, /* out */ record);
+        for(int i = 0; i < ${objectList.length()}; i++) {
+            hitSphere(ray, hitables[i], tMax, /* out */ record);
             if(record.hasHit) {
-                // inefficient hack to do dynamic sphere colors, textures & proc. textures
-                ${sphereList.updateTextureColors('uv', 'record.hitPoint')}
-                record.color = spheres[i].color;
+                // inefficient hack to do dynamic hitable colors, textures & proc. textures
+                ${objectList.updateTextureColors('uv', 'record.hitPoint')}
+                record.color = hitables[i].color;
 
                 hitRecord = record;
                 tMax = record.hitT; // handle depth! ("z-index" :))
@@ -431,12 +454,12 @@ const getSource = ({options, sphereList}) => `
     }
 
     // colorize
-    vec3 paint(Ray ray, Sphere spheres[${sphereList.length()}]) {
+    vec3 paint(Ray ray, Hitable hitables[${objectList.length()}]) {
         vec3 color = vec3(1.0);
         float tMax = T_MAX;
 
         HitRecord hitRecord;
-        hitWorld(ray, spheres, tMax, /* out => */ hitRecord);
+        hitWorld(ray, hitables, tMax, /* out => */ hitRecord);
 
         for(int hitCounts = 0; hitCounts < MAX_HIT_DEPTH; hitCounts++) {
             if(!hitRecord.hasHit) {
@@ -446,13 +469,13 @@ const getSource = ({options, sphereList}) => `
             ray.origin = hitRecord.hitPoint;
 
             shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray);
-            hitWorld(ray, spheres, tMax, /* out => */ hitRecord);
+            hitWorld(ray, hitables, tMax, /* out => */ hitRecord);
         }
 
         return color;
     }
 
-    vec3 trace(Camera camera, Sphere spheres[${sphereList.length()}]) {
+    vec3 trace(Camera camera, Hitable hitables[${objectList.length()}]) {
         vec3 color = vec3(0.);
 
         // trace
@@ -462,9 +485,24 @@ const getSource = ({options, sphereList}) => `
                 uv.y + (rand() / uResolution.y)
             );
 
+            // vec3 lookFrom = vec3(0.03-abs(sin(uv.x*cos(uTime*10.)*10.)), 0.9, 2.5+sin(uv.y*2.));
+            // vec3 lookAt = vec3(-0.2, 0.3-abs(sin(uv.x*cos(uTime*4.)*2.)), -1.5-abs(sin(uv.x*cos(uTime*0.1)*30.)));
+            // float focusDist = length(lookFrom - lookAt);
+            // float aperture = 0.1; //0.2;
+            //
+            // Camera camera = getCameraWithAperture(
+            //     lookFrom, // look from
+            //     lookAt, // look at
+            //     vec3(0., 1., 0.), // camera up
+            //     30., // vfov
+            //     uResolution.x/uResolution.y, // aspect ratio
+            //     aperture,
+            //     focusDist
+            // );
+
             Ray ray = getRay(camera, rUv);
-            color += paint(ray, spheres);
-            // color += deNan(paint(ray, spheres));
+            color += paint(ray, hitables);
+            // color += deNan(paint(ray, hitables));
         }
 
         color /= float(NUM_SAMPLES);
@@ -473,35 +511,37 @@ const getSource = ({options, sphereList}) => `
 
     void main () {
         // set initial seed for stateful rng
-        gRandSeed = uv;
+        gRandSeed = uv + uSeed;
 
-        // // regular camera
-        // Camera camera = getCamera(
-        //     vec3(0.0, 0.5, 0.5), // look from
-        //     vec3(0., -3.0, -5.3), // look at
-        //     vec3(0., 1., 0.), // camera up
-        //     25., // vfov
-        //     uResolution.x/uResolution.y // aspect ratio
-        // );
+        #ifdef GLSL_CAMERA
+            // // regular camera
+            // Camera camera = getCamera(
+            //     vec3(0.0, 0.5, 0.5), // look from
+            //     vec3(0., -3.0, -5.3), // look at
+            //     vec3(0., 1., 0.), // camera up
+            //     25., // vfov
+            //     uResolution.x/uResolution.y // aspect ratio
+            // );
 
-        vec3 lookFrom = vec3(0.03, 0.9, 2.5);
-        vec3 lookAt = vec3(0., 0.3, -1.5);
-        float focusDist = length(lookFrom - lookAt);
-        float aperture = 0.1; //0.2;
+            vec3 lookFrom = vec3(0.03, 0.9, 2.5);
+            vec3 lookAt = vec3(-0.2, 0.3, -1.5);
+            float focusDist = length(lookFrom - lookAt);
+            float aperture = 0.1; //0.2;
 
-        Camera camera = getCameraWithAperture(
-            lookFrom, // look from
-            lookAt, // look at
-            vec3(0., 1., 0.), // camera up
-            40., // vfov
-            uResolution.x/uResolution.y, // aspect ratio
-            aperture,
-            focusDist
-        );
+            Camera camera = getCameraWithAperture(
+                lookFrom, // look from
+                lookAt, // look at
+                vec3(0., 1., 0.), // camera up
+                30., // vfov
+                uResolution.x/uResolution.y, // aspect ratio
+                aperture,
+                focusDist
+            );
+        #endif
 
-        ${sphereList.getDefinition()}
+        ${objectList.getDefinition()}
 
-        vec3 color = trace(camera, spheres);
+        vec3 color = trace(camera, hitables);
         color = sqrt(color); // correct gamma
 
         gl_FragColor = vec4(color, 1.);

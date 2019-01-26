@@ -23,6 +23,11 @@ const random = (max = 1) => Math.random() * max;
 const randomSign = () => random() < 0.5 ? -1 : 1;
 const pluckRandom = (arr) => arr[parseInt(random(arr.length))];
 
+// math stuff
+
+const degToRad = (d) => d * Math.PI / 180;
+const radToDeg = (r) => r * 180 / Math.PI;
+
 // color stuff
 
 const isHexColor = (str) =>
@@ -46,6 +51,8 @@ module.exports = {
     random,
     randomSign,
     pluckRandom,
+    degToRad,
+    radToDeg,
     isHexColor,
     normedColor,
     normedColorStr
