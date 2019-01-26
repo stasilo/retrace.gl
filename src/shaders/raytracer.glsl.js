@@ -27,6 +27,7 @@ const getSource = ({options, objectList}) => `
 
     uniform float uTime;
     uniform vec2 uSeed;
+
     uniform vec2 uResolution;
     uniform vec3 uBgGradientColors[2];
 
@@ -511,7 +512,7 @@ const getSource = ({options, objectList}) => `
 
     void main () {
         // set initial seed for stateful rng
-        gRandSeed = uv + uSeed;
+        gRandSeed = uSeed * uv;///vec2(0.1, 0.1); //uSeed + 20.; //uv + uSeed;
 
         #ifdef GLSL_CAMERA
             // // regular camera
@@ -542,7 +543,7 @@ const getSource = ({options, objectList}) => `
         ${objectList.getDefinition()}
 
         vec3 color = trace(camera, hitables);
-        color = sqrt(color); // correct gamma
+        // color = sqrt(color); // correct gamma
 
         gl_FragColor = vec4(color, 1.);
     }

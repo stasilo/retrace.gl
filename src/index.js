@@ -113,8 +113,8 @@ async function app() {
                 type: 'float'
             }),
         ],
-        stencil: false,
-        depth: false
+        // stencil: false,
+        // depth: false
     });
 
     let accumTexture = regl.texture({
@@ -128,7 +128,7 @@ async function app() {
         frag: raytraceShader({
             options: {
                 glslCamera: false,
-                numSamples: 2//300//800//1500
+                numSamples: 1//300//800//1500
             },
             objectList: objects
         }),
@@ -166,27 +166,25 @@ async function app() {
             uniform sampler2D renderTexture;
             uniform sampler2D accumTexture;
 
-            uniform float uSampleCount;
+            uniform float uOneOverSampleCount;
 
             varying vec2 uv;
 
             void main() {
                 //vec2 uw = abs(1. - uv); // mirror axes correctly
-            	vec2 uw = vec2(uv.x, uv.y);
 
-            	vec4 newSample = texture2D(renderTexture, uw);
-                vec4 accumSamples = texture2D(accumTexture, uw);
+            	vec4 newSample = texture2D(renderTexture, uv);
+                vec4 accumSamples = texture2D(accumTexture, uv);
 
-                // gl_FragColor = (newSample*0.2 + accumSamples*0.8);
-
-                gl_FragColor = accumSamples + newSample/uSampleCount;
+                gl_FragColor = sqrt(accumSamples + newSample*uOneOverSampleCount);
 
 
-                // if(uSampleCount == 0.) {
-                //     gl_FragColor = newSample;
+                // if(uOneOverSampleCount < 1.) {
+                //     gl_FragColor = accumSamples + newSample*uOneOverSampleCount;
                 // } else {
-                //     gl_FragColor = mix(vec4(0.5), newSample, accumSamples); //vec4(newSample.rgb*0.5 + accumSamples.rgb*0.5, 1.);
+                //     gl_FragColor = newSample;
                 // }
+
             }
         `,
         vert: vertShader,
@@ -200,7 +198,7 @@ async function app() {
         uniforms: {
             'renderTexture': () => fbo,
             'accumTexture': () => accumTexture,
-            'uSampleCount': regl.prop('sampleCount'),
+            'uOneOverSampleCount': regl.prop('oneOverSampleCount'),
             'uTime': ({tick}) =>
                 0.01 * tick,
             'uResolution': ({viewportWidth, viewportHeight}) =>
@@ -231,11 +229,11 @@ async function app() {
         });
 
         rayTrace({
-            seed: [random(), random()]
+            seed: [random(0.1, 10), random(0.1, 10)]
         });
 
         accumulate({
-            sampleCount
+            oneOverSampleCount: 1/sampleCount
         });
 
         accumTexture({

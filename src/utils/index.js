@@ -19,7 +19,7 @@ const flatten = ([x, ...xs]) => typeof x !== 'undefined'
 
 // random no stuff
 
-const random = (max = 1) => Math.random() * max;
+const random = (min = 0, max = 1) => Math.random() * (max - min) + min;
 const randomSign = () => random() < 0.5 ? -1 : 1;
 const pluckRandom = (arr) => arr[parseInt(random(arr.length))];
 
