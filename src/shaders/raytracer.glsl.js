@@ -26,10 +26,14 @@ const getSource = ({options, objectList}) => `
     }
 
     uniform float uTime;
+    uniform float uOneOverSampleCount;
+
     uniform vec2 uSeed;
 
     uniform vec2 uResolution;
     uniform vec3 uBgGradientColors[2];
+
+    uniform sampler2D accumTexture;
 
     varying vec2 uv;
 
@@ -542,10 +546,13 @@ const getSource = ({options, objectList}) => `
 
         ${objectList.getDefinition()}
 
+        vec3 prevColor = texture2D(accumTexture, uv).rgb;
         vec3 color = trace(camera, hitables);
-        color = sqrt(color); // correct gamma
 
-        gl_FragColor = vec4(color, 1.);
+        color = sqrt(color); // correct gamma
+        color *= uOneOverSampleCount;
+
+        gl_FragColor = vec4(color+prevColor, 1.);
     }
 `;
 

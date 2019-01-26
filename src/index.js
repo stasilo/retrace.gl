@@ -26,9 +26,9 @@ async function app() {
 
     const camera = createCamera({
         lookFrom: [0.03, 0.9, 2.5],
-        lookAt: [-0.2, 0.3, -1.5],
+        lookAt: [-0.25, 0.3, -1.5],
         vUp: [0, 1, 0],
-        vfov: 30,
+        vfov: 35,
         aperture: 0.1,
         aspect: 2.0
     });
@@ -44,7 +44,6 @@ async function app() {
 
                 if(s < 0.) {
                     return vec3(${normedColorStr('#661111')});
-                    //return vec3(${normedColorStr('#154535')});
                 } else {
                     return vec3(${normedColorStr('#101010')});
                 }
@@ -119,13 +118,19 @@ async function app() {
         depth: false
     });
 
-    let accumTexture = regl.texture({
-        width: canvas.width,
-        height: canvas.height,
-        format: 'srgba',
-        type: 'float',
-        mag: 'nearest',
-        min: 'nearest',
+    let accumFbo = regl.framebuffer({
+        color: [
+            regl.texture({
+                width: canvas.width,
+                height: canvas.height,
+                format: 'srgba',
+                type: 'float',
+                mag: 'nearest',
+                min: 'nearest'
+            })
+        ],
+        stencil: false,
+        depth: false
     });
 
     let rayTrace = regl({
@@ -146,9 +151,11 @@ async function app() {
         },
         uniforms: {
             ...camera.getUniform(),
+            'accumTexture': () => accumFbo,
             'uBgGradientColors[0]': normedColor('#000000'),
             'uBgGradientColors[1]': normedColor('#111150'),
             'uSeed': regl.prop('seed'),
+            'uOneOverSampleCount': regl.prop('oneOverSampleCount'),
             'uTime': ({tick}) =>
                 0.01 * tick,
             'uResolution': ({viewportWidth, viewportHeight}) =>
@@ -165,10 +172,51 @@ async function app() {
         frag: `
             precision highp float;
 
+
+            uniform sampler2D traceTexture;
+
+            uniform int uCurrentSampleCount;
+            uniform float uOneOverSampleCount;
+            uniform vec2 uResolution;
+
+            varying vec2 uv;
+
+            void main() {
+            	vec3 newSample = texture2D(traceTexture, uv).rgb;
+                gl_FragColor = vec4(newSample, 1.);
+            }
+        `,
+        vert: vertShader,
+        attributes: {
+            position: [
+                -2, 0,
+                0, -2,
+                2, 2
+            ]
+        },
+        uniforms: {
+            'traceTexture': () => traceFbo,
+            'uOneOverSampleCount': regl.prop('oneOverSampleCount'),
+            'uCurrentSampleCount': regl.prop('currentSampleCount'),
+            'uTime': ({tick}) =>
+                0.01 * tick,
+            'uResolution': ({viewportWidth, viewportHeight}) =>
+                [viewportWidth, viewportHeight]
+        },
+        depth: {
+            enable: false
+        },
+        count: 3,
+        framebuffer: accumFbo
+    });
+
+    let render = regl({
+        frag: `
+            precision highp float;
+
             uniform vec2 uResolution;
 
             uniform sampler2D renderTexture;
-            uniform sampler2D accumTexture;
 
             uniform int uCurrentSampleCount;
             uniform float uOneOverSampleCount;
@@ -176,14 +224,8 @@ async function app() {
             varying vec2 uv;
 
             void main() {
-            	vec3 newSample = texture2D(renderTexture, uv).rgb;
-                vec3 accumSamples = texture2D(accumTexture, uv).rgb;
-
-                if(uCurrentSampleCount == 1) {
-                    gl_FragColor = vec4(newSample*uOneOverSampleCount, 1.0);
-                } else {
-                    gl_FragColor = vec4(accumSamples + newSample*uOneOverSampleCount, 1.0);
-                }
+                vec3 color = texture2D(renderTexture, uv).rgb;
+                gl_FragColor = vec4(color, 1.0);
             }
         `,
         vert: vertShader,
@@ -196,7 +238,6 @@ async function app() {
         },
         uniforms: {
             'renderTexture': () => traceFbo,
-            'accumTexture': () => accumTexture,
             'uOneOverSampleCount': regl.prop('oneOverSampleCount'),
             'uCurrentSampleCount': regl.prop('currentSampleCount'),
             'uTime': ({tick}) =>
@@ -210,15 +251,9 @@ async function app() {
         count: 3,
     });
 
-
-    // regl.clear({
-    //     color: [0, 0, 0, 1]
-    // });
-    //
-    // rayTrace();
-
-    const maxSampleCount = 1000;
     let sampleCount = 1;
+    const maxSampleCount = 1000;
+
     const frame = regl.frame(() => {
         if(sampleCount > maxSampleCount) {
             console.log('done!');
@@ -230,16 +265,18 @@ async function app() {
         });
 
         rayTrace({
-            seed: [random(0.1, 10), random(0.1, 10)]
-        });
-
-        accumulate({
-            currentSampleCount: sampleCount, //sampleCount,
+            seed: [random(0.1, 10), random(0.1, 10)],
             oneOverSampleCount: 1/maxSampleCount
         });
 
-        accumTexture({
-            copy: true
+        accumulate({
+            currentSampleCount: sampleCount,
+            oneOverSampleCount: 1/maxSampleCount
+        });
+
+        render({
+            currentSampleCount: sampleCount,
+            oneOverSampleCount: 1/maxSampleCount
         });
 
         ++sampleCount;
