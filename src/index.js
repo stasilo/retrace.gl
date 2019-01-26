@@ -104,24 +104,28 @@ async function app() {
     //     )f
     // );
 
-    let fbo = regl.framebuffer({
+    let traceFbo = regl.framebuffer({
         color: [
             regl.texture({
                 width: canvas.width,
                 height: canvas.height,
-                format: 'srgb',
-                type: 'float'
-            }),
+                format: 'srgba',
+                type: 'float',
+                mag: 'nearest',
+                min: 'nearest'
+            })
         ],
-        // stencil: false,
-        // depth: false
+        stencil: false,
+        depth: false
     });
 
     let accumTexture = regl.texture({
         width: canvas.width,
         height: canvas.height,
-        format: 'srgb',
-        type: 'float'
+        format: 'srgba',
+        type: 'float',
+        mag: 'nearest',
+        min: 'nearest',
     });
 
     let rayTrace = regl({
@@ -154,7 +158,7 @@ async function app() {
             enable: false
         },
         count: 3,
-        framebuffer: fbo
+        framebuffer: traceFbo
     });
 
     let accumulate = regl({
@@ -166,25 +170,20 @@ async function app() {
             uniform sampler2D renderTexture;
             uniform sampler2D accumTexture;
 
+            uniform int uCurrentSampleCount;
             uniform float uOneOverSampleCount;
 
             varying vec2 uv;
 
             void main() {
-                //vec2 uw = abs(1. - uv); // mirror axes correctly
+            	vec3 newSample = texture2D(renderTexture, uv).rgb;
+                vec3 accumSamples = texture2D(accumTexture, uv).rgb;
 
-            	vec4 newSample = texture2D(renderTexture, uv);
-                vec4 accumSamples = texture2D(accumTexture, uv);
-
-                gl_FragColor = sqrt(accumSamples + newSample*uOneOverSampleCount);
-
-
-                // if(uOneOverSampleCount < 1.) {
-                //     gl_FragColor = accumSamples + newSample*uOneOverSampleCount;
-                // } else {
-                //     gl_FragColor = newSample;
-                // }
-
+                if(uCurrentSampleCount == 1) {
+                    gl_FragColor = vec4(newSample*uOneOverSampleCount, 1.0);
+                } else {
+                    gl_FragColor = vec4(accumSamples + newSample*uOneOverSampleCount, 1.0);
+                }
             }
         `,
         vert: vertShader,
@@ -196,9 +195,10 @@ async function app() {
             ]
         },
         uniforms: {
-            'renderTexture': () => fbo,
+            'renderTexture': () => traceFbo,
             'accumTexture': () => accumTexture,
             'uOneOverSampleCount': regl.prop('oneOverSampleCount'),
+            'uCurrentSampleCount': regl.prop('currentSampleCount'),
             'uTime': ({tick}) =>
                 0.01 * tick,
             'uResolution': ({viewportWidth, viewportHeight}) =>
@@ -217,12 +217,13 @@ async function app() {
     //
     // rayTrace();
 
+    const maxSampleCount = 1000;
     let sampleCount = 1;
-    regl.frame(() => {
-        // if(sampleCount > 500) {
-        //     console.log('done!');
-        //     return;
-        // }
+    const frame = regl.frame(() => {
+        if(sampleCount > maxSampleCount) {
+            console.log('done!');
+            frame.cancel();
+        }
 
         regl.clear({
             color: [0, 0, 0, 1]
@@ -233,7 +234,8 @@ async function app() {
         });
 
         accumulate({
-            oneOverSampleCount: 1/sampleCount
+            currentSampleCount: sampleCount, //sampleCount,
+            oneOverSampleCount: 1/maxSampleCount
         });
 
         accumTexture({

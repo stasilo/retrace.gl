@@ -543,7 +543,7 @@ const getSource = ({options, objectList}) => `
         ${objectList.getDefinition()}
 
         vec3 color = trace(camera, hitables);
-        // color = sqrt(color); // correct gamma
+        color = sqrt(color); // correct gamma
 
         gl_FragColor = vec4(color, 1.);
     }

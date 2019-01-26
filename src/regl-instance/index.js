@@ -3,15 +3,11 @@ import regl from 'regl';
 let instance = null;
 let instancePromise = null;
 
-
-// extensions: ['OES_texture_float'],
-// optionalExtensions: ['oes_texture_float_linear']
-
 // singleton instance factory
 const getInstance = (opts = {canvas: _}) => {
     if(!instance) {
         let settings = {
-            extensions: ['OES_texture_float', 'EXT_sRGB'],
+            extensions: ['oes_texture_float', 'EXT_sRGB', 'EXT_color_buffer_half_float'],
             // optionalExtensions: ['oes_texture_float_linear'],
             ...opts
         }
@@ -20,15 +16,6 @@ const getInstance = (opts = {canvas: _}) => {
     }
 
     return instance;
-    //
-    // if(!instance) {
-    //     instance = regl(opts.canvas
-    //         ? opts.canvas
-    //         : undefined
-    //     );
-    // }
-    //
-    // return instance;
 }
 
 export default getInstance;
