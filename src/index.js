@@ -31,8 +31,8 @@ function app() {
         : defaultMaxSampleCount;
 
     const shaderSampleCount = params.realTime
-            ? params.sampleCount || 1
-            : 1;
+        ? params.sampleCount || 1
+        : 1;
 
     const camera = createCamera({
         lookFrom: [0.03, 0.9, 2.5],
@@ -140,9 +140,8 @@ function app() {
     });
 
     const realTimeRender = () => {
-        document.getElementById('samples').innerHTML = `(per frame) ${shaderSampleCount}`;
-
-        const frame = regl.frame(() => {
+        let then = 0;
+        const frame = regl.frame((context) => {
             regl.clear({
                 color: [0, 0, 0, 1]
             });
@@ -153,6 +152,14 @@ function app() {
                 oneOverSampleCount: 1,
                 to: null // screen
             });
+
+            let now = context.time;
+            const deltaTime = now - then;
+            then = now;
+            const fps = (1 / deltaTime).toFixed(1);
+
+            document.getElementById('debug').innerHTML =
+                `samples per frame: ${shaderSampleCount}, fps: ${fps}`;
         });
     }
 
@@ -160,7 +167,8 @@ function app() {
         let sampleCount = 1;
 
         const frame = regl.frame(() => {
-            document.getElementById('samples').innerHTML = `${sampleCount} / ${maxSampleCount}`;
+            document.getElementById('debug').innerHTML =
+                `samples: ${sampleCount} / ${maxSampleCount}`;
 
             if(sampleCount == maxSampleCount) {
                 frame.cancel();
