@@ -30,6 +30,10 @@ function app() {
         ? params.sampleCount
         : defaultMaxSampleCount;
 
+    const shaderSampleCount = params.realTime
+            ? params.sampleCount || 1
+            : 1;
+
     const camera = createCamera({
         lookFrom: [0.03, 0.9, 2.5],
         lookAt: [-0.25, 0.1, -1.5],
@@ -74,9 +78,7 @@ function app() {
             options: {
                 realTime: params.realTime,
                 glslCamera: false,
-                numSamples: params.realTime
-                    ? params.sampleCount || 1
-                    : 1
+                numSamples: shaderSampleCount
             },
             objectList: scene
         }),
@@ -138,6 +140,8 @@ function app() {
     });
 
     const realTimeRender = () => {
+        document.getElementById('samples').innerHTML = `(per frame) ${shaderSampleCount}`;
+
         const frame = regl.frame(() => {
             regl.clear({
                 color: [0, 0, 0, 1]
@@ -156,7 +160,7 @@ function app() {
         let sampleCount = 1;
 
         const frame = regl.frame(() => {
-            document.getElementById('samples').innerHTML = sampleCount;
+            document.getElementById('samples').innerHTML = `${sampleCount} / ${maxSampleCount}`;
 
             if(sampleCount == maxSampleCount) {
                 frame.cancel();
