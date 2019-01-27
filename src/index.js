@@ -255,8 +255,9 @@ async function app() {
     const maxSampleCount = 1000;
 
     const frame = regl.frame(() => {
-        if(sampleCount > maxSampleCount) {
-            console.log('done!');
+        document.getElementById('samples').innerHTML = sampleCount;
+
+        if(sampleCount == maxSampleCount) {
             frame.cancel();
         }
 
