@@ -1,9 +1,5 @@
 import {definedNotNull} from '../utils';
 
-    // #define GLSL_CAMERA ${definedNotNull(options.glslCamera)
-    //     ? options.glslCamera
-    //     : false
-    // }
 const getSource = ({options, objectList}) => `
     precision highp float;
     // precision mediump float;
@@ -19,6 +15,11 @@ const getSource = ({options, objectList}) => `
 
     #define DEG_TO_RAD(deg) deg * PI / 180.;
     #define RAD_TO_DEG(rad) rad * 180. / PI;
+
+    ${options.realTime
+        ? '#define REALTIME'
+        : ''
+    }
 
     ${options.glslCamera
         ? '#define GLSL_CAMERA'
@@ -546,13 +547,17 @@ const getSource = ({options, objectList}) => `
 
         ${objectList.getDefinition()}
 
-        vec3 prevColor = texture2D(accumTexture, uv).rgb;
         vec3 color = trace(camera, hitables);
-
         color = sqrt(color); // correct gamma
-        color *= uOneOverSampleCount;
 
-        gl_FragColor = vec4(color+prevColor, 1.);
+        #ifndef REALTIME
+            vec3 prevColor = texture2D(accumTexture, uv).rgb;
+
+            color *= uOneOverSampleCount;
+            color += prevColor;
+        #endif
+
+        gl_FragColor = vec4(color, 1.);
     }
 `;
 

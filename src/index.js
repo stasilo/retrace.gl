@@ -1,107 +1,43 @@
 import reglInstance from './regl-instance';
 
-import vec3 from 'gl-vec3';
-
-import {
-    random,
-    pluckRandom,
-    normedColor,
-    normedColorStr
-} from './utils';
-
-import sphere from './models/sphere';
 import {createCamera} from './models/camera';
-
-import objectList from './dtos/objectList';
+import scene from './scenes/test-scene';
 
 import vertShader from './shaders/vert.glsl';
 import raytraceShader from './shaders/raytracer.glsl.js';
 
+import {
+    definedNotNull,
+    random,
+    normedColor,
+    normedColorStr
+} from './utils';
+
+import queryString from 'query-string';
+
 import 'normalize.css/normalize.css';
 import './styles/index.scss';
 
-async function app() {
+const defaultMaxSampleCount = 300;
+
+function app() {
     const canvas = document.getElementById('regl-canvas');
-    const regl = await reglInstance({canvas});
+    const params = queryString.parse(location.search);
+
+    const regl = reglInstance({canvas});
+
+    const maxSampleCount = definedNotNull(params.sampleCount)
+        ? params.sampleCount
+        : defaultMaxSampleCount;
 
     const camera = createCamera({
         lookFrom: [0.03, 0.9, 2.5],
-        lookAt: [-0.25, 0.3, -1.5],
+        lookAt: [-0.25, 0.1, -1.5],
         vUp: [0, 1, 0],
         vfov: 35,
         aperture: 0.1,
         aspect: 2.0
     });
-
-    const objects = new objectList([
-        new sphere({
-            id: 0,
-            center: [0., -301, -5.],
-            radius: 300.5,
-            material: 'LambertMaterial',
-            color: `
-                float s = sin(10.*p.x)*sin(10.*p.y)*sin(10.*p.z);
-
-                if(s < 0.) {
-                    return vec3(${normedColorStr('#661111')});
-                } else {
-                    return vec3(${normedColorStr('#101010')});
-                }
-            `
-        }),
-        new sphere({
-            center: [-0.2, 0.5, -1.7], // sphere center
-            radius: 0.5,
-            material: 'FuzzyMetalMaterial',
-            color: '#ffffff'
-        }),
-        new sphere({
-            center:[-1.5, 0.1, -1.25],
-            radius: 0.5,
-            material: 'GlassMaterial',
-            color: '#ffffff'
-        }),
-        new sphere({
-            center:[-0.35, -0.27, -1.], // '-0.27 + abs(sin(uTime*3.))*0.4'
-            radius: 0.25,
-            material: 'ShinyMetalMaterial',
-            color: '#eeeeee'
-        }),
-        new sphere({
-            center:[0.8, 0., -1.3],
-            radius: 0.5,
-            material: 'LambertMaterial',
-            color: '#eeeeee'
-        }),
-        new sphere({
-            center:[5.8, 5., -1.3],
-            radius: 2.5,
-            material: 'LightMaterial',
-            color: `
-                return vec3(5., 5., 5.);
-            `
-        }),
-        new sphere({
-            center:[-2.8, 5., -2.5],
-            radius: 2.9,
-            material: 'LightMaterial',
-            color: `
-                return vec3(5., 5., 5.);
-            `
-        })
-    ]);
-
-    // [...Array(3)].forEach((_, i) =>
-    //     spheres.add(
-    //         new sphere({
-    //             id: 7+i,
-    //             center:[-4.1 + random()*7.0, -0.2, -5.0 + random()*3.0],
-    //             radius: 0.25, // radius
-    //             material: 'FuzzyMetalMaterial', //pluckRandom(['LambertMaterial', 'FuzzyMetalMaterial']),
-    //             color: '#353535'//'#451010' //'#ffffff'
-    //         })
-    //     )f
-    // );
 
     let traceFbo = regl.framebuffer({
         color: [
@@ -133,13 +69,16 @@ async function app() {
         depth: false
     });
 
-    let rayTrace = regl({
+    const rayTrace = regl({
         frag: raytraceShader({
             options: {
+                realTime: params.realTime,
                 glslCamera: false,
-                numSamples: 1//300//800//1500
+                numSamples: params.realTime
+                    ? params.sampleCount || 1
+                    : 1
             },
-            objectList: objects
+            objectList: scene
         }),
         vert: vertShader,
         attributes: {
@@ -165,25 +104,19 @@ async function app() {
             enable: false
         },
         count: 3,
-        framebuffer: traceFbo
+        framebuffer: regl.prop('to')
     });
 
-    let accumulate = regl({
+    const render = regl({
         frag: `
             precision highp float;
-
 
             uniform sampler2D traceTexture;
-
-            uniform int uCurrentSampleCount;
-            uniform float uOneOverSampleCount;
-            uniform vec2 uResolution;
-
             varying vec2 uv;
 
             void main() {
-            	vec3 newSample = texture2D(traceTexture, uv).rgb;
-                gl_FragColor = vec4(newSample, 1.);
+            	vec3 accumSamples = texture2D(traceTexture, uv).rgb;
+                gl_FragColor = vec4(accumSamples, 1.);
             }
         `,
         vert: vertShader,
@@ -195,93 +128,66 @@ async function app() {
             ]
         },
         uniforms: {
-            'traceTexture': () => traceFbo,
-            'uOneOverSampleCount': regl.prop('oneOverSampleCount'),
-            'uCurrentSampleCount': regl.prop('currentSampleCount'),
-            'uTime': ({tick}) =>
-                0.01 * tick,
-            'uResolution': ({viewportWidth, viewportHeight}) =>
-                [viewportWidth, viewportHeight]
+            'traceTexture': () => traceFbo
         },
         depth: {
             enable: false
         },
         count: 3,
-        framebuffer: accumFbo
+        framebuffer: regl.prop('to'),
     });
 
-    let render = regl({
-        frag: `
-            precision highp float;
+    const realTimeRender = () => {
+        const frame = regl.frame(() => {
+            regl.clear({
+                color: [0, 0, 0, 1]
+            });
 
-            uniform vec2 uResolution;
+            // render scene
+            rayTrace({
+                seed: [random(0.1, 10), random(0.1, 10)],
+                oneOverSampleCount: 1,
+                to: null // screen
+            });
+        });
+    }
 
-            uniform sampler2D renderTexture;
+    const staticRender = () => {
+        let sampleCount = 1;
 
-            uniform int uCurrentSampleCount;
-            uniform float uOneOverSampleCount;
+        const frame = regl.frame(() => {
+            document.getElementById('samples').innerHTML = sampleCount;
 
-            varying vec2 uv;
-
-            void main() {
-                vec3 color = texture2D(renderTexture, uv).rgb;
-                gl_FragColor = vec4(color, 1.0);
+            if(sampleCount == maxSampleCount) {
+                frame.cancel();
             }
-        `,
-        vert: vertShader,
-        attributes: {
-            position: [
-                -2, 0,
-                0, -2,
-                2, 2
-            ]
-        },
-        uniforms: {
-            'renderTexture': () => traceFbo,
-            'uOneOverSampleCount': regl.prop('oneOverSampleCount'),
-            'uCurrentSampleCount': regl.prop('currentSampleCount'),
-            'uTime': ({tick}) =>
-                0.01 * tick,
-            'uResolution': ({viewportWidth, viewportHeight}) =>
-                [viewportWidth, viewportHeight]
-        },
-        depth: {
-            enable: false
-        },
-        count: 3,
-    });
 
-    let sampleCount = 1;
-    const maxSampleCount = 1000;
+            regl.clear({
+                color: [0, 0, 0, 1]
+            });
 
-    const frame = regl.frame(() => {
-        document.getElementById('samples').innerHTML = sampleCount;
+            // render scene to trace framebuffer
+            rayTrace({
+                seed: [random(0.1, 10), random(0.1, 10)],
+                oneOverSampleCount: 1/maxSampleCount,
+                to: traceFbo
+            });
 
-        if(sampleCount == maxSampleCount) {
-            frame.cancel();
-        }
+            // render trace framebuffer to accumulator framebuffer
+            render({to: accumFbo});
 
-        regl.clear({
-            color: [0, 0, 0, 1]
+            // render scene to screen
+            render({to: null});
+
+            ++sampleCount;
         });
+    }
 
-        rayTrace({
-            seed: [random(0.1, 10), random(0.1, 10)],
-            oneOverSampleCount: 1/maxSampleCount
-        });
-
-        accumulate({
-            currentSampleCount: sampleCount,
-            oneOverSampleCount: 1/maxSampleCount
-        });
-
-        render({
-            currentSampleCount: sampleCount,
-            oneOverSampleCount: 1/maxSampleCount
-        });
-
-        ++sampleCount;
-    })
-};
+    if(!params.realTime) {
+        staticRender();
+    } else {
+        realTimeRender();
+    }
+}
 
 document.addEventListener('DOMContentLoaded', app);
