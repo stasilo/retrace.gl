@@ -1,6 +1,7 @@
-import reglInstance from './regl-instance';
+import queryString from 'query-string';
 
-import {createCamera} from './models/camera';
+import reglInstance from './regl-instance';
+import {createCamera} from './camera';
 import scene from './scenes/test-scene';
 
 import vertShader from './shaders/vert.glsl';
@@ -13,12 +14,10 @@ import {
     normedColorStr
 } from './utils';
 
-import queryString from 'query-string';
-
 import 'normalize.css/normalize.css';
 import './styles/index.scss';
 
-const defaultMaxSampleCount = 300;
+const defaultMaxSampleCount = 30;
 
 function app() {
     const canvas = document.getElementById('regl-canvas');
@@ -35,12 +34,12 @@ function app() {
         : 1;
 
     const camera = createCamera({
-        lookFrom: [0.03, 0.9, 2.5],
+        lookFrom: [3.1, 0.8, 1.9],
         lookAt: [-0.25, 0.1, -1.5],
         vUp: [0, 1, 0],
-        vfov: 35,
+        vfov: 32,
         aperture: 0.1,
-        aspect: 2.0
+        aspect: canvas.width/canvas.height
     });
 
     let traceFbo = regl.framebuffer({
@@ -73,15 +72,19 @@ function app() {
         depth: false
     });
 
+    const rayTraceShaderSrc = raytraceShader({
+        options: {
+            realTime: params.realTime,
+            glslCamera: false,
+            numSamples: shaderSampleCount
+        },
+        objectList: scene
+    });
+
+    console.log(rayTraceShaderSrc);
+
     const rayTrace = regl({
-        frag: raytraceShader({
-            options: {
-                realTime: params.realTime,
-                glslCamera: false,
-                numSamples: shaderSampleCount
-            },
-            objectList: scene
-        }),
+        frag: rayTraceShaderSrc,
         vert: vertShader,
         attributes: {
             position: [
@@ -94,7 +97,9 @@ function app() {
             ...camera.getUniform(),
             'accumTexture': () => accumFbo,
             'uBgGradientColors[0]': normedColor('#000000'),
-            'uBgGradientColors[1]': normedColor('#111150'),
+            'uBgGradientColors[1]': normedColor('#111111'),
+            // 'uBgGradientColors[0]': normedColor('#000000'),
+            // 'uBgGradientColors[1]': normedColor('#111150'),
             'uSeed': regl.prop('seed'),
             'uOneOverSampleCount': regl.prop('oneOverSampleCount'),
             'uTime': ({tick}) =>
@@ -148,8 +153,8 @@ function app() {
 
             // render scene
             rayTrace({
-                seed: [random(0.1, 10), random(0.1, 10)],
-                oneOverSampleCount: 1,
+                seed: [random(), random()],
+                oneOverSampleCount: null,
                 to: null // screen
             });
 
@@ -165,10 +170,14 @@ function app() {
 
     const staticRender = () => {
         let sampleCount = 1;
+        let startTime = Date.now();
 
         const frame = regl.frame(() => {
+            const elapsedTime = ((Date.now() - startTime) / 1000)
+                .toFixed(2);
+
             document.getElementById('debug').innerHTML =
-                `samples: ${sampleCount} / ${maxSampleCount}`;
+                `samples: ${sampleCount} / ${maxSampleCount}, render time: ${elapsedTime}s`;
 
             if(sampleCount == maxSampleCount) {
                 frame.cancel();
@@ -180,7 +189,7 @@ function app() {
 
             // render scene to trace framebuffer
             rayTrace({
-                seed: [random(0.1, 10), random(0.1, 10)],
+                seed: [random(), random()],
                 oneOverSampleCount: 1/maxSampleCount,
                 to: traceFbo
             });

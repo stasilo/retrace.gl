@@ -1,5 +1,5 @@
 import sphere from '../../models/sphere';
-import {createCamera} from '../../models/camera';
+import rect from '../../models/rect';
 
 import {
     normedColor,
@@ -15,23 +15,36 @@ const sceneObjects = new objectList([
         radius: 300.5,
         material: 'LambertMaterial',
         color: `
+            p-=.5;
             float s = sin(10.*p.x)*sin(10.*p.y)*sin(10.*p.z);
 
             if(s < 0.) {
                 return vec3(${normedColorStr('#661111')});
             } else {
-                return vec3(${normedColorStr('#101010')});
+                return vec3(${normedColorStr('#ffffff')});
             }
         `
     }),
-    new sphere({
-        center: [-0.2, 0.5, -1.7], // sphere center
-        radius: 0.5,
-        material: 'FuzzyMetalMaterial',
+    new rect({
+        x0: -1.0,
+        x1: 0.5,
+        y0: -0.0,
+        y1: 1,
+        k: -4.1,
+        material: 'LightMaterial',
+        color: '#ffffff'
+    }),
+    new rect({
+        x0: -3,
+        x1: -1,
+        y0: -0.4,
+        y1: 1,
+        k: 0,
+        material: 'LightMaterial',
         color: '#ffffff'
     }),
     new sphere({
-        center:[-1.5, 0.1, -1.25],
+        center:[-1.5, 0.2, -1.25],
         radius: 0.5,
         material: 'GlassMaterial',
         color: '#ffffff'
@@ -44,26 +57,10 @@ const sceneObjects = new objectList([
         color: '#eeeeee'
     }),
     new sphere({
-        center:[0.8, 0., -1.3],
+        center:[0.0, -0.05, -1.8],
         radius: 0.5,
-        material: 'LambertMaterial',
-        color: '#eeeeee'
-    }),
-    new sphere({
-        center:[5.8, 5., -1.3],
-        radius: 2.5,
-        material: 'LightMaterial',
-        color: `
-            return vec3(5., 5., 5.);
-        `
-    }),
-    new sphere({
-        center:[-2.8, 5., -2.5],
-        radius: 2.9,
-        material: 'LightMaterial',
-        color: `
-            return vec3(5., 5., 5.);
-        `
+        material: 'FuzzyMetalMaterial',
+        color: '#ffffff'
     })
 ]);
 

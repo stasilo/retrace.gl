@@ -1,5 +1,5 @@
 import vec3 from 'gl-vec3';
-import {degToRad} from '../../utils';
+import {degToRad} from '../utils';
 
 // lookFrom - eye origin point
 // lookAt - point camera here

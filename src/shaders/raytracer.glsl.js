@@ -6,10 +6,10 @@ const getSource = ({options, objectList}) => `
 
     #define FLT_MAX 3.402823466e+38
     #define T_MIN .001
-    #define T_MAX 15. //FLT_MAX
+    #define T_MAX FLT_MAX
 
-    #define MAX_HIT_DEPTH 50 //50
-    #define NUM_SAMPLES ${options.numSamples} //10
+    #define MAX_HIT_DEPTH 50
+    #define NUM_SAMPLES ${options.numSamples}
 
     #define PI 3.141592653589793
 
@@ -38,6 +38,10 @@ const getSource = ({options, objectList}) => `
 
     varying vec2 uv;
 
+    /*
+     * Camera
+     */
+
     struct Camera {
         vec3 origin;
         vec3 horizontal;
@@ -51,6 +55,16 @@ const getSource = ({options, objectList}) => `
     #ifndef GLSL_CAMERA
         uniform Camera camera;
     #endif
+
+    /*
+     * Lights
+     */
+
+    // struct Light {
+    //     vec3 color;
+    //     float intensity;
+    //     vec3 center;
+    // };
 
     /*
      * utils
@@ -195,18 +209,20 @@ const getSource = ({options, objectList}) => `
     #define LAMBERT 1
     #define METAL 2
     #define DIALECTRIC 3
-    #define EMISSIVE 4
+    #define DIFFUSE_EMISSIVE 4
 
     struct Material {
         int type;
         vec3 albedo;
         float fuzz;
         float refIdx;
+        float emissiveIntensity;
     };
 
     Material LambertMaterial = Material(
         LAMBERT,
         vec3(1.),
+        0.,
         0.,
         0.
     );
@@ -215,6 +231,7 @@ const getSource = ({options, objectList}) => `
         METAL,
         vec3(0.8),
         0.01,
+        0.,
         0.
     );
 
@@ -222,6 +239,7 @@ const getSource = ({options, objectList}) => `
         METAL,
         vec3(0.9),
         0.45,
+        0.,
         0.
     );
 
@@ -229,14 +247,16 @@ const getSource = ({options, objectList}) => `
         DIALECTRIC,
         vec3(1.),
         0.,
-        1.8 //1.7
+        1.8, //1.7
+        0.
     );
 
     Material LightMaterial = Material(
-        EMISSIVE,
+        DIFFUSE_EMISSIVE,
         vec3(1.),
         0.,
-        0. //1.7
+        0., //1.7
+        15.
     );
 
     // better algo from: https://karthikkaranth.me/blog/generating-random-points-in-a-hitable/
@@ -305,7 +325,7 @@ const getSource = ({options, objectList}) => `
     };
 
     // amass color and scatter ray on material
-    void shadeAndScatter(HitRecord hitRecord, inout vec3 color, inout Ray ray) {
+    bool shadeAndScatter(HitRecord hitRecord, inout vec3 color, inout Ray ray) {
 
         // LAMBERT / DIFFUSE
 
@@ -313,6 +333,7 @@ const getSource = ({options, objectList}) => `
             // get lambertian random reflection direction
             ray.dir = hitRecord.normal + randomPointInUnitSphere();
             color *= hitRecord.material.albedo * hitRecord.color;
+            return true;
         }
 
         // REFLECTIVE / METAL
@@ -325,6 +346,7 @@ const getSource = ({options, objectList}) => `
             if(dot(dir, hitRecord.normal) > 0.) {
                 ray.dir = dir;
                 color *= hitRecord.material.albedo * hitRecord.color;
+                return true;
             }
         }
 
@@ -362,23 +384,42 @@ const getSource = ({options, objectList}) => `
             }
 
             color *= hitRecord.material.albedo * hitRecord.color;
+            return true;
         }
 
-        // EMISSIVE
-        if(hitRecord.material.type == EMISSIVE) {
-           color *= hitRecord.color;
+        return false;
+    }
+
+    // amass emissive color
+    vec3 emit(HitRecord hitRecord) {
+        vec3 emittedColor = vec3(0.);
+
+        if(hitRecord.material.type == DIFFUSE_EMISSIVE) {
+            emittedColor = hitRecord.material.emissiveIntensity * hitRecord.color;
         }
+
+        return emittedColor;
     }
 
     /*
      * Hitable handling
      */
 
+    #define SPHERE_GEOMETRY 1
+    #define XY_RECT_GEOMETRY 2
+
     struct Hitable {
-        vec3 center;
-        float radius;
+        int geometry;
         Material material;
         vec3 color;
+
+        // sphere
+        vec3 center;
+        float radius;
+
+        // xy rect
+        float x0, x1, y0, y1;
+        float k;
     };
 
     void hitSphere(Ray ray, Hitable hitable, float tMax, out HitRecord hitRecord) {
@@ -426,6 +467,32 @@ const getSource = ({options, objectList}) => `
         hitRecord.hitT = tMax;
     }
 
+    void hitXyRect(Ray ray, Hitable rect, float tMin, float tMax, out HitRecord hitRecord) {
+        float t = (rect.k - ray.origin.z) / ray.dir.z;
+        if(t < tMin || t > tMax) {
+            hitRecord.hasHit = false;
+            return;
+            // hitRecord.hitT = t; //tMax;
+        }
+
+        float x = ray.origin.x + t*ray.dir.x;
+        float y = ray.origin.y + t*ray.dir.y;
+
+        if(x < rect.x0 || x > rect.x1 || y < rect.y0 || y > rect.y1) {
+            hitRecord.hasHit = false;
+            return;
+            // hitRecord.hitT = t; //tMax;
+        }
+
+        hitRecord.hasHit = true;
+        hitRecord.hitT = t;
+        hitRecord.material = rect.material;
+        hitRecord.hitPoint = pointOnRay(ray, t);
+        hitRecord.normal = vec3(0., 0., 1.);
+        //hitRecord.uv = vec2((x-x0)/(x1-x0), (y-y0)/(y1-y0));
+
+    }
+
     /*
      * World
      */
@@ -435,7 +502,14 @@ const getSource = ({options, objectList}) => `
 
         HitRecord record;
         for(int i = 0; i < ${objectList.length()}; i++) {
-            hitSphere(ray, hitables[i], tMax, /* out */ record);
+            if(hitables[i].geometry == SPHERE_GEOMETRY) {
+                hitSphere(ray, hitables[i], tMax, /* out => */ record);
+            }
+
+            if(hitables[i].geometry == XY_RECT_GEOMETRY) {
+                hitXyRect(ray, hitables[i], T_MIN, tMax, /* out => */ record);
+            }
+
             if(record.hasHit) {
                 // inefficient hack to do dynamic hitable colors, textures & proc. textures
                 ${objectList.updateTextureColors('uv', 'record.hitPoint')}
@@ -468,14 +542,21 @@ const getSource = ({options, objectList}) => `
         hitWorld(ray, hitables, tMax, /* out => */ hitRecord);
 
         for(int hitCounts = 0; hitCounts < MAX_HIT_DEPTH; hitCounts++) {
-            if(!hitRecord.hasHit) {
+            vec3 emitted = emit(hitRecord);
+
+            if(hitRecord.hasHit) {
+                ray.origin = hitRecord.hitPoint;
+                if(!shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray)) {
+                    color *= emitted;
+                    break;
+                }
+            } else {
                 color *= background(ray.dir);
                 break;
             }
-            ray.origin = hitRecord.hitPoint;
 
-            shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray);
             hitWorld(ray, hitables, tMax, /* out => */ hitRecord);
+
         }
 
         return color;
