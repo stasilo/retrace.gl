@@ -1,13 +1,14 @@
 {
-    "name": "baz-dev-wall-idle",
-    "version": "2.0.0",
+    "name": "glsl-raytracer",
+    "version": "1.0.0",
     "description": "",
     "main": "index.js",
     "scripts": {
         "test": "echo \"Error: no test specified\" && exit 1",
         "start": "webpack-dev-server --config webpack.dev.js --mode development",
         "build": "webpack --config webpack.prod.js --mode production",
-        "preview": "npm run build && http-server dist"
+        "preview": "npm run build && http-server dist",
+        "deploy": "scp -i ~/stasilo.pem dist/* ec2-user@labb.stasilo.se:/var/www/lighttpd/raytracer/"
     },
     "repository": {
         "type": "git",

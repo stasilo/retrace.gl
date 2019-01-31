@@ -27,7 +27,11 @@ module.exports = {
 
                 options: {
                     presets: ['env'],
-                    plugins: ['transform-decorators-legacy', 'transform-class-properties', 'babel-plugin-transform-object-rest-spread']
+                    plugins: [
+                        'transform-decorators-legacy',
+                        'transform-class-properties',
+                        'babel-plugin-transform-object-rest-spread'
+                    ]
                 }
             }, {
                 test: /\.(scss|css|sass)$/,
@@ -88,35 +92,35 @@ module.exports = {
             inject: 'body',
         }),
         new CleanWebpackPlugin(buildPath),
-        new FaviconsWebpackPlugin({
-            // Your source logo
-            logo: './src/assets/icon.png',
-            // The prefix for all image files (might be a folder or a name)
-            prefix: 'icons-[hash]/',
-            // Generate a cache file with control hashes and
-            // don't rebuild the favicons until those hashes change
-            persistentCache: true,
-            // Inject the html into the html-webpack-plugin
-            inject: true,
-            // favicon background color (see https://github.com/haydenbleasel/favicons#usage)
-            background: '#fff',
-            // favicon app title (see https://github.com/haydenbleasel/favicons#usage)
-            title: 'baz-dev-wall-idle',
-
-            // which icons should be generated (see https://github.com/haydenbleasel/favicons#usage)
-            icons: {
-                android: true,
-                appleIcon: true,
-                appleStartup: true,
-                coast: false,
-                favicons: true,
-                firefox: true,
-                opengraph: false,
-                twitter: false,
-                yandex: false,
-                windows: false
-            }
-        }),
+        // new FaviconsWebpackPlugin({
+        //     // Your source logo
+        //     logo: './src/assets/icon.png',
+        //     // The prefix for all image files (might be a folder or a name)
+        //     prefix: 'icons-[hash]/',
+        //     // Generate a cache file with control hashes and
+        //     // don't rebuild the favicons until those hashes change
+        //     persistentCache: true,
+        //     // Inject the html into the html-webpack-plugin
+        //     inject: true,
+        //     // favicon background color (see https://github.com/haydenbleasel/favicons#usage)
+        //     background: '#fff',
+        //     // favicon app title (see https://github.com/haydenbleasel/favicons#usage)
+        //     title: 'glsl-raytracer',
+        //
+        //     // which icons should be generated (see https://github.com/haydenbleasel/favicons#usage)
+        //     icons: {
+        //         android: true,
+        //         appleIcon: true,
+        //         appleStartup: true,
+        //         coast: false,
+        //         favicons: true,
+        //         firefox: true,
+        //         opengraph: false,
+        //         twitter: false,
+        //         yandex: false,
+        //         windows: false
+        //     }
+        // }),
         new ExtractTextPlugin('styles.[md5:contenthash:hex:20].css', {
             allChunks: true
         }),
