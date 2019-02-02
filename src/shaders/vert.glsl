@@ -1,9 +1,13 @@
-precision mediump float;
+#version 300 es
 
-attribute vec2 position;
-varying vec2 uv;
+layout(location=0) in vec2 position;
 
-void main () {
+out vec2 uv;
+
+void main() {
     uv = position;
     gl_Position = vec4(2.0 * position - 1.0, 0, 1);
+
+    // vColor = color;
+    // gl_Position = position;
 }

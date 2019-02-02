@@ -55,6 +55,18 @@ const glslFloat = (n) => Number.isInteger(n)
     ? n + '.0'
     : n.toString();
 
+// animation
+const animationFrame = fn => {
+    const startTime = Date.now();
+
+    function frame() {
+        fn({time: Date.now() - startTime});
+        requestAnimationFrame(frame);
+    }
+
+    requestAnimationFrame(frame);
+}
+
 module.exports = {
     defined,
     definedNotNull,
@@ -69,5 +81,6 @@ module.exports = {
     isHexColor,
     normedColor,
     normedColorStr,
-    glslFloat
+    glslFloat,
+    animationFrame
 };

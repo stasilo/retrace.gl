@@ -1,8 +1,9 @@
 import {definedNotNull} from '../utils';
 
-const getSource = ({options, objectList}) => `
+const getSource = ({options, objectList}) =>
+`   #version 300 es
+
     precision highp float;
-    // precision mediump float;
 
     #define FLT_MAX 3.402823466e+38
     #define T_MIN .001
@@ -36,7 +37,8 @@ const getSource = ({options, objectList}) => `
 
     uniform sampler2D accumTexture;
 
-    varying vec2 uv;
+    in vec2 uv;
+    out vec4 fragColor;
 
     /*
      * Camera
@@ -597,6 +599,8 @@ const getSource = ({options, objectList}) => `
     }
 
     void main () {
+        uTime;
+
         // set initial seed for stateful rng
         gRandSeed = uSeed * uv;///vec2(0.1, 0.1); //uSeed + 20.; //uv + uSeed;
 
@@ -631,14 +635,14 @@ const getSource = ({options, objectList}) => `
         vec3 color = trace(camera, hitables);
         color = sqrt(color); // correct gamma
 
-        #ifndef REALTIME
-            vec3 prevColor = texture2D(accumTexture, uv).rgb;
+        // #ifndef REALTIME
+        //     vec3 prevColor = texture(accumTexture, uv).rgb;
+        //
+        //     color *= uOneOverSampleCount;
+        //     color += prevColor;
+        // #endif
 
-            color *= uOneOverSampleCount;
-            color += prevColor;
-        #endif
-
-        gl_FragColor = vec4(color, 1.);
+        fragColor = vec4(color, 1.);
     }
 `;
 
