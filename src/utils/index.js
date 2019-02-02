@@ -58,13 +58,27 @@ const glslFloat = (n) => Number.isInteger(n)
 // animation
 const animationFrame = fn => {
     const startTime = Date.now();
+    let frameCount = 0;
+    let cancel = false;
 
     function frame() {
-        fn({time: Date.now() - startTime});
+        if(cancel) {
+            return;
+        }
+
+        fn({
+            time: Date.now() - startTime,
+            frameCount: ++frameCount
+        });
+
         requestAnimationFrame(frame);
     }
 
     requestAnimationFrame(frame);
+
+    return {
+        cancel: () => cancel = true
+    }
 }
 
 module.exports = {

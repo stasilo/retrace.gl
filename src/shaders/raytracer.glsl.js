@@ -2,7 +2,6 @@ import {definedNotNull} from '../utils';
 
 const getSource = ({options, objectList}) =>
 `   #version 300 es
-
     precision highp float;
 
     #define FLT_MAX 3.402823466e+38
@@ -28,17 +27,23 @@ const getSource = ({options, objectList}) =>
     }
 
     uniform float uTime;
-    uniform float uOneOverSampleCount;
-
+    #ifndef REALTIME
+        uniform float uOneOverSampleCount;
+    #endif
     uniform vec2 uSeed;
 
     uniform vec2 uResolution;
     uniform vec3 uBgGradientColors[2];
 
-    uniform sampler2D accumTexture;
-
+    #ifndef REALTIME
+        uniform sampler2D accumTexture;
+    #endif
+    
     in vec2 uv;
+
     out vec4 fragColor;
+    // layout(location=0) out vec4 fragColor;
+    // layout(location=1) out vec4 accumColor;
 
     /*
      * Camera
@@ -635,12 +640,12 @@ const getSource = ({options, objectList}) =>
         vec3 color = trace(camera, hitables);
         color = sqrt(color); // correct gamma
 
-        // #ifndef REALTIME
-        //     vec3 prevColor = texture(accumTexture, uv).rgb;
-        //
-        //     color *= uOneOverSampleCount;
-        //     color += prevColor;
-        // #endif
+        #ifndef REALTIME
+            vec3 prevColor = texture(accumTexture, uv).rgb;
+
+            color *= uOneOverSampleCount;
+            color += prevColor;
+        #endif
 
         fragColor = vec4(color, 1.);
     }
