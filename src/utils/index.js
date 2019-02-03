@@ -56,17 +56,19 @@ const glslFloat = (n) => Number.isInteger(n)
     : n.toString();
 
 // animation
-const animationFrame = fn => {
+
+const animationFrame = (render) => {
     const startTime = Date.now();
+
     let frameCount = 0;
-    let cancel = false;
+    let cancelled = false;
 
     function frame() {
-        if(cancel) {
+        if(cancelled) {
             return;
         }
 
-        fn({
+        render({
             time: Date.now() - startTime,
             frameCount: ++frameCount
         });
@@ -77,7 +79,7 @@ const animationFrame = fn => {
     requestAnimationFrame(frame);
 
     return {
-        cancel: () => cancel = true
+        cancel: () => cancelled = true
     }
 }
 

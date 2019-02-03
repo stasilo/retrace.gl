@@ -22,7 +22,7 @@ import {
 import 'normalize.css/normalize.css';
 import './styles/index.scss';
 
-const defaultMaxSampleCount = 2;
+const defaultMaxSampleCount = 10;
 
 function app() {
     const canvas = document.getElementById('regl-canvas');
@@ -104,8 +104,6 @@ function app() {
 
     const rayTraceDrawCall = app
         .createDrawCall(rayTraceGlProgram, fullScreenQuadVertArray)
-        // textures
-        // uniforms
         .uniform('uBgGradientColors[0]', new Float32Array([
             ...normedColor('#000000'),
             ...normedColor('#111111')
@@ -126,18 +124,10 @@ function app() {
     );
 
     /*
-     * accum render draw call
-     */
-
-    const renderGlProgram = app.createProgram(vertShader, renderShader);
-    const accumDrawCall = app
-        .createDrawCall(renderGlProgram, fullScreenQuadVertArray)
-        .texture('traceTexture', traceFbo.colorAttachments[0]);
-
-    /*
      * render draw call
      */
 
+    const renderGlProgram = app.createProgram(vertShader, renderShader);
     const renderDrawCall = app
         .createDrawCall(renderGlProgram, fullScreenQuadVertArray)
         .texture('traceTexture', traceFbo.colorAttachments[0]);
@@ -147,18 +137,22 @@ function app() {
     // var spector = new SPECTOR.Spector();
     // spector.displayUI();
 
+    let debugEl = document.getElementById('debug');
+
     const staticRender = () => {
         const frame = animationFrame(({time, frameCount}) => {
+            console.log(frameCount);
             let sampleCount = frameCount;
 
-            document.getElementById('debug').innerHTML =
-                `samples: ${sampleCount} / ${maxSampleCount}, render time: ${(time*0.001).toFixed(1)}s`;
+            debugEl.innerHTML =
+                `samples: ${sampleCount} / ${maxSampleCount},
+                 render time: ${(time*0.001).toFixed(1)}s`;
 
             if(sampleCount == maxSampleCount) {
                 frame.cancel();
             }
 
-            // draw scene to traceFbo frambuffer
+            // draw new sample blended with accumulated samples to traceFbo frambuffer
 
             app.drawFramebuffer(traceFbo)
                 .clear();
@@ -168,15 +162,14 @@ function app() {
                 .uniform('uSeed', vec2.fromValues(random(), random()))
                 .draw();
 
-            // draw new accumulated result to accumFbo framebuffer
+            // copy rendered result in traceFbo to accumFbo frambuffer
 
-            app.drawFramebuffer(accumFbo)
-                .clear();
+            app.readFramebuffer(traceFbo)
+                .drawFramebuffer(accumFbo)
+                .clear()
+                .blitFramebuffer(PicoGL.COLOR_BUFFER_BIT);
 
-            renderDrawCall
-                .draw();
-
-            // draw scene to screen
+            // draw rendered result in traceFbo to screen
 
             app.defaultDrawFramebuffer()
                 .clear();
@@ -201,7 +194,7 @@ function app() {
             then = time;
             const fps = (1000 / deltaTime).toFixed(3);
 
-            document.getElementById('debug').innerHTML =
+            debugEl.innerHTML =
                 `samples per frame: ${shaderSampleCount}, fps: ${fps}`;
         });
     }
