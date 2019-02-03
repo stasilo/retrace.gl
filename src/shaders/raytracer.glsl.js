@@ -38,12 +38,9 @@ const getSource = ({options, objectList}) =>
     #ifndef REALTIME
         uniform sampler2D accumTexture;
     #endif
-    
-    in vec2 uv;
 
+    in vec2 uv;
     out vec4 fragColor;
-    // layout(location=0) out vec4 fragColor;
-    // layout(location=1) out vec4 accumColor;
 
     /*
      * Camera

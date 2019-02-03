@@ -22,7 +22,7 @@ import {
 // };
 
 function rect({x0, x1, y0, y1, k, material, color}) {
-    // super()
+    // super
     hitable.call(this, {
         material,
         color

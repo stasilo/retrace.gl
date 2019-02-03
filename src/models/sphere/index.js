@@ -8,7 +8,7 @@ import {
 } from '../../utils';
 
 function sphere({center, radius, material, color}) {
-    // super()
+    // super
     hitable.call(this, {
         material,
         color
@@ -24,7 +24,7 @@ function sphere({center, radius, material, color}) {
             vec3(1.), // color
 
             vec3(${center.map(c => glslFloat(c)).join(', ')}), // center
-            ${parseFloat(radius)}, // radius
+            ${glslFloat(radius)}, // radius
 
             // irrelevant props for sphere
             -1., -1., -1., -1., // x0, x1, y0, y1

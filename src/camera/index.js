@@ -1,4 +1,4 @@
-import vec3 from 'gl-vec3';
+import {vec3} from 'gl-matrix';
 import {degToRad} from '../utils';
 
 // lookFrom - eye origin point
