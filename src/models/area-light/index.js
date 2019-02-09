@@ -1,4 +1,4 @@
-import hitable from '../hitable';
+import Hitable from '../hitable';
 
 import {
     definedNotNull,
@@ -12,7 +12,7 @@ import {
 //     Material material;
 //     vec3 color;
 //
-//     // rect
+//     // sphere
 //     vec3 center;
 //     float radius;
 //
@@ -21,9 +21,9 @@ import {
 //     float k;
 // };
 
-function rect({x0, x1, y0, y1, k, material, color}) {
+function AreaLight({x0, x1, y0, y1, k, color}) {
     // super
-    hitable.call(this, {
+    Hitable.call(this, {
         material,
         color
     });
@@ -40,7 +40,7 @@ function rect({x0, x1, y0, y1, k, material, color}) {
             ${material}, // material
             vec3(1.), // color
 
-            // irrelevant props for rect
+            // irrelevant props for AreaLight
             vec3(-1.),
             -1.,
 
@@ -52,4 +52,4 @@ function rect({x0, x1, y0, y1, k, material, color}) {
         );`;
 }
 
-export default rect;
+export default AreaLight;

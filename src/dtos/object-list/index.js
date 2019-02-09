@@ -7,7 +7,7 @@ import {
 
 let objIdCounter = 0;
 
-function objectList(hitables) {
+function ObjectList(hitables) {
     this.hitables = [];
 
     this.initialize = (hitables) => {
@@ -57,4 +57,4 @@ function objectList(hitables) {
     this.initialize(hitables);
 };
 
-export default objectList;
+export default ObjectList;

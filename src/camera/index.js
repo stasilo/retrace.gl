@@ -7,7 +7,7 @@ import {degToRad} from '../utils';
 // vfov - vertical field of view
 // aspect ratio
 
-function camera({lookFrom, lookAt, vUp, vfov, aspect, aperture}) {
+function Camera({lookFrom, lookAt, vUp, vfov, aspect, aperture}) {
     this.cameraUniformName = 'camera';
 
     this.lookFrom = lookFrom;
@@ -92,7 +92,7 @@ function createCamera({lookFrom, lookAt, vUp, vfov, aperture, aspect}) {
     let vUpVec = vec3.create();
     vUpVec.set(vUp);
 
-    return new camera({
+    return new Camera({
         lookFrom: lookFromVec,
         lookAt: lookAtVec,
         vUp: vUpVec,
@@ -103,8 +103,8 @@ function createCamera({lookFrom, lookAt, vUp, vfov, aperture, aspect}) {
 };
 
 export {
-    camera,
+    Camera,
     createCamera
 };
 
-export default camera;
+export default Camera;

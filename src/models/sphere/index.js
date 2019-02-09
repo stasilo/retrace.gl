@@ -1,4 +1,5 @@
-import hitable from '../hitable';
+import {vec3} from 'gl-matrix';
+import Hitable from '../hitable';
 
 import {
     definedNotNull,
@@ -7,9 +8,9 @@ import {
     glslFloat
 } from '../../utils';
 
-function sphere({center, radius, material, color}) {
+function Sphere({center, radius, material, color}) {
     // super
-    hitable.call(this, {
+    Hitable.call(this, {
         material,
         color
     });
@@ -17,11 +18,26 @@ function sphere({center, radius, material, color}) {
     this.center = center;
     this.radius = radius;
 
+    this.getBoundingBox = () => {
+        let vRadius = vec3.fromValues(radius, radius, radius);
+        let vCenter = vec3.fromValues(...center);
+
+        let min = vec3.create();
+        vec3.sub(min, vCenter, vRadius);
+        let max = vec3.create();
+        vec3.add(max, vCenter, vRadius);
+
+        return `vec3(${min.map(n => glslFloat(n)).join(', ')}), vec3(${max.map(n => glslFloat(n)).join(', ')}),`;
+    }
+
     this.getDefinition = () =>
         `Hitable(
             SPHERE_GEOMETRY,
             ${material}, // material
             vec3(1.), // color
+
+            // bounding box
+            ${this.getBoundingBox()}
 
             vec3(${center.map(c => glslFloat(c)).join(', ')}), // center
             ${glslFloat(radius)}, // radius
@@ -32,4 +48,4 @@ function sphere({center, radius, material, color}) {
         );`;
 }
 
-export default sphere;
+export default Sphere;

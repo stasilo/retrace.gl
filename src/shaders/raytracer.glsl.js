@@ -1,6 +1,6 @@
 import {definedNotNull} from '../utils';
 
-const getSource = ({options, objectList}) =>
+const getSource = ({options, ObjectList}) =>
 `   #version 300 es
     precision highp float;
 
@@ -8,7 +8,7 @@ const getSource = ({options, objectList}) =>
     #define T_MIN .001
     #define T_MAX FLT_MAX
 
-    #define MAX_HIT_DEPTH 50
+    #define MAX_HIT_DEPTH 15//50
     #define NUM_SAMPLES ${options.numSamples}
 
     #define PI 3.141592653589793
@@ -138,7 +138,7 @@ const getSource = ({options, objectList}) =>
      * Textures
      */
 
-    ${objectList.getTextureDefinitions()}
+    ${ObjectList.getTextureDefinitions()}
 
     /*
      * Camera (mostly left for reference)
@@ -417,6 +417,9 @@ const getSource = ({options, objectList}) =>
         Material material;
         vec3 color;
 
+        // bounding box
+        vec3 bMin, bMax;
+
         // sphere
         vec3 center;
         float radius;
@@ -425,6 +428,29 @@ const getSource = ({options, objectList}) =>
         float x0, x1, y0, y1;
         float k;
     };
+
+    bool hitBbox(vec3 boxMin, vec3 boxMax, Ray ray, out HitRecord hitRecord) {
+        vec3 invDir = 1. / ray.dir;
+
+        vec3 tBottom = invDir * (boxMin - ray.origin);
+        vec3 tTop = invDir * (boxMax - ray.origin);
+
+        vec3 tmin = min(tTop, tBottom);
+        vec3 tmax = max(tTop, tBottom);
+
+        vec2 t = max(tmin.xx, tmin.yz);
+        float t0 = max(t.x, t.y);
+
+        t = min(tmax.xx, tmax.yz);
+        float t1 = min(t.x, t.y);
+
+        if(t1 > max(t0, 0.0)) {
+            // hitRecord.hitT = t1;
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     void hitSphere(Ray ray, Hitable hitable, float tMax, out HitRecord hitRecord) {
         vec3 oc = ray.origin - hitable.center;
@@ -494,18 +520,25 @@ const getSource = ({options, objectList}) =>
         hitRecord.hitPoint = pointOnRay(ray, t);
         hitRecord.normal = vec3(0., 0., 1.);
         //hitRecord.uv = vec2((x-x0)/(x1-x0), (y-y0)/(y1-y0));
-
     }
 
     /*
      * World
      */
 
-    void hitWorld(Ray ray, Hitable hitables[${objectList.length()}], float tMax, out HitRecord hitRecord) {
+    void hitWorld(Ray ray, Hitable hitables[${ObjectList.length()}], float tMax, out HitRecord hitRecord) {
         hitRecord.hasHit = false;
 
         HitRecord record;
-        for(int i = 0; i < ${objectList.length()}; i++) {
+        for(int i = 0; i < ${ObjectList.length()}; i++) {
+            //samples: 500 / 500, render time: 99.8s
+            // if(hitables[i].geometry == SPHERE_GEOMETRY
+            //     && hitBbox(hitables[i].bMin, hitables[i].bMax, ray, /* out => */ record))
+            // {
+            //     hitSphere(ray, hitables[i], tMax, /* out => */ record);
+            // }
+
+            // samples: 500 / 500, render time: 96.8s
             if(hitables[i].geometry == SPHERE_GEOMETRY) {
                 hitSphere(ray, hitables[i], tMax, /* out => */ record);
             }
@@ -516,11 +549,12 @@ const getSource = ({options, objectList}) =>
 
             if(record.hasHit) {
                 // inefficient hack to do dynamic hitable colors, textures & proc. textures
-                ${objectList.updateTextureColors('uv', 'record.hitPoint')}
+                ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
                 record.color = hitables[i].color;
 
                 hitRecord = record;
                 tMax = record.hitT; // handle depth! ("z-index" :))
+                record.hasHit = false;
             }
         }
     }
@@ -538,7 +572,7 @@ const getSource = ({options, objectList}) =>
     }
 
     // colorize
-    vec3 paint(Ray ray, Hitable hitables[${objectList.length()}]) {
+    vec3 paint(Ray ray, Hitable hitables[${ObjectList.length()}]) {
         vec3 color = vec3(1.0);
         float tMax = T_MAX;
 
@@ -566,7 +600,7 @@ const getSource = ({options, objectList}) =>
         return color;
     }
 
-    vec3 trace(Camera camera, Hitable hitables[${objectList.length()}]) {
+    vec3 trace(Camera camera, Hitable hitables[${ObjectList.length()}]) {
         vec3 color = vec3(0.);
 
         // trace
@@ -632,7 +666,7 @@ const getSource = ({options, objectList}) =>
             );
         #endif
 
-        ${objectList.getDefinition()}
+        ${ObjectList.getDefinition()}
 
         vec3 color = trace(camera, hitables);
         color = sqrt(color); // correct gamma

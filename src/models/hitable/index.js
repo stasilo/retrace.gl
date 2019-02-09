@@ -10,17 +10,20 @@ import {
 //     Material material;
 //     vec3 color;
 //
-//     // hitable
+//     // bounding box
+//     vec3 bMin, bMax;
+//
+//     // sphere
 //     vec3 center;
 //     float radius;
 //
-//     // xy hitable
+//     // xy rect
 //     float x0, x1, y0, y1;
 //     float k;
 // };
 
-function hitable({material, color}) {
-    this.id = null; // id is assigned by an objectList
+function Hitable({material, color}) {
+    this.id = null; // id is assigned by an ObjectList
     this.material = material;
     this.color = color;
 
@@ -39,4 +42,4 @@ function hitable({material, color}) {
         : '';
 }
 
-export default hitable;
+export default Hitable;

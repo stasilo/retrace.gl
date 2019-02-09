@@ -61,8 +61,11 @@ function app() {
     // raytrace framebuffer
     let traceFboColorTarget = app.createTexture2D(app.width, app.height, {
         type: gl.FLOAT,
-        interalFormat: gl.R32F,
+        interalFormat: gl.RGBA16F,
+        // interalFormat: gl.R32F,
+
         // format: gl.SRGBA
+        // format: gl.SRGB_ALPHA
     });
 
     let traceFbo = app.createFramebuffer()
@@ -71,8 +74,11 @@ function app() {
     // framebuffer for accumulating samples
     let accumFboColorTarget = app.createTexture2D(app.width, app.height, {
         type: gl.FLOAT,
-        interalFormat: gl.R32F,
+        interalFormat: gl.RGBA16F,
+        // interalFormat: gl.R32F,
+
         // format: gl.SRGBA
+        // format: gl.SRGB_ALPHA
     });
 
     let accumFbo = app.createFramebuffer()
@@ -88,7 +94,7 @@ function app() {
             glslCamera: false,
             numSamples: shaderSampleCount
         },
-        objectList: scene
+        ObjectList: scene
     }));
 
     // full screen quad
@@ -104,11 +110,13 @@ function app() {
         .createVertexArray()
         .vertexAttributeBuffer(0, positions)
 
+    // uniforms
+
     const rayTraceDrawCall = app
         .createDrawCall(rayTraceGlProgram, fullScreenQuadVertArray)
         .uniform('uBgGradientColors[0]', new Float32Array([
             ...normedColor('#000000'),
-            ...normedColor('#111111')
+            ...normedColor('#010101')
         ]))
         .uniform('uResolution', vec2.fromValues(app.width, app.height))
         .uniform('uSeed', vec2.fromValues(random(), random()))
@@ -119,6 +127,9 @@ function app() {
             .texture('accumTexture', accumFbo.colorAttachments[0])
             .uniform('uOneOverSampleCount', 1/maxSampleCount);
     }
+
+    // camera uniform
+    // TODO: make this a uniform buffer
 
     const cameraUniform = camera.getUniform();
     Object.keys(cameraUniform)
@@ -145,7 +156,7 @@ function app() {
 
             debugEl.innerHTML =
                 `samples: ${sampleCount} / ${maxSampleCount},
-                 render time: ${(time*0.001).toFixed(1)}s`;
+                 render time: ${(time*0.001).toFixed(2)}s`;
 
             if(sampleCount == maxSampleCount) {
                 frame.cancel();
@@ -171,7 +182,6 @@ function app() {
                 .blitFramebuffer(PicoGL.COLOR_BUFFER_BIT);
 
             // draw rendered result in traceFbo to screen
-
             app.defaultDrawFramebuffer()
                 .clear();
 

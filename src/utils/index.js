@@ -21,7 +21,7 @@ const flatten = ([x, ...xs]) => typeof x !== 'undefined'
 
 // random no stuff
 
-const random = (min = 0, max = 1) =>
+const random = (max = 1, min = 0) =>
     Math.random() * (max - min) + min;
 
 const randomSign = () =>
@@ -63,7 +63,7 @@ const animationFrame = (render) => {
     let frameCount = 0;
     let cancelled = false;
 
-    function frame() {
+    (function frame() {
         if(cancelled) {
             return;
         }
@@ -74,9 +74,7 @@ const animationFrame = (render) => {
         });
 
         requestAnimationFrame(frame);
-    }
-
-    requestAnimationFrame(frame);
+    })();
 
     return {
         cancel: () => cancelled = true
