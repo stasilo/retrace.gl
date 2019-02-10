@@ -1,5 +1,6 @@
 import PicoGL from 'picogl';
 import {vec3, vec2} from 'gl-matrix';
+
 import spector from 'spectorjs';
 import queryString from 'query-string';
 
@@ -9,6 +10,8 @@ import scene from './scenes/test-scene';
 import vertShader from './shaders/vert.glsl';
 import rayTraceShader from './shaders/raytracer.glsl.js';
 import renderShader from './shaders/render.glsl';
+
+import * as ObjLoader from 'webgl-obj-loader';
 
 import {
     definedNotNull,
@@ -23,7 +26,7 @@ import './styles/index.scss';
 
 const defaultMaxSampleCount = 10;
 
-function app() {
+function app({modelData}) {
     const params = queryString.parse(location.search);
     const canvas = document.getElementById('regl-canvas');
     const gl = canvas.getContext('webgl2');
@@ -210,7 +213,6 @@ function app() {
         });
     }
 
-
     if(!params.realTime) {
         staticRender();
     } else {
@@ -218,4 +220,22 @@ function app() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', app);
+// document.addEventListener('DOMContentLoaded', app);
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    fetch('assets/models/suzanne.obj')
+        .then(data => data.text())
+        .then(data => {
+            let mesh = new ObjLoader.Mesh(data);
+            console.dir(mesh);
+        })
+
+
+    // loadFile('http://localhost:8080/assets/models/bunny.obj', OBJLoader)
+    //     .then(data => {
+    //         // app({modelData: data})
+    //         console.dir(data);
+    //     })
+});

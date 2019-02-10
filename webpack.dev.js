@@ -1,6 +1,8 @@
 const path = require('path');
 
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const WriteFilePlugin = require('write-file-webpack-plugin');
 
 module.exports = {
     devtool: 'eval-cheap-module-source-map',
@@ -76,6 +78,11 @@ module.exports = {
         ],
     },
     plugins: [
+        new WriteFilePlugin(),
+        new CopyWebpackPlugin([{
+            from: './src/assets/models/',
+            to: 'assets/models/',
+        }]),
         new HtmlWebpackPlugin({
             template: './index.html',
             inject: true
