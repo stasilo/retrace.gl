@@ -406,11 +406,12 @@ const getSource = ({options, ObjectList}) =>
     }
 
     /*
-     * Hitable handling
+     *  handling
      */
 
     #define SPHERE_GEOMETRY 1
     #define XY_RECT_GEOMETRY 2
+    #define TRIANGLE_GEOMETRY 3
 
     struct Hitable {
         int geometry;
@@ -427,6 +428,12 @@ const getSource = ({options, ObjectList}) =>
         // xy rect
         float x0, x1, y0, y1;
         float k;
+
+        // triangle
+        vec3 v0, v1, v2;
+
+        // normal (triangle face normal)
+        vec3 normal;
     };
 
     bool hitBbox(vec3 boxMin, vec3 boxMax, Ray ray, out HitRecord hitRecord) {
@@ -522,6 +529,105 @@ const getSource = ({options, ObjectList}) =>
         //hitRecord.uv = vec2((x-x0)/(x1-x0), (y-y0)/(y1-y0));
     }
 
+    // from: https://www.shadertoy.com/view/llGSDD
+    bool hitTriangle(in Ray r, in Hitable t, float tMax, inout HitRecord hitRecord) {
+        vec3 pVec = cross(r.dir, t.v2);
+        float det = dot(t.v1, pVec);
+        if (det < 0.001) {
+            return false;
+        }
+
+        float oneOverDet = 1./det;
+
+        vec3 tvec = r.origin - t.v0;
+        float u = dot(tvec, pVec) * oneOverDet;
+        float inside = step(0.0, u) * (1.-step(1.0, u));
+
+        vec3 qvec = cross(tvec, t.v1);
+        float v = dot(r.dir, qvec) * oneOverDet;
+        inside *= step(0.0, v) * (1. - step(1., u+v));
+        if (inside == 0.0) return false;
+
+        float d = dot(t.v2, qvec) * oneOverDet;
+
+        float f = step(0.0, -d);
+        d = d * (1.-f) + (f * 100000.0);
+        if (d > tMax) { return false; }
+
+        hitRecord.hasHit = true;
+        // hitRecord.dist = d;
+        hitRecord.hitT = d;
+        hitRecord.normal = t.normal * sign(det); //((s.n0 * u) + (s.n1 * v) + (s.n2 * (1. - (u + v)))) * -sign(a);
+        hitRecord.material = t.material;
+        hitRecord.hitPoint = pointOnRay(r, d);
+
+        return true;
+    }
+
+    // bool hitTriangle(Ray ray, Hitable triangle, float tMax, out HitRecord hitRecord) {
+    //     vec3 orig = ray.origin;
+    //     vec3 dir = ray.dir;
+    //
+    //     const float INFINITY = 1e10;
+    //
+    //     vec3 u, v, n; // triangle vectors
+    //     vec3 w0, w;  // ray vectors
+    //     float r, a, b; // params to calc ray-plane intersect
+    //
+    //     // get triangle edge vectors and plane normal
+    //     u = triangle.v1 - triangle.v0;
+    //     v = triangle.v2 - triangle.v0;
+    //     n = cross(u, v);
+    //
+    //     w0 = orig - triangle.v0;
+    //     a = -dot(n, w0);
+    //     b = dot(n, dir);
+    //     if (abs(b) < 1e-5) {
+    //         // ray is parallel to triangle plane, and thus can never intersect.
+    //         //return INFINITY;
+    //         return false;
+    //     }
+    //
+    //     // get intersect point of ray with triangle plane
+    //     r = a / b;
+    //     if (r < 0.0) {
+    //         return false; // ray goes away from triangle.
+    //     }
+    //
+    //     vec3 I = orig + r * dir;
+    //     float uu, uv, vv, wu, wv, D;
+    //     uu = dot(u, u);
+    //     uv = dot(u, v);
+    //     vv = dot(v, v);
+    //     w = I - triangle.v0;
+    //     wu = dot(w, u);
+    //     wv = dot(w, v);
+    //     D = uv * uv - uu * vv;
+    //
+    //     // get and test parametric coords
+    //     float s, t;
+    //     s = (uv * wv - vv * wu) / D;
+    //     if (s < 0.0 || s > 1.0)
+    //         return false;
+    //
+    //     t = (uv * wu - uu * wv) / D;
+    //     if (t < 0.0 || (s + t) > 1.0)
+    //         return false;
+    //
+    //     if(r > 1e-5) {
+    //         // hit
+    //         hitRecord.hasHit = true;
+    //         hitRecord.hitT = t;
+    //         hitRecord.material = triangle.material;
+    //         hitRecord.hitPoint = pointOnRay(ray, t);
+    //         hitRecord.normal = triangle.normal;
+    //
+    //         return true;
+    //     } else {
+    //         return false;
+    //     }
+    // }
+
     /*
      * World
      */
@@ -545,6 +651,11 @@ const getSource = ({options, ObjectList}) =>
 
             if(hitables[i].geometry == XY_RECT_GEOMETRY) {
                 hitXyRect(ray, hitables[i], T_MIN, tMax, /* out => */ record);
+            }
+
+            // bool hitTriangle(Ray ray, Hitable triangle, float tMax, out HitRecord hitRecord) {
+            if(hitables[i].geometry == TRIANGLE_GEOMETRY) {
+                hitTriangle(ray, hitables[i], tMax, /* out => */ record);
             }
 
             if(record.hasHit) {

@@ -5,7 +5,8 @@ import spector from 'spectorjs';
 import queryString from 'query-string';
 
 import {createCamera} from './camera';
-import scene from './scenes/test-scene';
+// import scene from './scenes/test-scene';
+import scene from './scenes/triangle-test';
 
 import vertShader from './shaders/vert.glsl';
 import rayTraceShader from './shaders/raytracer.glsl.js';
@@ -206,8 +207,8 @@ function app({modelData}) {
             const now = time;
             const deltaTime = time - then;
             then = time;
-            const fps = (1000 / deltaTime).toFixed(3);
 
+            const fps = (1000 / deltaTime).toFixed(3);
             debugEl.innerHTML =
                 `samples per frame: ${shaderSampleCount}, fps: ${fps}`;
         });
@@ -220,22 +221,13 @@ function app({modelData}) {
     }
 }
 
-// document.addEventListener('DOMContentLoaded', app);
+document.addEventListener('DOMContentLoaded', app);
 
-
-
-document.addEventListener('DOMContentLoaded', () => {
-    fetch('assets/models/suzanne.obj')
-        .then(data => data.text())
-        .then(data => {
-            let mesh = new ObjLoader.Mesh(data);
-            console.dir(mesh);
-        })
-
-
-    // loadFile('http://localhost:8080/assets/models/bunny.obj', OBJLoader)
-    //     .then(data => {
-    //         // app({modelData: data})
-    //         console.dir(data);
-    //     })
-});
+// document.addEventListener('DOMContentLoaded', () => {
+//     fetch('assets/models/tree01.obj')
+//         .then(data => data.text())
+//         .then(data => {
+//             let mesh = new ObjLoader.Mesh(data);
+//             console.dir(mesh);
+//         })
+// });

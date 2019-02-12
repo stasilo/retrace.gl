@@ -53,7 +53,11 @@ function XyRect({x0, x1, y0, y1, k, material, color}) {
             ${glslFloat(x1)}, // x1
             ${glslFloat(y0)}, // y0
             ${glslFloat(y1)}, // y1
-            ${glslFloat(k)} // k
+            ${glslFloat(k)}, // k
+
+            // irrelevant props for XyRect
+            vec3(-1.), vec3(-1.), vec3(-1.),
+            vec3(-1.)
         );`;
 }
 

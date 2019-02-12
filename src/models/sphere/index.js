@@ -44,7 +44,11 @@ function Sphere({center, radius, material, color}) {
 
             // irrelevant props for sphere
             -1., -1., -1., -1., // x0, x1, y0, y1
-            -1. // k
+            -1., // k
+
+            // irrelevant props for sphere
+            vec3(-1.), vec3(-1.), vec3(-1.),
+            vec3(-1.)
         );`;
 }
 
