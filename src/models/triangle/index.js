@@ -30,6 +30,7 @@ function Triangle({vertices, material, color}) {
         color
     });
 
+
     // Vec3f v0(-1, -1, 0), v1(1, -1, 0), v2(0, 1, 0);
     // Vec3f A = v1 - v0; // edge 0
     // Vec3f B = v2 - v0; // edge 1
@@ -52,8 +53,9 @@ function Triangle({vertices, material, color}) {
         let c = vec3.create();
         vec3.cross(c, a, b);
 
-        let normal = vec3.create();
-        vec3.normalize(normal, c);
+        let normal = c;
+        // let normal = vec3.create();
+        // vec3.normalize(normal, c);
 
         return `vec3(${Array.from(normal).map(n => glslFloat(n)).join(', ')})`;
     }
@@ -68,7 +70,7 @@ function Triangle({vertices, material, color}) {
         `Hitable(
             TRIANGLE_GEOMETRY,
             ${material}, // material
-            vec3(1.), // color
+            vec3(1., 0., 0.), // color
 
             // bounding box
             vec3(-1.), vec3(-1.),
@@ -86,6 +88,10 @@ function Triangle({vertices, material, color}) {
             // face normal
             ${this.getFaceNormal()}
         );`;
+
+    console.log('triangle definition: ');
+    console.dir(this.getDefinition());
+    console.dir(this.getTextureDefinition());
 }
 
 export default Triangle;

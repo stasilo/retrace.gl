@@ -5,9 +5,8 @@ import {
     isFn
 } from '../../utils';
 
-let objIdCounter = 0;
-
 function ObjectList(hitables) {
+    this.objIdCounter = 0;
     this.hitables = [];
 
     this.initialize = (hitables) => {
@@ -16,7 +15,7 @@ function ObjectList(hitables) {
         }
 
         hitables.forEach(hitable =>
-            hitable.id = objIdCounter++
+            hitable.id = this.objIdCounter++
         );
 
         this.hitables = hitables;
@@ -29,7 +28,7 @@ function ObjectList(hitables) {
         this.hitables[i];
 
     this.add = (hitable) => {
-        hitable.id = objIdCounter++;
+        hitable.id = this.objIdCounter++;
         this.hitables.push(hitable);
     }
 

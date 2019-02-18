@@ -6,13 +6,17 @@ import queryString from 'query-string';
 
 import {createCamera} from './camera';
 // import scene from './scenes/test-scene';
-import scene from './scenes/triangle-test';
+// import scene from './scenes/triangle-test';
+import createMeshScene from './scenes/model-test';
 
 import vertShader from './shaders/vert.glsl';
 import rayTraceShader from './shaders/raytracer.glsl.js';
 import renderShader from './shaders/render.glsl';
 
-import * as ObjLoader from 'webgl-obj-loader';
+// import * as ObjLoader from 'webgl-obj-loader';
+// import parseObj from 'wavefront-obj-parser';
+// import expandObj from 'expand-vertex-data';
+import ObjLoader from 'obj-mtl-loader';
 
 import {
     definedNotNull,
@@ -27,7 +31,7 @@ import './styles/index.scss';
 
 const defaultMaxSampleCount = 10;
 
-function app({modelData}) {
+function app({mesh}) {
     const params = queryString.parse(location.search);
     const canvas = document.getElementById('regl-canvas');
     const gl = canvas.getContext('webgl2');
@@ -53,14 +57,24 @@ function app({modelData}) {
         .floatRenderTargets()
         .clearColor(0, 0, 0, 1);
 
+    // const camera = createCamera({
+    //     lookFrom: [3.1, 0.8, 1.9],
+    //     lookAt: [-0.25, 0.1, -1.5],
+    //     vUp: [0, 1, 0],
+    //     vfov: 32,
+    //     aperture: 0.1,
+    //     aspect: canvas.width/canvas.height
+    // });
+
     const camera = createCamera({
         lookFrom: [3.1, 0.8, 1.9],
         lookAt: [-0.25, 0.1, -1.5],
         vUp: [0, 1, 0],
-        vfov: 32,
-        aperture: 0.1,
+        vfov: 30,
+        aperture: 0.00001,
         aspect: canvas.width/canvas.height
     });
+
 
     // raytrace framebuffer
     let traceFboColorTarget = app.createTexture2D(app.width, app.height, {
@@ -92,6 +106,8 @@ function app({modelData}) {
      * raytrace draw call
      */
 
+    let scene = createMeshScene({mesh});
+
     const rayTraceGlProgram = app.createProgram(vertShader, rayTraceShader({
         options: {
             realTime: params.realTime,
@@ -119,8 +135,11 @@ function app({modelData}) {
     const rayTraceDrawCall = app
         .createDrawCall(rayTraceGlProgram, fullScreenQuadVertArray)
         .uniform('uBgGradientColors[0]', new Float32Array([
-            ...normedColor('#000000'),
-            ...normedColor('#010101')
+            ...normedColor('#404040'),
+            ...normedColor('#aaaaaa')
+
+            // ...normedColor('#000000'),
+            // ...normedColor('#010101')
         ]))
         .uniform('uResolution', vec2.fromValues(app.width, app.height))
         .uniform('uSeed', vec2.fromValues(random(), random()))
@@ -164,6 +183,7 @@ function app({modelData}) {
 
             if(sampleCount == maxSampleCount) {
                 frame.cancel();
+                return;
             }
 
             // draw new rendered sample blended with accumulated
@@ -221,13 +241,33 @@ function app({modelData}) {
     }
 }
 
-document.addEventListener('DOMContentLoaded', app);
+// document.addEventListener('DOMContentLoaded', app);
 
-// document.addEventListener('DOMContentLoaded', () => {
-//     fetch('assets/models/tree01.obj')
-//         .then(data => data.text())
-//         .then(data => {
-//             let mesh = new ObjLoader.Mesh(data);
-//             console.dir(mesh);
-//         })
-// });
+document.addEventListener('DOMContentLoaded', () => {
+    let objLoader = new ObjLoader();
+    objLoader.load('assets/models/my_cube.obj', (err, result) => {
+        console.dir(result);
+        app({mesh: result});
+
+        // if(err){
+        // /*Handle error here*/
+        // }
+        // var vertices = result.vertices;
+        // var faces = result.faces;
+        // var normals = result.normals;
+        // var textureCoords = result.textureCoords;
+        // var facesMaterialsIndex = result.facesMaterialsIndex;
+        // var materials = result.materials;
+    });
+
+    // fetch('assets/models/tree01.obj')
+    // fetch('assets/models/my_cube.obj')
+    //     .then(data => data.text())
+    //     .then(data => {
+    //         // let mesh = new ObjLoader.Mesh(data);
+    //         let mesh = new ObjModel(data);
+    //         console.log('Mesh: ');
+    //         console.dir(mesh);
+    //         // app({mesh});
+    //     })
+});

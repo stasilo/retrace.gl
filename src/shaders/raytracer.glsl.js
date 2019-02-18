@@ -529,103 +529,111 @@ const getSource = ({options, ObjectList}) =>
         //hitRecord.uv = vec2((x-x0)/(x1-x0), (y-y0)/(y1-y0));
     }
 
-    // from: https://www.shadertoy.com/view/llGSDD
-    bool hitTriangle(in Ray r, in Hitable t, float tMax, inout HitRecord hitRecord) {
-        vec3 pVec = cross(r.dir, t.v2);
-        float det = dot(t.v1, pVec);
-        if (det < 0.001) {
-            return false;
+    // by iq
+    //https://www.shadertoy.com/view/MlGcDz
+    bool hitTriangle(in Ray r, in Hitable tri, float tMax, inout HitRecord hitRecord) {
+        vec3 v1v0 = tri.v1 - tri.v0;
+        vec3 v2v0 = tri.v2 - tri.v0;
+        vec3 rov0 = r.origin - tri.v0;
+
+        vec3  n = cross( v1v0, v2v0 );
+        vec3  q = cross( rov0, r.dir );
+        float d = 1.0/dot( r.dir, n );
+
+        float u = d*dot( -q, v2v0 );
+        float v = d*dot(  q, v1v0 );
+
+        float t = d*dot( -n, rov0 );
+
+        if( u<0.0 || v<0.0 || (u+v)>1.0 ) {
+            t = -1.0;
         }
 
-        float oneOverDet = 1./det;
+        if( t > T_MIN && t<tMax) {
+            hitRecord.hasHit = true;
+            hitRecord.hitT = t;
+            hitRecord.normal = normalize(n);
+            hitRecord.material = tri.material;
+            hitRecord.hitPoint = pointOnRay(r, t);
 
-        vec3 tvec = r.origin - t.v0;
-        float u = dot(tvec, pVec) * oneOverDet;
-        float inside = step(0.0, u) * (1.-step(1.0, u));
+            return true;
+        }
 
-        vec3 qvec = cross(tvec, t.v1);
-        float v = dot(r.dir, qvec) * oneOverDet;
-        inside *= step(0.0, v) * (1. - step(1., u+v));
-        if (inside == 0.0) return false;
-
-        float d = dot(t.v2, qvec) * oneOverDet;
-
-        float f = step(0.0, -d);
-        d = d * (1.-f) + (f * 100000.0);
-        if (d > tMax) { return false; }
-
-        hitRecord.hasHit = true;
-        // hitRecord.dist = d;
-        hitRecord.hitT = d;
-        hitRecord.normal = t.normal * sign(det); //((s.n0 * u) + (s.n1 * v) + (s.n2 * (1. - (u + v)))) * -sign(a);
-        hitRecord.material = t.material;
-        hitRecord.hitPoint = pointOnRay(r, d);
-
-        return true;
+        return false;
     }
 
-    // bool hitTriangle(Ray ray, Hitable triangle, float tMax, out HitRecord hitRecord) {
-    //     vec3 orig = ray.origin;
-    //     vec3 dir = ray.dir;
+
+    // bool hitTriangle(in Ray r, in Hitable tri, float tMax, inout HitRecord hitRecord) {
+    //     vec3 orig = r.origin;
+    //     vec3 dir = r.dir;
     //
-    //     const float INFINITY = 1e10;
+    //     vec3 v0 = tri.v0;
+    //     vec3 v1 = tri.v1;
+    //     vec3 v2 = tri.v2;
     //
-    //     vec3 u, v, n; // triangle vectors
-    //     vec3 w0, w;  // ray vectors
-    //     float r, a, b; // params to calc ray-plane intersect
+    //     // compute plane's normal
+    //     vec3 v0v1 = v1 - v0;
+    //     vec3 v0v2 = v2 - v0;
     //
-    //     // get triangle edge vectors and plane normal
-    //     u = triangle.v1 - triangle.v0;
-    //     v = triangle.v2 - triangle.v0;
-    //     n = cross(u, v);
+    //     // no need to normalize
+    //     vec3 N = cross(v0v1, v0v2); //v0v1.crossProduct(v0v2); // N
+    //     float area2 = length(N);
     //
-    //     w0 = orig - triangle.v0;
-    //     a = -dot(n, w0);
-    //     b = dot(n, dir);
-    //     if (abs(b) < 1e-5) {
-    //         // ray is parallel to triangle plane, and thus can never intersect.
-    //         //return INFINITY;
+    //     // Step 1: finding P
+    //
+    //     // check if ray and plane are parallel ?
+    //     float NdotRayDirection = dot(N, dir); //N.dotProduct(dir);
+    //     if (abs(NdotRayDirection) < 0.0000001) // almost 0
+    //         return false; // they are parallel so they don't intersect !
+    //
+    //     // compute d parameter using equation 2
+    //     float d = dot(N, v0); //N.dotProduct(v0);
+    //
+    //     // compute t (equation 3)
+    //     float t = (dot(N, orig) + d) / NdotRayDirection;
+    //     // check if the triangle is in behind the ray
+    //     if (t < 0.) {
+    //         hitRecord.hasHit = false;
+    //         return false; // the triangle is behind
+    //     }
+    //
+    //     if(t > tMax) {
+    //         hitRecord.hasHit = false;
     //         return false;
     //     }
     //
-    //     // get intersect point of ray with triangle plane
-    //     r = a / b;
-    //     if (r < 0.0) {
-    //         return false; // ray goes away from triangle.
-    //     }
+    //     // compute the intersection point using equation 1
+    //     vec3 P = orig + t * dir;
     //
-    //     vec3 I = orig + r * dir;
-    //     float uu, uv, vv, wu, wv, D;
-    //     uu = dot(u, u);
-    //     uv = dot(u, v);
-    //     vv = dot(v, v);
-    //     w = I - triangle.v0;
-    //     wu = dot(w, u);
-    //     wv = dot(w, v);
-    //     D = uv * uv - uu * vv;
+    //     // Step 2: inside-outside test
+    //     vec3 C; // vector perpendicular to triangle's plane
     //
-    //     // get and test parametric coords
-    //     float s, t;
-    //     s = (uv * wv - vv * wu) / D;
-    //     if (s < 0.0 || s > 1.0)
-    //         return false;
+    //     // edge 0
+    //     vec3 edge0 = v1 - v0;
+    //     vec3 vp0 = P - v0;
+    //     C = cross(edge0, vp0); //edge0.crossProduct(vp0);
+    //     if (dot(N, C) < 0.) return false; // P is on the right side
     //
-    //     t = (uv * wu - uu * wv) / D;
-    //     if (t < 0.0 || (s + t) > 1.0)
-    //         return false;
+    //     // edge 1
+    //     vec3 edge1 = v2 - v1;
+    //     vec3 vp1 = P - v1;
+    //     C = cross(edge1, vp1); //edge1.crossProduct(vp1);
+    //     if (dot(N, C) < 0.)  return false; // P is on the right side
     //
-    //     if(r > 1e-5) {
-    //         // hit
-    //         hitRecord.hasHit = true;
-    //         hitRecord.hitT = t;
-    //         hitRecord.material = triangle.material;
-    //         hitRecord.hitPoint = pointOnRay(ray, t);
-    //         hitRecord.normal = triangle.normal;
+    //     // edge 2
+    //     vec3 edge2 = v0 - v2;
+    //     vec3 vp2 = P - v2;
+    //     C = cross(edge2, vp2); //edge2.crossProduct(vp2);
+    //     if (dot(N, C) < 0.) return false; // P is on the right side;
     //
-    //         return true;
-    //     } else {
-    //         return false;
-    //     }
+    //     hitRecord.hasHit = true;
+    //     // hitRecord.dist = d;
+    //     hitRecord.hitT = t;
+    //     hitRecord.normal = N; //t.normal * sign(det); //((s.n0 * u) + (s.n1 * v) + (s.n2 * (1. - (u + v)))) * -sign(a);
+    //     hitRecord.material = tri.material;
+    //     hitRecord.hitPoint = pointOnRay(r, t);
+    //
+    //     return true; // this ray hits the triangle
     // }
 
     /*
