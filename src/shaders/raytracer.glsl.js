@@ -39,6 +39,8 @@ const getSource = ({options, ObjectList}) =>
         uniform sampler2D accumTexture;
     #endif
 
+    uniform sampler2D uTriangleTexture;
+
     in vec2 uv;
     out vec4 fragColor;
 
@@ -662,14 +664,56 @@ const getSource = ({options, ObjectList}) =>
             }
 
             // bool hitTriangle(Ray ray, Hitable triangle, float tMax, out HitRecord hitRecord) {
-            if(hitables[i].geometry == TRIANGLE_GEOMETRY) {
-                hitTriangle(ray, hitables[i], tMax, /* out => */ record);
-            }
+            // if(hitables[i].geometry == TRIANGLE_GEOMETRY) {
+            //     hitTriangle(ray, hitables[i], tMax, /* out => */ record);
+            // }
 
             if(record.hasHit) {
                 // inefficient hack to do dynamic hitable colors, textures & proc. textures
                 ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
                 record.color = hitables[i].color;
+
+                hitRecord = record;
+                tMax = record.hitT; // handle depth! ("z-index" :))
+                record.hasHit = false;
+            }
+        }
+
+        ivec2 triTexSize = textureSize(uTriangleTexture, 0);
+        for(int iX = 0; iX < triTexSize.x; iX += 3) {
+            vec3 v0 = texelFetch(uTriangleTexture, ivec2(iX, 0), 0).xyz;
+            vec3 v1 = texelFetch(uTriangleTexture, ivec2((iX + 1), 0), 0).xyz;
+            vec3 v2 = texelFetch(uTriangleTexture, ivec2((iX + 2), 0), 0).xyz;
+
+            Hitable tri = Hitable(
+                TRIANGLE_GEOMETRY,
+                //LambertMaterial, // material
+                FuzzyMetalMaterial,
+                vec3(1., 1., 1.), // color
+
+                // bounding box
+                vec3(-1.), vec3(-1.),
+
+                // irrelevant props for triangle (sphere)
+                vec3(-1.),
+                -1.,
+
+                // irrelevant props for triangle (xy rect)
+                -1., -1., -1., -1.,
+                -1.,
+
+                // triangle props
+                v0, v1, v2,
+                // face normal
+                vec3(-1.)
+            );
+
+            hitTriangle(ray, tri, tMax, /* out => */ record);
+
+            if(record.hasHit) {
+                // inefficient hack to do dynamic hitable colors, textures & proc. textures
+                ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
+                record.color = vec3(0.8, 0.5, 0.5);
 
                 hitRecord = record;
                 tMax = record.hitT; // handle depth! ("z-index" :))
