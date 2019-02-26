@@ -31,23 +31,31 @@ import {
 import 'normalize.css/normalize.css';
 import './styles/index.scss';
 
-const defaultMaxSampleCount = 10;
+const defaultMaxSampleCount = 3;
 
 function getTriangleTextureData(mesh) {
     // cube
     // let scale = 0.5;
 
     // sphere
-    // let scale = 0.1;
+    let scale = 0.2;
 
     // bunny
-    let scale = 5;
+    // let scale = 8;
 
-    let translation = {
-        x: 0.4,
-        y: -0.6,
-        z: -0.4
+    let modelTranslation = {
+        x: 0,//0.4,
+        y: 0,//-0.6,
+        z: 0//-0.4
     }
+
+    // bunny
+    // let modelTranslation = {
+    //     x: 0.4,
+    //     y: -0.6,
+    //     z: -0.4
+    // }
+
 
     let vertices = mesh.vertices
         .map(v => v.slice(0,3)
@@ -65,14 +73,43 @@ function getTriangleTextureData(mesh) {
         ]
     });
 
+    // encode triangles for texture packing
+
+    let id = 0;
+    let triangles = faces
+        .reduce((tris, face) => {
+            id++;
+
+            return [
+                ...tris,
+                // v0
+                // ...face[0], id, // rgba, a = id
+                face[0][0] + modelTranslation.x, face[0][1] + modelTranslation.y, face[0][2] + modelTranslation.z,
+                // v1 (g)
+                // ...face[1], id,
+                face[1][0] + modelTranslation.x, face[1][1] + modelTranslation.y, face[1][2] + modelTranslation.z,
+                // v2 (b)
+                // ...face[2], id
+                face[2][0] + modelTranslation.x, face[2][1] + modelTranslation.y, face[2][2] + modelTranslation.z
+            ];
+        }, []);
+
+    return triangles;
+    // return new Float32Array(triangles);
+}
+
+async function buildBvhStructure(faces) {
     // Generate  the Bounding Volume Hierachy from an array of faces
     const maxTrianglesPerNode = 1;
-    let f = new Float32Array(flatten(faces));
+    // let f = new Float32Array(flatten(faces));
 
-    const BVH = BVHBuilderAsync(f, maxTrianglesPerNode)
+    // console.log('UN-flattened faces: ');
+    // console.dir(faces);
+    // let f = new Float32Array(flatten(faces));
+
+
+    return BVHBuilderAsync(new Float32Array(faces), maxTrianglesPerNode)
         .then((res) => {
-
-
             let nodeId = 1;
             const addBvhParentNodesAndIds = (currentNode, parentNode) => {
                 if(definedNotNull(parentNode)) {
@@ -116,11 +153,15 @@ function getTriangleTextureData(mesh) {
                 if(currentNode.node0) {
                     // node flattened size: 1 + 3 + 1 + 3 + 1 = 9
                     newNode = [
-                        `id: ${currentNode.id}`, // 1
-                        ...currentNode.extentsMin, // 3
-                        `node0 (id: ${currentNode.node0.id}) off: ${currentNode.node0.id * 9}`, // 1
-                        ...currentNode.extentsMax, // 3
-                        `node1 (id: ${currentNode.node1.id}) off: ${currentNode.node1.id * 9}`, // 1
+                        // `id: ${currentNode.id}`, // 1
+                        // `node0 (id: ${currentNode.node0.id}) off: ${currentNode.node0.id * 9}`, // 1
+                        // `node1 (id: ${currentNode.node1.id}) off: ${currentNode.node1.id * 9}`, // 1
+                        currentNode.id, // node id
+                        //dubbelkolla detta!? * 3? (rgb för texture) * 9 för att debugga med array-offsets
+                        currentNode.node0.id * 3, // node0 offset
+                        currentNode.node1.id * 3, // node1 offset
+                        ...currentNode.extentsMin, // len = 3
+                        ...currentNode.extentsMax // len = 3
                     ];
 
                 } else {
@@ -130,12 +171,16 @@ function getTriangleTextureData(mesh) {
                     // c.setFromArray(this.trianglesArray, triIndex*9+6);
 
                     newNode = [
-                        `(TRIANGLE) id: ${currentNode.id}`, // 1
                         currentNode.startIndex, currentNode.startIndex, currentNode.startIndex,
-                        -1,
-                        currentNode.startIndex, currentNode.startIndex, currentNode.startIndex,
-                        -1
-                    ]
+                        -1, -1, -1, // padding
+                        -1, -1, -1 // padding
+
+                        // `(TRIANGLE) id: ${currentNode.id}`, // 1
+                        // currentNode.startIndex, currentNode.startIndex, currentNode.startIndex,
+                        // -1,
+                        // currentNode.startIndex, currentNode.startIndex, currentNode.startIndex,
+                        // -1
+                    ];
                 }
 
 
@@ -153,59 +198,20 @@ function getTriangleTextureData(mesh) {
 
             iterateBvhNodes(rootNode);
 
-            // console.log(depth);
-            console.dir(bvhArray);
-            console.log('bvhArray length: ' + bvhArray.length);
-            console.log('bvhArray max id: ' + nodeId);
-            console.log('calc len: ' + nodeId * 9);
+            // console.dir(bvhArray);
+            // console.log('bvhArray length: ' + bvhArray.length);
+            // console.log('bvhArray max id: ' + nodeId);
+            // console.log('calc len: ' + nodeId * 9);
+            //
+            // console.dir(rootNode);
 
-            console.dir(rootNode);
+            console.log('done building bvh');
+
+            return bvhArray;
         });
-
-
-
-    // return;
-    // encode triangles for texture packing
-
-    let id = 0;
-    let triangles = faces
-        .reduce((tris, face) => {
-            id++;
-
-
-            // face = face.map(vert => {
-            //     // console.log('vert');
-            //     // console.dir(vert);
-            //
-            //     vert[0] += translation.x;
-            //     vert[1] += translation.y;
-            //     vert[2] += translation.z;
-            //
-            //     return vert;
-            // });
-
-            return [
-                ...tris,
-                // v0
-                // ...face[0], id, // rgba, a = id
-                face[0][0] + translation.x, face[0][1] + translation.y, face[0][2] + translation.z, id,
-                // v1 (g)
-                // ...face[1], id,
-                face[1][0] + translation.x, face[1][1] + translation.y, face[1][2] + translation.z, id,
-                // v2 (b)
-                // ...face[2], id
-                face[2][0] + translation.x, face[2][1] + translation.y, face[2][2] + translation.z, id
-            ];
-        }, []);
-
-    console.log('triangles: ');
-    console.dir(triangles);
-
-    // return triangles;
-    return new Float32Array(triangles);
 }
 
-function app({mesh}) {
+async function app({mesh}) {
     const params = queryString.parse(location.search);
     const canvas = document.getElementById('regl-canvas');
     const gl = canvas.getContext('webgl2');
@@ -303,16 +309,31 @@ function app({mesh}) {
     // uniforms
 
     let triangleData = getTriangleTextureData(mesh);
-    console.dir(triangleData);
-    console.log('trinagleData lenght: ' + triangleData.length);
-    console.log('texture width: ' + triangleData.length / 4);
 
-    // 32 bits => 4 bytes
-    let triangleTexture = app.createTexture2D(triangleData, triangleData.length / 4, 1, { // len / 4 because rgba
+    let triangleTexHeight = 4; //108;
+    let triangleTexWidth = (triangleData.length / 3) / triangleTexHeight;
+
+    // let triangleTexData = [
+    //     ...triangleData,
+    //     ...Array( (triangleTexHeight * triangleTexWidth) - triangleData.length)
+    //         .fill(-1)
+    // ];
+
+    // let triangleTexData = [...triangleData];
+
+
+    console.dir(triangleData);
+    console.log('no of tris: ' + (triangleData.length / 3));
+
+    console.log('trinagleData len: ' + triangleData.length);
+    console.log(`texture dimensions: ${triangleTexWidth}x${triangleTexHeight}`);
+
+    // let triangleTexture = app.createTexture2D(new Float32Array(triangleData), triangleData.length / 3, 1, { // len / 3 because rgb (no alpha chan!)
+    let triangleTexture = app.createTexture2D(new Float32Array(triangleData), triangleTexWidth, triangleTexHeight, { // len / 3 because rgb (no alpha chan!)
         type: gl.FLOAT,
         // interalFormat: gl.RGBA16F,
         interalFormat: gl.RGBA32F,
-        format: gl.RGBA,
+        format: gl.RGB,
 
         generateMipmaps: false,
         minFilter: gl.LINEAR,
@@ -321,9 +342,36 @@ function app({mesh}) {
         wrapT: gl.CLAMP_TO_EDGE
     });
 
+    // return;
+
+    let bvhData = await buildBvhStructure(triangleData);
+    console.log('bvhData: ');
+    console.dir(bvhData);
+
+    let bvhTexHeight = 9;
+    let bvhTexWidth = (bvhData.length / 3) / bvhTexHeight;
+
+    console.log(`bvh text dimensions: ${bvhTexWidth}x${bvhTexHeight}`);
+
+    let bvhDataTexture = app.createTexture2D(new Float32Array(bvhData), bvhTexWidth, bvhTexHeight, { // len / 3 because rgb (no alpha chan!)
+        type: gl.FLOAT,
+        // interalFormat: gl.RGBA16F,
+        interalFormat: gl.RGBA32F,
+        format: gl.RGB,
+
+        generateMipmaps: false,
+        minFilter: gl.LINEAR,
+        magFilter: gl.LINEAR,
+        wrapS: gl.CLAMP_TO_EDGE,
+        wrapT: gl.CLAMP_TO_EDGE
+    });
+    //
+    // return;
+
     const rayTraceDrawCall = app
         .createDrawCall(rayTraceGlProgram, fullScreenQuadVertArray)
         .texture('uTriangleTexture', triangleTexture)
+        .texture('uBvhDataTexture', bvhDataTexture)
         .uniform('uBgGradientColors[0]', new Float32Array([
             ...normedColor('#050505'),
             ...normedColor('#050505')
@@ -436,8 +484,8 @@ function app({mesh}) {
 document.addEventListener('DOMContentLoaded', () => {
     let objLoader = new ObjLoader();
     // objLoader.load('assets/models/my_cube.obj', (err, result) => {
-    // objLoader.load('assets/models/sphere.obj', (err, result) => {
-    objLoader.load('assets/models/bunny.obj', (err, result) => {
+    objLoader.load('assets/models/sphere.obj', (err, result) => {
+    // objLoader.load('assets/models/bunny.obj', (err, result) => {
         console.dir(result);
         app({mesh: result});
 

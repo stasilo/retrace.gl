@@ -39,7 +39,12 @@ const getSource = ({options, ObjectList}) =>
         uniform sampler2D accumTexture;
     #endif
 
+    /*
+     * Model bvh & triangle data
+     */
+
     uniform sampler2D uTriangleTexture;
+    uniform sampler2D uBvhDataTexture;
 
     in vec2 uv;
     out vec4 fragColor;
@@ -134,6 +139,46 @@ const getSource = ({options, ObjectList}) =>
         float z = r * cos(theta);
 
         return vec3(x, y, z);
+    }
+
+    /*
+     * BVH
+     */
+
+    struct BvhNode {
+        // [id, node0 offset, node1 offset]
+        vec3 meta;
+        vec3 minCoords;
+        vec3 maxCoords;
+    };
+
+    BvhNode getBvhNode(int index) {
+        ivec2 bvhTexSize = textureSize(uBvhDataTexture, 0);
+
+        float offset = float(index) * 3.;
+        float dataTexWidth = float(bvhTexSize.x);
+        float oneOverDataTexWidth = 1. / dataTexWidth;
+
+        float xOffset = mod(offset, dataTexWidth);
+        float yOffset = ceil(offset * oneOverDataTexWidth) - 1.;
+
+        vec3 meta = texelFetch(uBvhDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        xOffset = mod(offset + 1., dataTexWidth);
+        yOffset = ceil((offset + 1.) * oneOverDataTexWidth) - 1.;
+
+        vec3 minCoords = texelFetch(uBvhDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        xOffset = mod(offset + 2., dataTexWidth);
+        yOffset = ceil((offset + 2.) * oneOverDataTexWidth) - 1.;
+
+        vec3 maxCoords = texelFetch(uBvhDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        return BvhNode(
+            meta,
+            minCoords,
+            maxCoords
+        );
     }
 
     /*
@@ -408,7 +453,7 @@ const getSource = ({options, ObjectList}) =>
     }
 
     /*
-     *  handling
+     *  geometry handling
      */
 
     #define SPHERE_GEOMETRY 1
@@ -680,46 +725,54 @@ const getSource = ({options, ObjectList}) =>
         }
 
         ivec2 triTexSize = textureSize(uTriangleTexture, 0);
-        for(int iX = 0; iX < triTexSize.x; iX += 3) {
-            vec3 v0 = texelFetch(uTriangleTexture, ivec2(iX, 0), 0).xyz;
-            vec3 v1 = texelFetch(uTriangleTexture, ivec2((iX + 1), 0), 0).xyz;
-            vec3 v2 = texelFetch(uTriangleTexture, ivec2((iX + 2), 0), 0).xyz;
+        for(int iY = 0; iY < triTexSize.y; iY += 1) {
+            for(int iX = 0; iX < triTexSize.x; iX += 3) {
 
-            Hitable tri = Hitable(
-                TRIANGLE_GEOMETRY,
-                //LambertMaterial, // material
-                FuzzyMetalMaterial,
-                vec3(1., 1., 1.), // color
+                vec3 v0 = texelFetch(uTriangleTexture, ivec2(iX, iY), 0).xyz;
+                vec3 v1 = texelFetch(uTriangleTexture, ivec2(iX + 1, iY), 0).xyz;
+                vec3 v2 = texelFetch(uTriangleTexture, ivec2(iX + 2, iY), 0).xyz;
 
-                // bounding box
-                vec3(-1.), vec3(-1.),
+                // if(v0.x == -1. && v0.y == -1. && v0.z == -1.) {
+                //     break;
+                // }
 
-                // irrelevant props for triangle (sphere)
-                vec3(-1.),
-                -1.,
+                Hitable tri = Hitable(
+                    TRIANGLE_GEOMETRY,
+                    //LambertMaterial, // material
+                    FuzzyMetalMaterial,
+                    vec3(1., 1., 1.), // color
 
-                // irrelevant props for triangle (xy rect)
-                -1., -1., -1., -1.,
-                -1.,
+                    // bounding box
+                    vec3(-1.), vec3(-1.),
 
-                // triangle props
-                v0, v1, v2,
-                // face normal
-                vec3(-1.)
-            );
+                    // irrelevant props for triangle (sphere)
+                    vec3(-1.),
+                    -1.,
 
-            hitTriangle(ray, tri, tMax, /* out => */ record);
+                    // irrelevant props for triangle (xy rect)
+                    -1., -1., -1., -1.,
+                    -1.,
 
-            if(record.hasHit) {
-                // inefficient hack to do dynamic hitable colors, textures & proc. textures
-                ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
-                record.color = vec3(0.8, 0.5, 0.5);
+                    // triangle props
+                    v0, v1, v2,
+                    // face normal
+                    vec3(-1.)
+                );
 
-                hitRecord = record;
-                tMax = record.hitT; // handle depth! ("z-index" :))
-                record.hasHit = false;
+                hitTriangle(ray, tri, tMax, /* out => */ record);
+
+                if(record.hasHit) {
+                    // inefficient hack to do dynamic hitable colors, textures & proc. textures
+                    ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
+                    record.color = vec3(0.8, 0.5, 0.5);
+
+                    hitRecord = record;
+                    tMax = record.hitT; // handle depth! ("z-index" :))
+                    record.hasHit = false;
+                }
             }
         }
+
     }
 
     /*
@@ -841,7 +894,54 @@ const getSource = ({options, ObjectList}) =>
             color += prevColor;
         #endif
 
-        fragColor = vec4(color, 1.);
+
+
+        BvhNode test = getBvhNode(600);
+        fragColor = vec4(test.maxCoords, 1.);
+        // should look like:
+        // fragColor = vec4(
+        //     0.5091178284416199,
+        //     0.399251328540802,
+        //     0.2676621542701721,
+        //     1.0
+        // );
+
+        // BvhNode test = getBvhNode(2);
+        // fragColor = vec4(test.maxCoords, 1.);
+
+        // fragColor = vec4(
+        //     0.07036020768976212,
+        //     0.1827109323272705,
+        //     0.5091178284416199,
+        //     1.0
+        // );
+
+        // idx 1 (9)
+        // BvhNode test = getBvhNode(1);
+        // fragColor = vec4(test.maxCoords, 1.);
+        // should be purple
+        // fragColor = vec4(0.5091178284416199,
+        //     0.1827109323272705,
+        //     0.5091178284416199,
+        //     1.0
+        // );
+
+        //idx 0
+        // BvhNode test = getBvhNode(0);
+        // fragColor = vec4(test.maxCoords, 1.);
+        // fragColor = vec4(0.5091178284416199,
+        //     0.6091178522834778,
+        //     0.5091178284416199,
+        //     1.0);
+
+        // fragColor = vec4(test.meta, 1.);
+        // fragColor = vec4(0., 9., 3024., 1.);
+
+        // vec3 kaka = texelFetch(uBvhDataTexture, ivec2(2, 0), 0).xyz; // maxCoords first node
+        // fragColor = vec4(kaka, 1.);
+
+
+        // fragColor = vec4(color, 1.);
     }
 `;
 

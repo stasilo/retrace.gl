@@ -81,7 +81,7 @@ export default ({mesh}) => {
             color: '#eeeeee'
         }),
         new Sphere({
-            center: [0., 5.4, -3.],
+            center: [-2.5, 5.4, -2.],
             radius: 2.5,
             material: 'LightMaterial',
             color: '#ffffff'
