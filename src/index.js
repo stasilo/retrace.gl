@@ -40,8 +40,24 @@ function getTriangleTextureData(mesh) {
     // sphere
     let scale = 0.3;
 
-    // bunny
+    // diamond
+    // let scale = 0.01;
+
+    // // bunny
     // let scale = 8;
+
+    // octahedron
+    // let scale = 0.5; //0.5;
+
+    // teapot
+    // let scale = 0.01;
+
+    // box
+    // let modelTranslation = {
+    //     x: 0,//0.4,
+    //     y: -0.5,//-0.6,
+    //     z: 0//-0.4
+    // }
 
     let modelTranslation = {
         x: 0,//0.4,
@@ -161,8 +177,8 @@ async function buildBvhStructure(faces) {
                         // `node1 (id: ${currentNode.node1.id}) off: ${currentNode.node1.id * 9}`, // 1
                         currentNode.id, // node id
                         //dubbelkolla detta!? * 3? (rgb för texture) * 9 för att debugga med array-offsets
-                        currentNode.node0.id * 1, // node0 offset
-                        currentNode.node1.id * 1, // node1 offset
+                        currentNode.node0.id,// * 1, // node0 offset
+                        currentNode.node1.id,// * 1, // node1 offset
                         ...currentNode.extentsMin, // len = 3
                         ...currentNode.extentsMax // len = 3
                     ];
@@ -215,7 +231,7 @@ async function buildBvhStructure(faces) {
             console.log('moreThanOneTriInNode: ' + moreThanOneTriInNode);
             console.log('done building bvh');
 
-            return bvhArray;
+            return [res, bvhArray];
         });
 }
 
@@ -244,6 +260,11 @@ async function app({mesh}) {
         // enable EXT_color_buffer_float extension
         .floatRenderTargets()
         .clearColor(0, 0, 0, 1);
+
+
+    // https://webglfundamentals.org/webgl/lessons/webgl-data-textures.html
+    const alignment = 1;
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, alignment);
 
     // const camera = createCamera({
     //     lookFrom: [3.1, 0.8, 1.9],
@@ -318,27 +339,49 @@ async function app({mesh}) {
 
     let triangleData = getTriangleTextureData(mesh);
 
-    let triangleTexHeight = 1; //8; //4 //108;
-    let triangleTexWidth = (triangleData.length / 3) / triangleTexHeight;
-
-    // let triangleTexData = [
-    //     ...triangleData,
-    //     ...Array( (triangleTexHeight * triangleTexWidth) - triangleData.length)
-    //         .fill(-1)
-    // ];
-
-    // let triangleTexData = [...triangleData];
-
-
     console.log('triangleData');
     console.dir(triangleData);
     console.log('no of tris (triangleData): ' + (triangleData.length / 9));
 
     console.log('trinagleData len: ' + triangleData.length);
+
+    let triangleTexHeight = 1024; //1; //8; //4 //108;
+    let triangleTexWidth = 1024; //(triangleData.length / 3) / triangleTexHeight;
+
     console.log(`triangle texture dimensions: ${triangleTexWidth}x${triangleTexHeight}`);
 
-    // let triangleTexture = app.createTexture2D(new Float32Array(triangleData), triangleData.length / 3, 1, { // len / 3 because rgb (no alpha chan!)
-    let triangleTexture = app.createTexture2D(new Float32Array(triangleData), triangleTexWidth, triangleTexHeight, { // len / 3 because rgb (no alpha chan!)
+
+    // return;
+
+    let [bvhObj, bvhData] = await buildBvhStructure(triangleData);
+    console.log('bvhData: ');
+    console.dir(bvhData);
+    console.dir(bvhObj);
+
+    // let bvhTexHeight = 27;
+    // let bvhTexWidth = (bvhData.length / 3) / bvhTexHeight;
+    //
+    // console.log(`bvh text dimensions: ${bvhTexWidth}x${bvhTexHeight}`);
+    //
+    // let bvhDataTexture = app.createTexture2D(new Float32Array(bvhData), bvhTexWidth, bvhTexHeight, {
+    let bvhTexHeight = 1024; //27;
+    let bvhTexWidth = 1024; //(bvhData.length / 3) / bvhTexHeight;
+
+    console.log(`bvh text dimensions: ${bvhTexWidth}x${bvhTexHeight}`);
+    let bvhDataPadded = [
+        ...bvhData,
+        ...Array((bvhTexHeight*3)*(bvhTexWidth*3) - (bvhData.length/9))
+            .fill(-1)
+    ];
+
+    let triangleDataPadded = [
+        ...triangleData,
+        ...Array((triangleTexWidth*3)*(triangleTexHeight*3) - (triangleData.length/9))
+            .fill(-1)
+    ];
+
+    let triangleTexture = app.createTexture2D(new Float32Array(triangleDataPadded), triangleTexWidth, triangleTexHeight, {
+    // let triangleTexture = app.createTexture2D(new Float32Array(triangleData), triangleTexWidth, triangleTexHeight, {
         type: gl.FLOAT,
         // interalFormat: gl.RGBA16F,
         interalFormat: gl.RGBA32F,
@@ -351,20 +394,7 @@ async function app({mesh}) {
         wrapT: gl.CLAMP_TO_EDGE
     });
 
-    // return;
-
-    let bvhData = await buildBvhStructure(triangleData);
-    console.log('bvhData: ');
-    console.dir(bvhData);
-
-    // bunny
-    // let bvhTexHeight = 4;
-    let bvhTexHeight = 27;
-    let bvhTexWidth = (bvhData.length / 3) / bvhTexHeight;
-
-    console.log(`bvh text dimensions: ${bvhTexWidth}x${bvhTexHeight}`);
-
-    let bvhDataTexture = app.createTexture2D(new Float32Array(bvhData), bvhTexWidth, bvhTexHeight, { // len / 3 because rgb (no alpha chan!)
+    let bvhDataTexture = app.createTexture2D(new Float32Array(bvhDataPadded), bvhTexWidth, bvhTexHeight, {
         type: gl.FLOAT,
         // interalFormat: gl.RGBA16F,
         interalFormat: gl.RGBA32F,
@@ -490,10 +520,14 @@ async function app({mesh}) {
 
 // document.addEventListener('DOMContentLoaded', app);
 
+// https://people.sc.fsu.edu/~jburkardt/data/obj/obj.html
+
 document.addEventListener('DOMContentLoaded', () => {
     let objLoader = new ObjLoader();
-    // objLoader.load('assets/models/my_cube.obj', (err, result) => {
     objLoader.load('assets/models/sphere.obj', (err, result) => {
+    // objLoader.load('assets/models/my_cube.obj', (err, result) => {
+    // objLoader.load('assets/models/octahedron.obj', (err, result) => {
+    // objLoader.load('assets/models/teapot.obj', (err, result) => {
     // objLoader.load('assets/models/bunny.obj', (err, result) => {
     // objLoader.load('assets/models/skull.obj', (err, result) => {
         console.dir(result);

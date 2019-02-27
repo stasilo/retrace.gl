@@ -5,7 +5,7 @@ const getSource = ({options, ObjectList}) =>
     precision highp float;
 
     #define FLT_MAX 3.402823466e+38
-    #define T_MIN .0001
+    #define T_MIN .001
     #define T_MAX FLT_MAX
 
     #define MAX_HIT_DEPTH 15//50
@@ -634,6 +634,48 @@ const getSource = ({options, ObjectList}) =>
         return false;
     }
 
+    bool bvhHitTriangle(in Ray r, in Hitable tri, in float tMax, inout HitRecord hitRecord) {
+        vec3 v0 = tri.v0, v1 = tri.v1, v2 = tri.v2;
+
+    	vec3 edge1 = v1 - v0;
+    	vec3 edge2 = v2 - v0;
+    	vec3 pvec = cross(r.dir, edge2);
+        // vec3 n = cross(tri.v1 - tri.v0, tri.v2 - tri.v0);
+        vec3 n = cross(edge1, edge2);
+
+        float det = 1.0 / dot(edge1, pvec);
+    	// comment out the following line if double-sided triangles are wanted, or
+    	// uncomment the following line if back-face culling is desired (single-sided triangles)
+    	if (det <= 0.0) return false;
+
+    	vec3 tvec = r.origin - v0;
+    	float u = dot(tvec, pvec) * det;
+    	if (u < 0.0 || u > 1.0)
+    		return false;
+
+    	vec3 qvec = cross(tvec, edge1);
+    	float v = dot(r.dir, qvec) * det;
+
+        if (v < 0.0 || u + v > 1.0)
+    		return false;
+
+        float t = dot(edge2, qvec) * det;
+
+
+        // flytta ut detta!
+    	if(t > T_MIN && t < tMax) {
+            hitRecord.hasHit = true;
+            hitRecord.hitT = t;
+            hitRecord.normal = normalize(n);
+            hitRecord.material = tri.material;
+            hitRecord.hitPoint = pointOnRay(r, t);
+
+            return true;
+        }
+
+        return false;
+    }
+
 
     // bool hitTriangle(in Ray r, in Hitable tri, float tMax, inout HitRecord hitRecord) {
     //     vec3 orig = r.origin;
@@ -712,49 +754,50 @@ const getSource = ({options, ObjectList}) =>
      * World
      */
 
-    void hitWorld(Ray ray, Hitable hitables[${ObjectList.length()}], float tMax, out HitRecord hitRecord) {
+    void hitWorld(Ray ray, Hitable hitables[${ObjectList.length()}], float t, out HitRecord hitRecord) {
+        float tMax = t;
         hitRecord.hasHit = false;
 
         HitRecord record;
-        for(int i = 0; i < ${ObjectList.length()}; i++) {
-            //samples: 500 / 500, render time: 99.8s
-            // if(hitables[i].geometry == SPHERE_GEOMETRY
-            //     && hitBbox(hitables[i].bMin, hitables[i].bMax, ray, /* out => */ record))
-            // {
-            //     hitSphere(ray, hitables[i], tMax, /* out => */ record);
-            // }
-
-            // samples: 500 / 500, render time: 96.8s
-            if(hitables[i].geometry == SPHERE_GEOMETRY) {
-                hitSphere(ray, hitables[i], tMax, /* out => */ record);
-            }
-
-            if(hitables[i].geometry == XY_RECT_GEOMETRY) {
-                hitXyRect(ray, hitables[i], T_MIN, tMax, /* out => */ record);
-            }
-
-            // bool hitTriangle(Ray ray, Hitable triangle, float tMax, out HitRecord hitRecord) {
-            // if(hitables[i].geometry == TRIANGLE_GEOMETRY) {
-            //     hitTriangle(ray, hitables[i], tMax, /* out => */ record);
-            // }
-
-            if(record.hasHit) {
-                // inefficient hack to do dynamic hitable colors, textures & proc. textures
-                ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
-                record.color = hitables[i].color;
-
-                hitRecord = record;
-                tMax = record.hitT; // handle depth! ("z-index" :))
-                record.hasHit = false;
-            }
-        }
+        // for(int i = 0; i < ${ObjectList.length()}; i++) {
+        //     //samples: 500 / 500, render time: 99.8s
+        //     // if(hitables[i].geometry == SPHERE_GEOMETRY
+        //     //     && hitBbox(hitables[i].bMin, hitables[i].bMax, ray, /* out => */ record))
+        //     // {
+        //     //     hitSphere(ray, hitables[i], tMax, /* out => */ record);
+        //     // }
+        //
+        //     // samples: 500 / 500, render time: 96.8s
+        //     if(hitables[i].geometry == SPHERE_GEOMETRY) {
+        //         hitSphere(ray, hitables[i], tMax, /* out => */ record);
+        //     }
+        //
+        //     if(hitables[i].geometry == XY_RECT_GEOMETRY) {
+        //         hitXyRect(ray, hitables[i], T_MIN, tMax, /* out => */ record);
+        //     }
+        //
+        //     // bool hitTriangle(Ray ray, Hitable triangle, float tMax, out HitRecord hitRecord) {
+        //     // if(hitables[i].geometry == TRIANGLE_GEOMETRY) {
+        //     //     hitTriangle(ray, hitables[i], tMax, /* out => */ record);
+        //     // }
+        //
+        //     if(record.hasHit) {
+        //         // inefficient hack to do dynamic hitable colors, textures & proc. textures
+        //         ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
+        //         record.color = hitables[i].color;
+        //
+        //         hitRecord = record;
+        //         tMax = record.hitT; // handle depth! ("z-index" :))
+        //         record.hasHit = false;
+        //     }
+        // }
 
         /// BVH ///////////////////////////////////
-
+        //
         int stackPtr = 0;
 
         // BvhStackData stackLevels[24];
-        BvhStackData stackLevels[32];
+        BvhStackData stackLevels[18];
         BvhStackData slData0, slData1, tmp;
 
         BvhNode currentNode = getBvhNode(0);
@@ -778,115 +821,113 @@ const getSource = ({options, ObjectList}) =>
                 float node1Offset = currentNode.meta.z;
 
                 if (node1Offset == -1.) { // this is a leaf node
-                    float triangleOffset = floor(currentNode.meta.x);
-
-                    float xOffset = mod(triangleOffset, triTexWidth);
-                    float yOffset = floor(triangleOffset * oneOverTriTexWidth);
-
-                    vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
-
-                    xOffset = mod(triangleOffset + 1., triTexWidth);
-                    yOffset = floor((triangleOffset + 1.) * oneOverTriTexWidth);
-
-                    vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
-
-                    xOffset = mod(triangleOffset + 2., triTexWidth);
-                    yOffset = floor((triangleOffset + 2.) * oneOverTriTexWidth);
-
-                    vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
-
-                    Hitable tri = Hitable(
-                        TRIANGLE_GEOMETRY,
-                        //LambertMaterial, // material
-                        LambertMaterial,
-                        vec3(1., 1., 1.), // color
-
-                        // bounding box
-                        vec3(-1.), vec3(-1.),
-
-                        // irrelevant props for triangle (sphere)
-                        vec3(-1.),
-                        -1.,
-
-                        // irrelevant props for triangle (xy rect)
-                        -1., -1., -1., -1.,
-                        -1.,
-
-                        // triangle props
-                        v0, v1, v2,
-                        // face normal
-                        vec3(-1.)
-                    );
-
-                    hitTriangle(ray, tri, tMax, /* out => */ record);
-
-                    if(record.hasHit) {
-                        // inefficient hack to do dynamic hitable colors, textures & proc. textures
-                        // ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
-                        record.color = vec3(1.0, 0.0, 1.0);
-
-                        hitRecord = record;
-                        tMax = record.hitT; // handle depth! ("z-index" :))
-                        record.hasHit = false;
-                    }
-
-
-
-
-                    // for(int noTrisInNode = 0; noTrisInNode < int(currentNode.meta.y) - int(currentNode.meta.x); noTrisInNode+=3) {
-                    //     float triangleOffset = currentNode.meta.x + float(noTrisInNode);
+                    // float triangleOffset = floor(currentNode.meta.x);
                     //
-                    //     float xOffset = mod(triangleOffset, triTexWidth);
-                    //     float yOffset = floor(triangleOffset * oneOverTriTexWidth);
+                    // float xOffset = mod(triangleOffset, triTexWidth);
+                    // float yOffset = floor(triangleOffset * oneOverTriTexWidth);
                     //
-                    //     vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+                    // vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
                     //
-                    //     xOffset = mod(triangleOffset + 1., triTexWidth);
-                    //     yOffset = floor((triangleOffset + 1.) * oneOverTriTexWidth);
+                    // xOffset = mod(triangleOffset + 1., triTexWidth);
+                    // yOffset = floor((triangleOffset + 1.) * oneOverTriTexWidth);
                     //
-                    //     vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+                    // vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
                     //
-                    //     xOffset = mod(triangleOffset + 2., triTexWidth);
-                    //     yOffset = floor((triangleOffset + 2.) * oneOverTriTexWidth);
+                    // xOffset = mod(triangleOffset + 2., triTexWidth);
+                    // yOffset = floor((triangleOffset + 2.) * oneOverTriTexWidth);
                     //
-                    //     vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+                    // vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
                     //
-                    //     Hitable tri = Hitable(
-                    //         TRIANGLE_GEOMETRY,
-                    //         //LambertMaterial, // material
-                    //         LambertMaterial,
-                    //         vec3(1., 1., 1.), // color
+                    // Hitable tri = Hitable(
+                    //     TRIANGLE_GEOMETRY,
+                    //     //LambertMaterial, // material
+                    //     LambertMaterial,
+                    //     vec3(1., 1., 1.), // color
                     //
-                    //         // bounding box
-                    //         vec3(-1.), vec3(-1.),
+                    //     // bounding box
+                    //     vec3(-1.), vec3(-1.),
                     //
-                    //         // irrelevant props for triangle (sphere)
-                    //         vec3(-1.),
-                    //         -1.,
+                    //     // irrelevant props for triangle (sphere)
+                    //     vec3(-1.),
+                    //     -1.,
                     //
-                    //         // irrelevant props for triangle (xy rect)
-                    //         -1., -1., -1., -1.,
-                    //         -1.,
+                    //     // irrelevant props for triangle (xy rect)
+                    //     -1., -1., -1., -1.,
+                    //     -1.,
                     //
-                    //         // triangle props
-                    //         v0, v1, v2,
-                    //         // face normal
-                    //         vec3(-1.)
-                    //     );
+                    //     // triangle props
+                    //     v0, v1, v2,
+                    //     // face normal
+                    //     vec3(-1.)
+                    // );
                     //
-                    //     hitTriangle(ray, tri, tMax, /* out => */ record);
+                    // hitTriangle(ray, tri, tMax, /* out => */ record);
                     //
-                    //     if(record.hasHit) {
-                    //         // inefficient hack to do dynamic hitable colors, textures & proc. textures
-                    //         // ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
-                    //         record.color = vec3(1.0, 0.0, 1.0);
+                    // if(record.hasHit) {
+                    //     // inefficient hack to do dynamic hitable colors, textures & proc. textures
+                    //     // ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
+                    //     record.color = vec3(1.0, 0.0, 1.0);
                     //
-                    //         hitRecord = record;
-                    //         tMax = record.hitT; // handle depth! ("z-index" :))
-                    //         record.hasHit = false;
-                    //     }
-                    //
+                    //     hitRecord = record;
+                    //     tMax = record.hitT; // handle depth! ("z-index" :))
+                    //     record.hasHit = false;
                     // }
+
+
+                    for(int noTrisInNode = 0; noTrisInNode < (int(currentNode.meta.y) - int(currentNode.meta.x)); noTrisInNode+=3) {
+                        float triangleOffset = currentNode.meta.x + float(noTrisInNode);
+
+                        float xOffset = mod(triangleOffset, triTexWidth);
+                        float yOffset = floor(triangleOffset * oneOverTriTexWidth);
+
+                        vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        xOffset = mod(triangleOffset + 1., triTexWidth);
+                        yOffset = floor((triangleOffset + 1.) * oneOverTriTexWidth);
+
+                        vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        xOffset = mod(triangleOffset + 2., triTexWidth);
+                        yOffset = floor((triangleOffset + 2.) * oneOverTriTexWidth);
+
+                        vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        Hitable tri = Hitable(
+                            TRIANGLE_GEOMETRY,
+                            //LambertMaterial, // material
+                            LambertMaterial,
+                            vec3(1., 1., 1.), // color
+
+                            // bounding box
+                            vec3(-1.), vec3(-1.),
+
+                            // irrelevant props for triangle (sphere)
+                            vec3(-1.),
+                            -1.,
+
+                            // irrelevant props for triangle (xy rect)
+                            -1., -1., -1., -1.,
+                            -1.,
+
+                            // triangle props
+                            v0, v1, v2,
+                            // face normal
+                            vec3(-1.)
+                        );
+
+                        bvhHitTriangle(ray, tri, tMax, /* out => */ record);
+
+                        if(record.hasHit) {
+                            // inefficient hack to do dynamic hitable colors, textures & proc. textures
+                            // ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
+                            record.color = vec3(1.0, 0.0, 1.0);
+
+                            hitRecord = record;
+                            tMax = record.hitT; // handle depth! ("z-index" :))
+                            record.hasHit = false;
+                        }
+
+                    }
                 } else { // branch
 
                     node0 = getBvhNode(int(node0Offset));
@@ -953,6 +994,7 @@ const getSource = ({options, ObjectList}) =>
 
 
 
+
         // regular triangle intersection (no bvh)
 
         // ivec2 triTexSize = textureSize(uTriangleTexture, 0);
@@ -977,6 +1019,14 @@ const getSource = ({options, ObjectList}) =>
         //     yOffset = floor((triangleOffset + 2.) * oneOverTriTexWidth);
         //
         //     vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+        //
+        //     if(v0.x == v1.x &&
+        //         v1.x == v2.x &&
+        //         v0.y == v1.y &&
+        //         v1.y == v2.y)
+        //     {
+        //         break;
+        //     }
         //
         //     Hitable tri = Hitable(
         //         TRIANGLE_GEOMETRY,
@@ -1013,6 +1063,43 @@ const getSource = ({options, ObjectList}) =>
         //         record.hasHit = false;
         //     }
         // }
+
+
+
+
+
+        for(int i = 0; i < ${ObjectList.length()}; i++) {
+            //samples: 500 / 500, render time: 99.8s
+            // if(hitables[i].geometry == SPHERE_GEOMETRY
+            //     && hitBbox(hitables[i].bMin, hitables[i].bMax, ray, /* out => */ record))
+            // {
+            //     hitSphere(ray, hitables[i], tMax, /* out => */ record);
+            // }
+
+            // samples: 500 / 500, render time: 96.8s
+            if(hitables[i].geometry == SPHERE_GEOMETRY) {
+                hitSphere(ray, hitables[i], tMax, /* out => */ record);
+            }
+
+            if(hitables[i].geometry == XY_RECT_GEOMETRY) {
+                hitXyRect(ray, hitables[i], T_MIN, tMax, /* out => */ record);
+            }
+
+            // bool hitTriangle(Ray ray, Hitable triangle, float tMax, out HitRecord hitRecord) {
+            // if(hitables[i].geometry == TRIANGLE_GEOMETRY) {
+            //     hitTriangle(ray, hitables[i], tMax, /* out => */ record);
+            // }
+
+            if(record.hasHit) {
+                // inefficient hack to do dynamic hitable colors, textures & proc. textures
+                ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
+                record.color = hitables[i].color;
+
+                hitRecord = record;
+                tMax = record.hitT; // handle depth! ("z-index" :))
+                record.hasHit = false;
+            }
+        }
 
 
         // regular triangle intersection (no bvh)
