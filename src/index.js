@@ -38,7 +38,7 @@ function getTriangleTextureData(mesh) {
     // let scale = 0.5;
 
     // sphere
-    let scale = 0.2;
+    let scale = 0.3;
 
     // bunny
     // let scale = 8;
@@ -113,7 +113,7 @@ async function buildBvhStructure(faces) {
             let nodeId = 1;
             const addBvhParentNodesAndIds = (currentNode, parentNode) => {
                 if(definedNotNull(parentNode)) {
-                    currentNode.parent = parentNode;
+                    // currentNode.parent = parentNode;
                     currentNode.id = nodeId++;
                 }
 
@@ -147,10 +147,13 @@ async function buildBvhStructure(faces) {
             let nodeDepth = 0;
             let bvhArray = [];
 
+            let triCount = 0;
+            let moreThanOneTriInNode = 0;
+
             const iterateBvhNodes = (currentNode) => {
                 let newNode;
 
-                if(currentNode.node0) {
+                if(currentNode.node0 && currentNode.node1) {
                     // node flattened size: 1 + 3 + 1 + 3 + 1 = 9
                     newNode = [
                         // `id: ${currentNode.id}`, // 1
@@ -158,8 +161,8 @@ async function buildBvhStructure(faces) {
                         // `node1 (id: ${currentNode.node1.id}) off: ${currentNode.node1.id * 9}`, // 1
                         currentNode.id, // node id
                         //dubbelkolla detta!? * 3? (rgb för texture) * 9 för att debugga med array-offsets
-                        currentNode.node0.id * 3, // node0 offset
-                        currentNode.node1.id * 3, // node1 offset
+                        currentNode.node0.id * 1, // node0 offset
+                        currentNode.node1.id * 1, // node1 offset
                         ...currentNode.extentsMin, // len = 3
                         ...currentNode.extentsMax // len = 3
                     ];
@@ -170,8 +173,17 @@ async function buildBvhStructure(faces) {
                     // b.setFromArray(this.trianglesArray, triIndex*9+3);
                     // c.setFromArray(this.trianglesArray, triIndex*9+6);
 
+                    // console.log('setting tri data with start index: ' + currentNode.startIndex);
+                    let noOfTris = (currentNode.endIndex - currentNode.startIndex);
+
+                    triCount += noOfTris;
+
+                    if(noOfTris > 1) {
+                        moreThanOneTriInNode++;
+                    }
+
                     newNode = [
-                        currentNode.startIndex, currentNode.startIndex, currentNode.startIndex,
+                        currentNode.startIndex*3, currentNode.endIndex*3, -1, //currentNode.startIndex, currentNode.startIndex,
                         -1, -1, -1, // padding
                         -1, -1, -1 // padding
 
@@ -198,13 +210,9 @@ async function buildBvhStructure(faces) {
 
             iterateBvhNodes(rootNode);
 
-            // console.dir(bvhArray);
-            // console.log('bvhArray length: ' + bvhArray.length);
-            // console.log('bvhArray max id: ' + nodeId);
-            // console.log('calc len: ' + nodeId * 9);
-            //
-            // console.dir(rootNode);
-
+            console.dir(res);
+            console.log('tot no. of tris in bvh struct: ' + triCount);
+            console.log('moreThanOneTriInNode: ' + moreThanOneTriInNode);
             console.log('done building bvh');
 
             return bvhArray;
@@ -310,7 +318,7 @@ async function app({mesh}) {
 
     let triangleData = getTriangleTextureData(mesh);
 
-    let triangleTexHeight = 4; //108;
+    let triangleTexHeight = 1; //8; //4 //108;
     let triangleTexWidth = (triangleData.length / 3) / triangleTexHeight;
 
     // let triangleTexData = [
@@ -322,11 +330,12 @@ async function app({mesh}) {
     // let triangleTexData = [...triangleData];
 
 
+    console.log('triangleData');
     console.dir(triangleData);
-    console.log('no of tris: ' + (triangleData.length / 3));
+    console.log('no of tris (triangleData): ' + (triangleData.length / 9));
 
     console.log('trinagleData len: ' + triangleData.length);
-    console.log(`texture dimensions: ${triangleTexWidth}x${triangleTexHeight}`);
+    console.log(`triangle texture dimensions: ${triangleTexWidth}x${triangleTexHeight}`);
 
     // let triangleTexture = app.createTexture2D(new Float32Array(triangleData), triangleData.length / 3, 1, { // len / 3 because rgb (no alpha chan!)
     let triangleTexture = app.createTexture2D(new Float32Array(triangleData), triangleTexWidth, triangleTexHeight, { // len / 3 because rgb (no alpha chan!)
@@ -348,7 +357,9 @@ async function app({mesh}) {
     console.log('bvhData: ');
     console.dir(bvhData);
 
-    let bvhTexHeight = 9;
+    // bunny
+    // let bvhTexHeight = 4;
+    let bvhTexHeight = 27;
     let bvhTexWidth = (bvhData.length / 3) / bvhTexHeight;
 
     console.log(`bvh text dimensions: ${bvhTexWidth}x${bvhTexHeight}`);
@@ -365,8 +376,6 @@ async function app({mesh}) {
         wrapS: gl.CLAMP_TO_EDGE,
         wrapT: gl.CLAMP_TO_EDGE
     });
-    //
-    // return;
 
     const rayTraceDrawCall = app
         .createDrawCall(rayTraceGlProgram, fullScreenQuadVertArray)
@@ -486,6 +495,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // objLoader.load('assets/models/my_cube.obj', (err, result) => {
     objLoader.load('assets/models/sphere.obj', (err, result) => {
     // objLoader.load('assets/models/bunny.obj', (err, result) => {
+    // objLoader.load('assets/models/skull.obj', (err, result) => {
         console.dir(result);
         app({mesh: result});
 
