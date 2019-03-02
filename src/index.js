@@ -60,9 +60,9 @@ function getTriangleTextureData(mesh) {
     // }
 
     let modelTranslation = {
-        x: 0,//0.4,
-        y: 0,//-0.6,
-        z: 0//-0.4
+        x: 0.3,//0.4,
+        y: -0.1,//-0.6,
+        z: 0.2//-0.4
     }
 
     // bunny
@@ -345,8 +345,8 @@ async function app({mesh}) {
 
     console.log('trinagleData len: ' + triangleData.length);
 
-    let triangleTexHeight = 1024; //1; //8; //4 //108;
-    let triangleTexWidth = 1024; //(triangleData.length / 3) / triangleTexHeight;
+    let triangleTexHeight = 128; //1; //8; //4 //108;
+    let triangleTexWidth = 128; //(triangleData.length / 3) / triangleTexHeight;
 
     console.log(`triangle texture dimensions: ${triangleTexWidth}x${triangleTexHeight}`);
 
@@ -364,8 +364,8 @@ async function app({mesh}) {
     // console.log(`bvh text dimensions: ${bvhTexWidth}x${bvhTexHeight}`);
     //
     // let bvhDataTexture = app.createTexture2D(new Float32Array(bvhData), bvhTexWidth, bvhTexHeight, {
-    let bvhTexHeight = 1024; //27;
-    let bvhTexWidth = 1024; //(bvhData.length / 3) / bvhTexHeight;
+    let bvhTexHeight = 128; //27;
+    let bvhTexWidth = 128; //(bvhData.length / 3) / bvhTexHeight;
 
     console.log(`bvh text dimensions: ${bvhTexWidth}x${bvhTexHeight}`);
     let bvhDataPadded = [
@@ -383,8 +383,8 @@ async function app({mesh}) {
     let triangleTexture = app.createTexture2D(new Float32Array(triangleDataPadded), triangleTexWidth, triangleTexHeight, {
     // let triangleTexture = app.createTexture2D(new Float32Array(triangleData), triangleTexWidth, triangleTexHeight, {
         type: gl.FLOAT,
-        // interalFormat: gl.RGBA16F,
-        interalFormat: gl.RGBA32F,
+        interalFormat: gl.RGBA16F,
+        // interalFormat: gl.RGBA32jF,
         format: gl.RGB,
 
         generateMipmaps: false,
@@ -396,8 +396,8 @@ async function app({mesh}) {
 
     let bvhDataTexture = app.createTexture2D(new Float32Array(bvhDataPadded), bvhTexWidth, bvhTexHeight, {
         type: gl.FLOAT,
-        // interalFormat: gl.RGBA16F,
-        interalFormat: gl.RGBA32F,
+        interalFormat: gl.RGBA16F,
+        // interalFormat: gl.RGBA32F,
         format: gl.RGB,
 
         generateMipmaps: false,
@@ -524,8 +524,8 @@ async function app({mesh}) {
 
 document.addEventListener('DOMContentLoaded', () => {
     let objLoader = new ObjLoader();
-    objLoader.load('assets/models/sphere.obj', (err, result) => {
-    // objLoader.load('assets/models/my_cube.obj', (err, result) => {
+    // objLoader.load('assets/models/sphere.obj', (err, result) => {
+    objLoader.load('assets/models/my_cube.obj', (err, result) => {
     // objLoader.load('assets/models/octahedron.obj', (err, result) => {
     // objLoader.load('assets/models/teapot.obj', (err, result) => {
     // objLoader.load('assets/models/bunny.obj', (err, result) => {

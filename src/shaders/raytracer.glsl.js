@@ -8,7 +8,7 @@ const getSource = ({options, ObjectList}) =>
     #define T_MIN .001
     #define T_MAX FLT_MAX
 
-    #define MAX_HIT_DEPTH 15//50
+    #define MAX_HIT_DEPTH 5 //15 //50
     #define NUM_SAMPLES ${options.numSamples}
 
     #define INFINITY 1000000.0
@@ -344,6 +344,7 @@ const getSource = ({options, ObjectList}) =>
     struct Ray {
         vec3 origin;
         vec3 dir;
+        vec3 invDir;
     };
 
     vec3 pointOnRay(Ray ray, float t) {
@@ -360,14 +361,18 @@ const getSource = ({options, ObjectList}) =>
         vec3 offset = camera.u * rd.x + camera.v * rd.y;
 
         if(camera.lensRadius > 0.) { // camera with aperture
+            vec3 dir = camera.lowerLeft + uv.x * camera.horizontal + uv.y * camera.vertical - camera.origin - offset;
             return Ray(
                 camera.origin + offset,
-                camera.lowerLeft + uv.x * camera.horizontal + uv.y * camera.vertical - camera.origin - offset
+                dir,
+                1./dir
             );
         } else { // regular camera
+            vec3 dir = camera.lowerLeft + uv.x * camera.horizontal + uv.y * camera.vertical;
             return Ray(
                 camera.origin,
-                camera.lowerLeft + uv.x * camera.horizontal + uv.y * camera.vertical
+                dir,
+                1./dir
             );
         }
     }
@@ -390,6 +395,7 @@ const getSource = ({options, ObjectList}) =>
         if(hitRecord.material.type == LAMBERT) {
             // get lambertian random reflection direction
             ray.dir = hitRecord.normal + randomPointInUnitSphere();
+            ray.invDir = 1./ray.dir;
             color *= hitRecord.material.albedo * hitRecord.color;
             return true;
         }
@@ -403,6 +409,7 @@ const getSource = ({options, ObjectList}) =>
             // dot(a, b) > 0 if a and b are pointing "in the same direction"
             if(dot(dir, hitRecord.normal) > 0.) {
                 ray.dir = dir;
+                ray.invDir = 1./ray.dir;
                 color *= hitRecord.material.albedo * hitRecord.color;
                 return true;
             }
@@ -437,8 +444,10 @@ const getSource = ({options, ObjectList}) =>
             if(rand() < reflectProb) {
                 vec3 reflected = reflect(ray.dir, hitRecord.normal);
                 ray.dir = reflected;
+                ray.invDir = 1./ray.dir;
             } else {
                 ray.dir = refracted;
+                ray.invDir = 1./ray.dir;
             }
 
             color *= hitRecord.material.albedo * hitRecord.color;
@@ -490,45 +499,138 @@ const getSource = ({options, ObjectList}) =>
         vec3 normal;
     };
 
-    bool hitBbox(vec3 boxMin, vec3 boxMax, Ray ray, out HitRecord hitRecord) {
-        vec3 invDir = 1. / ray.dir;
+    // bool hitBbox(vec3 boxMin, vec3 boxMax, Ray ray, out HitRecord hitRecord) {
+    //     // vec3 invDir = 1. / ray.dir;
+    //
+    //     vec3 tBottom = ray.invDir * (boxMin - ray.origin);
+    //     vec3 tTop = ray.invDir * (boxMax - ray.origin);
+    //
+    //     vec3 tmin = min(tTop, tBottom);
+    //     vec3 tmax = max(tTop, tBottom);
+    //
+    //     vec2 t = max(tmin.xx, tmin.yz);
+    //     float t0 = max(t.x, t.y);
+    //
+    //     t = min(tmax.xx, tmax.yz);
+    //     float t1 = min(t.x, t.y);
+    //
+    //     if(t1 > max(t0, 0.0)) {
+    //         // hitRecord.hitT = t1;
+    //         return t1;
+    //     } else {
+    //         return t0;
+    //     }
+    // }
 
-        vec3 tBottom = invDir * (boxMin - ray.origin);
-        vec3 tTop = invDir * (boxMax - ray.origin);
+    vec2 calcTValues(float minVal, float maxVal, float rayOrigin, float rayInvDir) {
+		if(rayInvDir >= 0.) {
+			return vec2((minVal - rayOrigin) * rayInvDir, (maxVal - rayInvDir) * rayInvDir);
+		} else {
+			return vec2((maxVal - rayOrigin) * rayInvDir, (minVal - rayInvDir) * rayInvDir);
+		}
+	}
 
-        vec3 tmin = min(tTop, tBottom);
-        vec3 tmax = max(tTop, tBottom);
+    float hitBvhBBox(vec3 extentsMin, vec3 extentsMax, Ray ray) {
+		// let [tmin, tmax]:number[] = BVH.calcTValues(node.extentsMin[0], node.extentsMax[0], rayOrigin.x, invRayDirection.x);
+        vec2 tMinMax = calcTValues(extentsMin.x, extentsMax.x, ray.origin.x, ray.invDir.x);
+        float tmin = tMinMax.x;
+        float tmax = tMinMax.y;
 
-        vec2 t = max(tmin.xx, tmin.yz);
-        float t0 = max(t.x, t.y);
+		// let [tymin, tymax]:number[] = BVH.calcTValues(node.extentsMin[1], node.extentsMax[1], rayOrigin.y, invRayDirection.y);
+        vec2 tyMinMax = calcTValues(extentsMin.y, extentsMax.y, ray.origin.y, ray.invDir.y);
+        float tymin = tyMinMax.x;
+        float tymax = tyMinMax.y;
 
-        t = min(tmax.xx, tmax.yz);
-        float t1 = min(t.x, t.y);
+		// if(tmin > tymax || tymin > tmax) return false;
+        if(tmin > tymax || tymin > tmax)
+            return T_MAX;
 
-        if(t1 > max(t0, 0.0)) {
-            // hitRecord.hitT = t1;
-            return true;
-        } else {
-            return false;
-        }
-    }
+		// These lines also handle the case where tmin or tmax is NaN
+		// (result of 0 * Infinity). x !== x returns true if x is NaN
+		if(tymin > tmin || tmin != tmin) {
+			tmin = tymin;
+		}
 
-    float hitBvhBBox(vec3 minCorner, vec3 maxCorner, Ray ray) {
-        vec3 invDir = 1. / ray.dir;
+		if(tymax < tmax || tmax != tmax) {
+			tmax = tymax;
+		}
 
-    	vec3 near = (minCorner - ray.origin) * invDir;
-    	vec3 far  = (maxCorner - ray.origin) * invDir;
+        // let [tzmin, tzmax]:number[] = BVH.calcTValues(node.extentsMin[2], node.extentsMax[2], rayOrigin.z, invRayDirection.z);
+        vec2 tzMinMax = calcTValues(extentsMin.z, extentsMax.z, ray.origin.z, ray.invDir.z);
+        float tzmin = tzMinMax.x;
+        float tzmax = tzMinMax.y;
 
-    	vec3 tmin = min(near, far);
-    	vec3 tmax = max(near, far);
+		// if(tmin > tzmax || tzmin > tmax) return false;
+        if(tmin > tzmax || tzmin > tmax)
+            return T_MAX;
 
-    	float t0 = max( max(tmin.x, tmin.y), tmin.z);
-    	float t1 = min( min(tmax.x, tmax.y), tmax.z);
+		if(tzmax < tmax || tmax != tmax) {
+			tmax = tzmax;
+		}
 
-    	if (t0 > t1 || t1 < 0.0) return INFINITY;
+		//return point closest to the ray (positive side)
+		// if(tmax < 0) return false;
+        if(tmax < 0.) //return false;
+            return T_MAX;
 
-    	return t0;
-    }
+		return tmin;
+
+		// let [tzmin, tzmax]:number[] = BVH.calcTValues(node.extentsMin[2], node.extentsMax[2], rayOrigin.z, invRayDirection.z);
+        //
+		// if(tmin > tzmax || tzmin > tmax) return false;
+        //
+		// if(tzmax < tmax || tmax !== tmax) {
+		// 	tmax = tzmax;
+		// }
+        //
+		// //return point closest to the ray (positive side)
+		// if(tmax < 0) return false;
+        //
+		// return true;
+	}
+
+
+    // float hitBvhBBox(vec3 boxMax2, vec3 boxMin2, Ray ray) {
+    //     vec3 boxMax = boxMin2;
+    //     vec3 boxMin = boxMax2;
+    //
+    //     vec3 tMin = (boxMin - ray.origin) * ray.invDir;
+    //     vec3 tMax = (boxMax - ray.origin) * ray.invDir;
+    //
+    //     vec3 t1 = min(tMin, tMax);
+    //     vec3 t2 = max(tMin, tMax);
+    //
+    //     // compute the near and far intersections of the cube (stored in the x and y components) using the slab method
+    //     // no intersection means vec.x > vec.y (really tNear > tFar)
+    //     float tNear = max(max(t1.x, t1.y), t1.z);
+    //     float tFar = min(min(t2.x, t2.y), t2.z);
+    //
+    //     if(tNear > tFar)
+    //         return T_MAX;
+    //
+    //     return tNear;
+    //
+    //     // return vec2(tNear, tFar);
+    // }
+
+
+    // float hitBvhBBox(vec3 minCorner, vec3 maxCorner, Ray ray) {
+    //     // vec3 invDir = 1. / ray.dir;
+    //
+    // 	vec3 near = (minCorner - ray.origin) * ray.invDir;
+    // 	vec3 far  = (maxCorner - ray.origin) * ray.invDir;
+    //
+    // 	vec3 tmin = min(near, far);
+    // 	vec3 tmax = max(near, far);
+    //
+    // 	float t0 = max( max(tmin.x, tmin.y), tmin.z);
+    // 	float t1 = min( min(tmax.x, tmax.y), tmax.z);
+    //
+    // 	// if (t0 > t1 || t1 < 0.0)
+    //     //     return T_MAX;
+    //
+    // 	return t0;
+    // }
 
 
     void hitSphere(Ray ray, Hitable hitable, float tMax, out HitRecord hitRecord) {
@@ -754,8 +856,7 @@ const getSource = ({options, ObjectList}) =>
      * World
      */
 
-    void hitWorld(Ray ray, Hitable hitables[${ObjectList.length()}], float t, out HitRecord hitRecord) {
-        float tMax = t;
+    void hitWorld(Ray ray, Hitable hitables[${ObjectList.length()}], float tMax, out HitRecord hitRecord) {
         hitRecord.hasHit = false;
 
         HitRecord record;
@@ -817,6 +918,10 @@ const getSource = ({options, ObjectList}) =>
 
         while (true) {
             if (currentStackData.rayT < tMax) {
+                ///////////
+                // tMax = currentStackData.rayT;
+                ///////////
+
                 float node0Offset = currentNode.meta.y;
                 float node1Offset = currentNode.meta.z;
 
@@ -1068,38 +1173,38 @@ const getSource = ({options, ObjectList}) =>
 
 
 
-        for(int i = 0; i < ${ObjectList.length()}; i++) {
-            //samples: 500 / 500, render time: 99.8s
-            // if(hitables[i].geometry == SPHERE_GEOMETRY
-            //     && hitBbox(hitables[i].bMin, hitables[i].bMax, ray, /* out => */ record))
-            // {
-            //     hitSphere(ray, hitables[i], tMax, /* out => */ record);
-            // }
-
-            // samples: 500 / 500, render time: 96.8s
-            if(hitables[i].geometry == SPHERE_GEOMETRY) {
-                hitSphere(ray, hitables[i], tMax, /* out => */ record);
-            }
-
-            if(hitables[i].geometry == XY_RECT_GEOMETRY) {
-                hitXyRect(ray, hitables[i], T_MIN, tMax, /* out => */ record);
-            }
-
-            // bool hitTriangle(Ray ray, Hitable triangle, float tMax, out HitRecord hitRecord) {
-            // if(hitables[i].geometry == TRIANGLE_GEOMETRY) {
-            //     hitTriangle(ray, hitables[i], tMax, /* out => */ record);
-            // }
-
-            if(record.hasHit) {
-                // inefficient hack to do dynamic hitable colors, textures & proc. textures
-                ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
-                record.color = hitables[i].color;
-
-                hitRecord = record;
-                tMax = record.hitT; // handle depth! ("z-index" :))
-                record.hasHit = false;
-            }
-        }
+        // for(int i = 0; i < ${ObjectList.length()}; i++) {
+        //     //samples: 500 / 500, render time: 99.8s
+        //     // if(hitables[i].geometry == SPHERE_GEOMETRY
+        //     //     && hitBbox(hitables[i].bMin, hitables[i].bMax, ray, /* out => */ record))
+        //     // {
+        //     //     hitSphere(ray, hitables[i], tMax, /* out => */ record);
+        //     // }
+        //
+        //     // samples: 500 / 500, render time: 96.8s
+        //     if(hitables[i].geometry == SPHERE_GEOMETRY) {
+        //         hitSphere(ray, hitables[i], tMax, /* out => */ record);
+        //     }
+        //
+        //     if(hitables[i].geometry == XY_RECT_GEOMETRY) {
+        //         hitXyRect(ray, hitables[i], T_MIN, tMax, /* out => */ record);
+        //     }
+        //
+        //     // bool hitTriangle(Ray ray, Hitable triangle, float tMax, out HitRecord hitRecord) {
+        //     // if(hitables[i].geometry == TRIANGLE_GEOMETRY) {
+        //     //     hitTriangle(ray, hitables[i], tMax, /* out => */ record);
+        //     // }
+        //
+        //     if(record.hasHit) {
+        //         // inefficient hack to do dynamic hitable colors, textures & proc. textures
+        //         ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
+        //         record.color = hitables[i].color;
+        //
+        //         hitRecord = record;
+        //         tMax = record.hitT; // handle depth! ("z-index" :))
+        //         record.hasHit = false;
+        //     }
+        // }
 
 
         // regular triangle intersection (no bvh)
@@ -1281,9 +1386,9 @@ const getSource = ({options, ObjectList}) =>
         // fragColor = vec4(bajs.maxCoords, 1.);
 
         // fragColor = vec4(
-        //     0.5091178284416199,
-        //     0.6091178522834778,
-        //     0.5091178284416199,
+        //     0.6000010238418579,
+        //     0.20000100298023224,
+        //     0.500001,
         //     1.0
         // );
 
