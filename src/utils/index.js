@@ -64,14 +64,14 @@ const animationFrame = (render) => {
     let cancelled = false;
 
     (function frame() {
-        if(cancelled) {
-            return;
-        }
-
         render({
             time: Date.now() - startTime,
             frameCount: ++frameCount
         });
+
+        if(cancelled) {
+            return;
+        }
 
         requestAnimationFrame(frame);
     })();

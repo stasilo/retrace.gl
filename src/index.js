@@ -38,7 +38,7 @@ function getTriangleTextureData(mesh) {
     // let scale = 0.5;
 
     // sphere
-    let scale = 0.3;
+    let scale = 0.2;
 
     // diamond
     // let scale = 0.01;
@@ -60,9 +60,9 @@ function getTriangleTextureData(mesh) {
     // }
 
     let modelTranslation = {
-        x: 0.3,//0.4,
-        y: -0.1,//-0.6,
-        z: 0.2//-0.4
+        x: -0.3,//0.4,
+        y: -0.3,//-0.6,
+        z: -0.5//-0.4
     }
 
     // bunny
@@ -235,7 +235,7 @@ async function buildBvhStructure(faces) {
         });
 }
 
-async function app({mesh}) {
+async function app({triangleData, bvhData}) {
     const params = queryString.parse(location.search);
     const canvas = document.getElementById('regl-canvas');
     const gl = canvas.getContext('webgl2');
@@ -311,7 +311,7 @@ async function app({mesh}) {
      * raytrace draw call
      */
 
-    let scene = createMeshScene({mesh});
+    let scene = createMeshScene();
 
     const rayTraceGlProgram = app.createProgram(vertShader, rayTraceShader({
         options: {
@@ -337,26 +337,7 @@ async function app({mesh}) {
 
     // uniforms
 
-    let triangleData = getTriangleTextureData(mesh);
 
-    console.log('triangleData');
-    console.dir(triangleData);
-    console.log('no of tris (triangleData): ' + (triangleData.length / 9));
-
-    console.log('trinagleData len: ' + triangleData.length);
-
-    let triangleTexHeight = 128; //1; //8; //4 //108;
-    let triangleTexWidth = 128; //(triangleData.length / 3) / triangleTexHeight;
-
-    console.log(`triangle texture dimensions: ${triangleTexWidth}x${triangleTexHeight}`);
-
-
-    // return;
-
-    let [bvhObj, bvhData] = await buildBvhStructure(triangleData);
-    console.log('bvhData: ');
-    console.dir(bvhData);
-    console.dir(bvhObj);
 
     // let bvhTexHeight = 27;
     // let bvhTexWidth = (bvhData.length / 3) / bvhTexHeight;
@@ -364,27 +345,32 @@ async function app({mesh}) {
     // console.log(`bvh text dimensions: ${bvhTexWidth}x${bvhTexHeight}`);
     //
     // let bvhDataTexture = app.createTexture2D(new Float32Array(bvhData), bvhTexWidth, bvhTexHeight, {
-    let bvhTexHeight = 128; //27;
-    let bvhTexWidth = 128; //(bvhData.length / 3) / bvhTexHeight;
+    let bvhTexHeight = 256; //27;
+    let bvhTexWidth = 256; //(bvhData.length / 3) / bvhTexHeight;
+
+    let triangleTexHeight = 128; //1; //8; //4 //108;
+    let triangleTexWidth = 128; //(triangleData.length / 3) / triangleTexHeight;
+
+    console.log(`triangle texture dimensions: ${triangleTexWidth}x${triangleTexHeight}`);
 
     console.log(`bvh text dimensions: ${bvhTexWidth}x${bvhTexHeight}`);
     let bvhDataPadded = [
         ...bvhData,
         ...Array((bvhTexHeight*3)*(bvhTexWidth*3) - (bvhData.length/9))
-            .fill(-1)
+            .fill(-1337)
     ];
 
     let triangleDataPadded = [
         ...triangleData,
         ...Array((triangleTexWidth*3)*(triangleTexHeight*3) - (triangleData.length/9))
-            .fill(-1)
+            .fill(-1337)
     ];
 
     let triangleTexture = app.createTexture2D(new Float32Array(triangleDataPadded), triangleTexWidth, triangleTexHeight, {
     // let triangleTexture = app.createTexture2D(new Float32Array(triangleData), triangleTexWidth, triangleTexHeight, {
         type: gl.FLOAT,
-        interalFormat: gl.RGBA16F,
-        // interalFormat: gl.RGBA32jF,
+        // interalFormat: gl.RGBA16F,
+        interalFormat: gl.RGBA32F,
         format: gl.RGB,
 
         generateMipmaps: false,
@@ -396,8 +382,8 @@ async function app({mesh}) {
 
     let bvhDataTexture = app.createTexture2D(new Float32Array(bvhDataPadded), bvhTexWidth, bvhTexHeight, {
         type: gl.FLOAT,
-        interalFormat: gl.RGBA16F,
-        // interalFormat: gl.RGBA32F,
+        // interalFormat: gl.RGBA16F,
+        interalFormat: gl.RGBA32F,
         format: gl.RGB,
 
         generateMipmaps: false,
@@ -474,13 +460,15 @@ async function app({mesh}) {
                 .uniform('uSeed', vec2.fromValues(random(), random()))
                 .draw();
 
-            // copy rendered result in traceFbo to accumFbo frambuffer
-            // for blending in the next raytrace draw call
 
-            app.readFramebuffer(traceFbo)
-                .drawFramebuffer(accumFbo)
-                .clear()
-                .blitFramebuffer(PicoGL.COLOR_BUFFER_BIT);
+
+            ////////////////
+            app.drawFramebuffer(accumFbo)
+                .clear();
+
+            renderDrawCall
+                // .texture('traceTexture', traceFbo.colorAttachments[0])
+                .draw();
 
             // draw rendered result in traceFbo to screen
             app.defaultDrawFramebuffer()
@@ -488,6 +476,26 @@ async function app({mesh}) {
 
             renderDrawCall
                 .draw();
+
+
+            ///////////////////////////////////////////////////////////
+
+            // copy rendered result in traceFbo to accumFbo frambuffer
+            // for blending in the next raytrace draw call
+
+            // app.readFramebuffer(traceFbo)
+            //     .drawFramebuffer(accumFbo)
+            //     .clear()
+            //     .blitFramebuffer(PicoGL.COLOR_BUFFER_BIT);
+            //
+            // // draw rendered result in traceFbo to screen
+            // app.defaultDrawFramebuffer()
+            //     .clear();
+            //
+            // renderDrawCall
+            //     .draw();
+
+            ///////////////////////////////////////////////////////////
         });
     }
 
@@ -524,14 +532,31 @@ async function app({mesh}) {
 
 document.addEventListener('DOMContentLoaded', () => {
     let objLoader = new ObjLoader();
-    // objLoader.load('assets/models/sphere.obj', (err, result) => {
-    objLoader.load('assets/models/my_cube.obj', (err, result) => {
-    // objLoader.load('assets/models/octahedron.obj', (err, result) => {
-    // objLoader.load('assets/models/teapot.obj', (err, result) => {
-    // objLoader.load('assets/models/bunny.obj', (err, result) => {
-    // objLoader.load('assets/models/skull.obj', (err, result) => {
-        console.dir(result);
-        app({mesh: result});
+    objLoader.load('assets/models/sphere.obj', async (err, mesh) => {
+    // objLoader.load('assets/models/my_cube.obj', async (err, mesh) => {
+    // objLoader.load('assets/models/octahedron.obj', async (err, mesh) => {
+    // objLoader.load('assets/models/teapot.obj', async (err, mesh) => {
+    // objLoader.load('assets/models/bunny.obj', async (err, mesh) => {
+    // objLoader.load('assets/models/skull.obj', async (err, mesh) => {
+        console.dir(mesh);
+
+        let triangleData = getTriangleTextureData(mesh);
+
+        console.log('triangleData');
+        console.dir(triangleData);
+        console.log('no of tris (triangleData): ' + (triangleData.length / 9));
+
+        console.log('trinagleData len: ' + triangleData.length);
+
+
+        // return;
+
+        let [bvhObj, bvhData] = await buildBvhStructure(triangleData);
+        console.log('bvhData: ');
+        console.dir(bvhData);
+        console.dir(bvhObj);
+
+        app({triangleData, bvhData});
 
         // if(err){
         // /*Handle error here*/
