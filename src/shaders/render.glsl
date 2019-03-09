@@ -1,9 +1,11 @@
 #version 300 es
 precision highp float;
+precision highp int;
+precision highp sampler2D;
 
 uniform sampler2D traceTexture;
 
-out vec4 fragColor; 
+out vec4 fragColor;
 in vec2 uv;
 
 void main() {

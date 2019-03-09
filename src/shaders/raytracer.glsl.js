@@ -3,12 +3,14 @@ import {definedNotNull} from '../utils';
 const getSource = ({options, ObjectList}) =>
 `   #version 300 es
     precision highp float;
+    precision highp int;
+    precision highp sampler2D;
 
     #define FLT_MAX 3.402823466e+38
     #define T_MIN 0.0001 //.001
     #define T_MAX 10000.0
 
-    #define MAX_HIT_DEPTH 5 //15 //50
+    #define MAX_HIT_DEPTH 4//4 //15 //50
     #define NUM_SAMPLES ${options.numSamples}
 
     // #define INFINITY
@@ -164,7 +166,9 @@ const getSource = ({options, ObjectList}) =>
     struct BvhStackData {
         int id;
         float rayT;
-    };
+    } stackLevels[24*4];
+
+    BvhStackData slData0, slData1, tmp;
 
     BvhNode getBvhNode(int index) {
         float offset = float(index) * 3.;
@@ -461,14 +465,15 @@ const getSource = ({options, ObjectList}) =>
     }
 
     // amass emissive color
-    vec3 emit(HitRecord hitRecord) {
+    bool emit(HitRecord hitRecord, out vec3 color) {
         vec3 emittedColor = vec3(0.);
 
         if(hitRecord.material.type == DIFFUSE_EMISSIVE) {
             emittedColor = hitRecord.material.emissiveIntensity * hitRecord.color;
+            return true;
         }
 
-        return emittedColor;
+        return false;
     }
 
     /*
@@ -530,25 +535,55 @@ const getSource = ({options, ObjectList}) =>
     	return result;
     }
 
-    // https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
-    float hitBvhBBox(vec3 minCorner, vec3 maxCorner, Ray ray) {
-        vec3 rayOrigin = ray.origin;
-        vec3 invDir = 1./ray.invDir;
+    float hitBvhBBox( vec3 minCorner, vec3 maxCorner, Ray r) {
+    	vec3 near = (minCorner - r.origin) * r.invDir;
+    	vec3 far  = (maxCorner - r.origin) * r.invDir;
 
-        vec3 near = (minCorner - rayOrigin) * invDir;
-        vec3 far  = (maxCorner - rayOrigin) * invDir;
+    	vec3 tmin = min(near, far);
+    	vec3 tmax = max(near, far);
 
-        vec3 tmin = min(near, far);
-        vec3 tmax = max(near, far);
+    	float t0 = max( max(tmin.x, tmin.y), tmin.z);
+    	float t1 = min( min(tmax.x, tmax.y), tmax.z);
 
-        float t0 = max( max(tmin.x, tmin.y), tmin.z);
-        float t1 = min( min(tmax.x, tmax.y), tmax.z);
+    	if (t0 > t1)
+            return T_MAX;
 
-        if (t1 > t0 || t0 < 0.0) return T_MAX;
+        float result = T_MAX;
 
-        return t0;
+    	if (t1 > 0.0) { // if we are inside the box
+    		// normal = -sign(r.dir) * step(tmax, tmax.yzx) * step(tmax, tmax.zxy);
+    		result = t1;
+    	}
 
+    	if (t0 > 0.0) {// if we are outside the box
+    		// normal = -sign(r.dir) * step(tmin.yzx, tmin) * step(tmin.zxy, tmin);
+    		result = t0;
+    	}
+
+    	return result;
     }
+
+    // DENNA FUNGERAR AV NÅGON ANLEDNING!??????
+    // https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
+    // float hitBvhBBox(vec3 minCorner, vec3 maxCorner, Ray ray) {
+    //     vec3 rayOrigin = ray.origin;
+    //     vec3 invDir = 1./ray.invDir;
+    //     // vec3 invDir = ray.invDir;
+    //
+    //     vec3 near = (minCorner - rayOrigin) * invDir;
+    //     vec3 far  = (maxCorner - rayOrigin) * invDir;
+    //
+    //     vec3 tmin = min(near, far);
+    //     vec3 tmax = max(near, far);
+    //
+    //     float t0 = max( max(tmin.x, tmin.y), tmin.z);
+    //     float t1 = min( min(tmax.x, tmax.y), tmax.z);
+    //
+    //     if (t1 > t0 || t0 < 0.0) return T_MAX;
+    //
+    //     return t0;
+    //
+    // }
 
     void hitSphere(Ray ray, Hitable hitable, float tMax, out HitRecord hitRecord) {
         vec3 oc = ray.origin - hitable.center;
@@ -709,10 +744,6 @@ const getSource = ({options, ObjectList}) =>
         int stackPtr = 0;
         int levelCounter = 0;
 
-        // BvhStackData stackLevels[24];
-        BvhStackData stackLevels[18];
-        BvhStackData slData0, slData1, tmp;
-
         BvhNode currentNode = getBvhNode(0);
         BvhNode node0, node1, tnp;
 
@@ -726,63 +757,60 @@ const getSource = ({options, ObjectList}) =>
 
         while (true) {
             if (currentStackData.rayT < tMax) {
-                // debug
-                if (levelCounter == 3)
-                {
-                    vec3 n = vec3(0.);
-
-                    float d = hitBox(currentNode.minCoords, currentNode.maxCoords, ray, n);
-                    if (d < tMax)
-                    {
-                        record.hasHit = true;
-                        record.hitT = d;
-                        record.normal = normalize(n);
-                        record.material = LambertMaterial;
-                        record.hitPoint = pointOnRay(ray, d);
-
-                        record.color = vec3(0.9, 0.0, 0.0);
-                        record.normal = n;
-
-                        hitRecord = record;
-                        record.hasHit = false;
-                        tMax = record.hitT; // handle depth! ("z-index" :))
-
-                        break;
-                    }
-                }
+                // // debug
+                // if (levelCounter == 5) {
+                //     vec3 n = vec3(0.);
+                //
+                //     float d = hitBox(currentNode.minCoords, currentNode.maxCoords, ray, n);
+                //     if (d < tMax) {
+                //         record.hasHit = true;
+                //         record.hitT = d;
+                //         record.normal = normalize(n);
+                //         record.material = LambertMaterial;
+                //         record.hitPoint = pointOnRay(ray, d);
+                //
+                //         record.color = vec3(0.9, 0.0, 0.0);
+                //         record.normal = n;
+                //
+                //         hitRecord = record;
+                //         record.hasHit = false;
+                //         tMax = d; //record.hitT; // handle depth! ("z-index" :))
+                //
+                //         break;
+                //     }
+                // }
 
                 float node0Offset = currentNode.meta.y;
                 float node1Offset = currentNode.meta.z;
 
-                if (node1Offset == -1.) { // this is a leaf node
-                    int noOfTrisInNode = int(currentNode.meta.y) - int(currentNode.meta.x);
-                    for(int triIdx = 0; triIdx < noOfTrisInNode; triIdx += 3) {
-                        float triangleOffset = currentNode.meta.x + float(triIdx);
+                if (node1Offset < 0.) { // this is a leaf node
+                    // each triangle's data is encoded in 8 rgba(or xyzw) texture slots
+                    // id = 8.0 * (-currentBoxNode.branch_A_Index - 1.0);
 
-                        float xOffset = mod(triangleOffset, triTexWidth);
-                        float yOffset = floor(triangleOffset * oneOverTriTexWidth);
+                    float triangleOffset = 3. * (-node1Offset - 1.); // + float(triIdx);
 
-                        vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+                    float xOffset = mod(triangleOffset, triTexWidth);
+                    float yOffset = floor(triangleOffset * oneOverTriTexWidth);
 
-                        xOffset = mod(triangleOffset + 1., triTexWidth);
-                        yOffset = floor((triangleOffset + 1.) * oneOverTriTexWidth);
+                    vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                        vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+                    xOffset = mod(triangleOffset + 1., triTexWidth);
+                    yOffset = floor((triangleOffset + 1.) * oneOverTriTexWidth);
 
-                        xOffset = mod(triangleOffset + 2., triTexWidth);
-                        yOffset = floor((triangleOffset + 2.) * oneOverTriTexWidth);
+                    vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                        vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+                    xOffset = mod(triangleOffset + 2., triTexWidth);
+                    yOffset = floor((triangleOffset + 2.) * oneOverTriTexWidth);
 
-                        bvhHitTriangle(ray, v0, v1, v2, tMax, /* out => */ record);
+                    vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                        if(record.hasHit) {
-                            record.color = vec3(0.0, 0.9, 0.0);
-                            hitRecord = record;
-                            tMax = record.hitT; // handle depth! ("z-index" :))
-                            record.hasHit = false;
-                        }
+                    bvhHitTriangle(ray, v0, v1, v2, tMax, /* out => */ record);
 
+                    if(record.hasHit) {
+                        record.color = vec3(0.0, 0.9, 0.0);
+                        hitRecord = record;
+                        tMax = record.hitT; // handle depth! ("z-index" :))
+                        record.hasHit = false;
                     }
                 } else { // branch
                     levelCounter++;
@@ -848,6 +876,131 @@ const getSource = ({options, ObjectList}) =>
 
     		skip = false; // reset skip
         }
+
+
+        // while (true) {
+        //     if (currentStackData.rayT < tMax) {
+        //         // // debug
+        //         // if (levelCounter == 5) {
+        //         //     vec3 n = vec3(0.);
+        //         //
+        //         //     float d = hitBox(currentNode.minCoords, currentNode.maxCoords, ray, n);
+        //         //     if (d < tMax) {
+        //         //         record.hasHit = true;
+        //         //         record.hitT = d;
+        //         //         record.normal = normalize(n);
+        //         //         record.material = LambertMaterial;
+        //         //         record.hitPoint = pointOnRay(ray, d);
+        //         //
+        //         //         record.color = vec3(0.9, 0.0, 0.0);
+        //         //         record.normal = n;
+        //         //
+        //         //         hitRecord = record;
+        //         //         record.hasHit = false;
+        //         //         tMax = d; //record.hitT; // handle depth! ("z-index" :))
+        //         //
+        //         //         break;
+        //         //     }
+        //         // }
+        //
+        //         float node0Offset = currentNode.meta.y;
+        //         float node1Offset = currentNode.meta.z;
+        //
+        //         if (node1Offset == -1.) { // this is a leaf node
+        //             int noOfTrisInNode = 1; //int(currentNode.meta.y) - int(currentNode.meta.x);
+        //             for(int triIdx = 0; triIdx < noOfTrisInNode; triIdx += 3) {
+        //                 float triangleOffset = currentNode.meta.x + float(triIdx);
+        //
+        //                 float xOffset = mod(triangleOffset, triTexWidth);
+        //                 float yOffset = floor(triangleOffset * oneOverTriTexWidth);
+        //
+        //                 vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+        //
+        //                 xOffset = mod(triangleOffset + 1., triTexWidth);
+        //                 yOffset = floor((triangleOffset + 1.) * oneOverTriTexWidth);
+        //
+        //                 vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+        //
+        //                 xOffset = mod(triangleOffset + 2., triTexWidth);
+        //                 yOffset = floor((triangleOffset + 2.) * oneOverTriTexWidth);
+        //
+        //                 vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+        //
+        //                 bvhHitTriangle(ray, v0, v1, v2, tMax, /* out => */ record);
+        //
+        //                 if(record.hasHit) {
+        //                     record.color = vec3(0.0, 0.9, 0.0);
+        //                     hitRecord = record;
+        //                     tMax = record.hitT; // handle depth! ("z-index" :))
+        //                     record.hasHit = false;
+        //                 }
+        //             }
+        //         } else { // branch
+        //             levelCounter++;
+        //
+        //             node0 = getBvhNode(int(node0Offset));
+        //             node1 = getBvhNode(int(node1Offset));
+        //
+        //             slData0 = BvhStackData(
+        //                 int(node0Offset),
+        //                 hitBvhBBox(node0.minCoords, node0.maxCoords, ray)
+        //             );
+        //
+        //             slData1 = BvhStackData(
+        //                 int(node1Offset),
+        //                 hitBvhBBox(node1.minCoords, node1.maxCoords, ray)
+        //             );
+        //
+        //             // first sort the branch node data so that 'a' is the smallest
+    	// 			if (slData1.rayT < slData0.rayT) {
+    	// 				tmp = slData1;
+    	// 				slData1 = slData0;
+    	// 				slData0 = tmp;
+        //
+    	// 				tnp = node1;
+    	// 				node1 = node0;
+    	// 				node0 = tnp;
+    	// 			} // branch 'b' now has the larger rayT value of 'a' and 'b'
+        //
+    	// 			if (slData1.rayT < tMax) {// see if branch 'b' (the larger rayT) needs to be processed
+    	// 				currentStackData = slData1;
+    	// 				currentNode = node1;
+    	// 				skip = true; // this will prevent the stackPtr from decreasing by 1
+    	// 			}
+        //
+    	// 			if (slData0.rayT < tMax) { // see if branch 'a' (the smaller rayT) needs to be processed
+        //                 // if larger branch 'b' needed to be processed also,
+        //                 // cue larger branch 'b' for future round & increase stack pointer
+        //
+        //                 if (skip == true) {
+    	// 					stackLevels[stackPtr++] = slData1;
+    	// 				}
+        //
+    	// 				currentStackData = slData0;
+    	// 				currentNode = node0;
+    	// 				skip = true; // this will prevent the stackPtr from decreasing by 1
+    	// 			}
+        //         }
+        //     }
+        //
+        //     if (skip == false) {
+        //         // decrease pointer by 1 (0.0 is root level, 24.0 is maximum depth)
+        //         // & check if went past the root level
+        //         --stackPtr;
+        //         if (stackPtr < 0) {
+        //             break;
+        //         }
+        //
+        //         levelCounter = stackPtr;
+        //
+        //         currentStackData = stackLevels[stackPtr];
+        //         currentNode = getBvhNode(currentStackData.id);
+        //     }
+        //
+    	// 	skip = false; // reset skip
+        // }
+
+        /////////////////////////////////////////////////////////////////////////////////////////////
 
         for(int i = 0; i < ${ObjectList.length()}; i++) {
             //samples: 500 / 500, render time: 99.8s
@@ -981,13 +1134,23 @@ const getSource = ({options, ObjectList}) =>
             // vec3 emitted = emit(hitRecord);
 
             if(hitRecord.hasHit) {
-                vec3 emitted = emit(hitRecord);
+                vec3 emittedColor;
 
-                ray.origin = hitRecord.hitPoint;
-                if(!shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray)) {
-                    color *= emitted;
+                if(emit(hitRecord, /* out => */ emittedColor)) {
+                    color *= emittedColor;
                     break;
                 }
+
+                ray.origin = hitRecord.hitPoint;
+                shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray);
+
+                // vec3 emitted = emit(hitRecord);
+                //
+                // ray.origin = hitRecord.hitPoint;
+                // if(!shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray)) {
+                //     color *= emitted;
+                //     break;
+                // }
             } else {
                 color *= background(ray.dir);
                 break;
@@ -999,6 +1162,15 @@ const getSource = ({options, ObjectList}) =>
         return color;
     }
 
+    // Peter Shirley's tentFilter (Realistic Ray Tracing (2nd Edition, p. 60)
+    float tentFilter(float x) {
+    	if (x < 0.5)  {
+    		return sqrt(2.0 * x) - 1.0;
+        } else {
+            return 1.0 - sqrt(2.0 - (2.0 * x));
+        }
+    }
+
     vec3 trace(Camera camera, Hitable hitables[${ObjectList.length()}]) {
         vec3 color = vec3(0.);
 
@@ -1007,6 +1179,8 @@ const getSource = ({options, ObjectList}) =>
             vec2 rUv = vec2( // jitter pixel location for anti-aliasing effect
                 uv.x + (rand() / uResolution.x),
                 uv.y + (rand() / uResolution.y)
+                // uv.x + (tentFilter(rand()) / uResolution.x),
+                // uv.y + (tentFilter(rand()) / uResolution.y)
             );
 
             // vec3 lookFrom = vec3(0.03-abs(sin(uv.x*cos(uTime*10.)*10.)), 0.9, 2.5+sin(uv.y*2.));

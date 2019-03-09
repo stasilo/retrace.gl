@@ -2,6 +2,7 @@ import PicoGL from 'picogl';
 import {vec3, vec2} from 'gl-matrix';
 
 import spector from 'spectorjs';
+import Stats from 'stats.js';
 import queryString from 'query-string';
 
 import {createCamera} from './camera';
@@ -16,8 +17,13 @@ import renderShader from './shaders/render.glsl';
 // import * as ObjLoader from 'webgl-obj-loader';
 // import parseObj from 'wavefront-obj-parser';
 // import expandObj from 'expand-vertex-data';
+
 import ObjLoader from 'obj-mtl-loader';
 import { BVHBuilderAsync, BVHVector3 } from 'BVH';
+
+import { BVH_Build_Iterative } from './bvh';
+
+import { Vector3 } from 'three';
 
 import {
     flatten,
@@ -33,12 +39,15 @@ import './styles/index.scss';
 
 const defaultMaxSampleCount = 3;
 
-function getTriangleTextureData(mesh) {
+function getTriangleVertexData(mesh) {
     // cube
     // let scale = 0.5;
 
     // sphere
     let scale = 0.2;
+
+    // hand
+    // let scale = 0.05;
 
     // diamond
     // let scale = 0.01;
@@ -59,6 +68,7 @@ function getTriangleTextureData(mesh) {
     //     z: 0//-0.4
     // }
 
+    // sphere
     let modelTranslation = {
         x: -0.3,//0.4,
         y: -0.3,//-0.6,
@@ -70,6 +80,13 @@ function getTriangleTextureData(mesh) {
     //     x: 0.4,
     //     y: -0.6,
     //     z: -0.4
+    // }
+
+    // hand
+    // let modelTranslation = {
+    //     x: 1.5,//0.4,
+    //     y: 0.3,//-0.6,
+    //     z: 0.0//-0.4
     // }
 
 
@@ -235,7 +252,7 @@ async function buildBvhStructure(faces) {
         });
 }
 
-async function app({triangleData, bvhData}) {
+async function raytraceApp({triangleData, bvhData}) {
     const params = queryString.parse(location.search);
     const canvas = document.getElementById('regl-canvas');
     const gl = canvas.getContext('webgl2');
@@ -255,7 +272,10 @@ async function app({triangleData, bvhData}) {
 
     const app = PicoGL.createApp(canvas)
         .noDepthTest()
+        .depthMask(false)
         .noStencilTest()
+        // .scissorTest()
+        // .scissor(0, 0, canvas.width, canvas.height)
         .noScissorTest()
         // enable EXT_color_buffer_float extension
         .floatRenderTargets()
@@ -263,8 +283,8 @@ async function app({triangleData, bvhData}) {
 
 
     // https://webglfundamentals.org/webgl/lessons/webgl-data-textures.html
-    const alignment = 1;
-    gl.pixelStorei(gl.UNPACK_ALIGNMENT, alignment);
+    // const alignment = 1;
+    // gl.pixelStorei(gl.UNPACK_ALIGNMENT, alignment);
 
     // const camera = createCamera({
     //     lookFrom: [3.1, 0.8, 1.9],
@@ -288,7 +308,7 @@ async function app({triangleData, bvhData}) {
     // raytrace framebuffer
     let traceFboColorTarget = app.createTexture2D(app.width, app.height, {
         type: gl.FLOAT,
-        interalFormat: gl.RGBA16F,
+        // interalFormat: gl.RGBA16F,
         // interalFormat: gl.R32F,
         format: gl.RGBA
     });
@@ -299,7 +319,7 @@ async function app({triangleData, bvhData}) {
     // framebuffer for accumulating samples
     let accumFboColorTarget = app.createTexture2D(app.width, app.height, {
         type: gl.FLOAT,
-        interalFormat: gl.RGBA16F,
+        // interalFormat: gl.RGBA16F,
         // interalFormat: gl.R32F,
         format: gl.RGBA
     });
@@ -335,30 +355,29 @@ async function app({triangleData, bvhData}) {
         .createVertexArray()
         .vertexAttributeBuffer(0, positions)
 
+
+    // KOLLA DETTA:
+    // KÖRA RENDERBUFFER ISTÄLLET!?
+    // three render target?
+    // https://stackoverflow.com/questions/2213030/whats-the-concept-of-and-differences-between-framebuffer-and-renderbuffer-in-op
+
     // uniforms
 
+    let bvhTexHeight = 1024;
+    let bvhTexWidth = 1024;
 
-
-    // let bvhTexHeight = 27;
-    // let bvhTexWidth = (bvhData.length / 3) / bvhTexHeight;
-    //
-    // console.log(`bvh text dimensions: ${bvhTexWidth}x${bvhTexHeight}`);
-    //
-    // let bvhDataTexture = app.createTexture2D(new Float32Array(bvhData), bvhTexWidth, bvhTexHeight, {
-    let bvhTexHeight = 256; //27;
-    let bvhTexWidth = 256; //(bvhData.length / 3) / bvhTexHeight;
-
-    let triangleTexHeight = 128; //1; //8; //4 //108;
-    let triangleTexWidth = 128; //(triangleData.length / 3) / triangleTexHeight;
+    let triangleTexHeight = 1024;
+    let triangleTexWidth = 1024;
 
     console.log(`triangle texture dimensions: ${triangleTexWidth}x${triangleTexHeight}`);
-
     console.log(`bvh text dimensions: ${bvhTexWidth}x${bvhTexHeight}`);
-    let bvhDataPadded = [
-        ...bvhData,
-        ...Array((bvhTexHeight*3)*(bvhTexWidth*3) - (bvhData.length/9))
-            .fill(-1337)
-    ];
+
+    // let bvhDataPadded = [
+    //     ...bvhData,
+    //     ...Array((bvhTexHeight*3)*(bvhTexWidth*3) - (bvhData.length/9))
+    //         .fill(-1337)
+    // ];
+    let bvhDataPadded = bvhData;
 
     let triangleDataPadded = [
         ...triangleData,
@@ -370,27 +389,31 @@ async function app({triangleData, bvhData}) {
     // let triangleTexture = app.createTexture2D(new Float32Array(triangleData), triangleTexWidth, triangleTexHeight, {
         type: gl.FLOAT,
         // interalFormat: gl.RGBA16F,
-        interalFormat: gl.RGBA32F,
+        // interalFormat: gl.RGBA32F,
         format: gl.RGB,
 
         generateMipmaps: false,
-        minFilter: gl.LINEAR,
-        magFilter: gl.LINEAR,
+        // minFilter: gl.LINEAR,
+        // magFilter: gl.LINEAR,
+        minFilter: gl.NEAREST,
+        magFilter: gl.NEAREST,
         wrapS: gl.CLAMP_TO_EDGE,
-        wrapT: gl.CLAMP_TO_EDGE
+        wrapT: gl.CLAMP_TO_EDGE,
+        flipY: false
     });
 
     let bvhDataTexture = app.createTexture2D(new Float32Array(bvhDataPadded), bvhTexWidth, bvhTexHeight, {
         type: gl.FLOAT,
         // interalFormat: gl.RGBA16F,
-        interalFormat: gl.RGBA32F,
+        // interalFormat: gl.RGBA32F,
         format: gl.RGB,
 
         generateMipmaps: false,
-        minFilter: gl.LINEAR,
-        magFilter: gl.LINEAR,
+        minFilter: gl.NEAREST,
+        magFilter: gl.NEAREST,
         wrapS: gl.CLAMP_TO_EDGE,
-        wrapT: gl.CLAMP_TO_EDGE
+        wrapT: gl.CLAMP_TO_EDGE,
+        flipY: false
     });
 
     const rayTraceDrawCall = app
@@ -398,8 +421,8 @@ async function app({triangleData, bvhData}) {
         .texture('uTriangleTexture', triangleTexture)
         .texture('uBvhDataTexture', bvhDataTexture)
         .uniform('uBgGradientColors[0]', new Float32Array([
-            ...normedColor('#050505'),
-            ...normedColor('#050505')
+            ...normedColor('#eeeeee'),
+            ...normedColor('#ffffff')
 
             // ...normedColor('#000000'),
             // ...normedColor('#010101')
@@ -436,15 +459,18 @@ async function app({triangleData, bvhData}) {
     // debug info
     let debugEl = document.getElementById('debug');
 
+    // let stats = new Stats();
+    // stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+    // document.body.appendChild(stats.dom);
+
     const staticRender = () => {
         const frame = animationFrame(({time, frameCount}) => {
-            let sampleCount = frameCount;
-
+            // stats.begin();
             debugEl.innerHTML =
-                `samples: ${sampleCount} / ${maxSampleCount},
+                `samples: ${frameCount} / ${maxSampleCount},
                  render time: ${(time*0.001).toFixed(2)}s`;
 
-            if(sampleCount == maxSampleCount) {
+            if(frameCount == maxSampleCount) {
                 frame.cancel();
                 return;
             }
@@ -453,18 +479,16 @@ async function app({triangleData, bvhData}) {
             // samples in accumFbo to traceFbo frambuffer
 
             app.drawFramebuffer(traceFbo)
-                .clear();
+                // .clear();
 
             rayTraceDrawCall
                 .uniform('uTime', time * 0.01)
                 .uniform('uSeed', vec2.fromValues(random(), random()))
                 .draw();
 
-
-
             ////////////////
             app.drawFramebuffer(accumFbo)
-                .clear();
+                // .clear();
 
             renderDrawCall
                 // .texture('traceTexture', traceFbo.colorAttachments[0])
@@ -472,11 +496,12 @@ async function app({triangleData, bvhData}) {
 
             // draw rendered result in traceFbo to screen
             app.defaultDrawFramebuffer()
-                .clear();
+                // .clear();
 
             renderDrawCall
                 .draw();
 
+            // stats.end();
 
             ///////////////////////////////////////////////////////////
 
@@ -509,13 +534,13 @@ async function app({triangleData, bvhData}) {
                 .uniform('uSeed', vec2.fromValues(random(), random()))
                 .draw();
 
-            const now = time;
-            const deltaTime = time - then;
-            then = time;
-
-            const fps = (1000 / deltaTime).toFixed(3);
-            debugEl.innerHTML =
-                `samples per frame: ${shaderSampleCount}, fps: ${fps}`;
+            // const now = time;
+            // const deltaTime = time - then;
+            // then = time;
+            //
+            // const fps = (1000 / deltaTime).toFixed(3);
+            // debugEl.innerHTML =
+            //     `samples per frame: ${shaderSampleCount}, fps: ${fps}`;
         });
     }
 
@@ -533,6 +558,7 @@ async function app({triangleData, bvhData}) {
 document.addEventListener('DOMContentLoaded', () => {
     let objLoader = new ObjLoader();
     objLoader.load('assets/models/sphere.obj', async (err, mesh) => {
+    // objLoader.load('assets/models/hand.obj', async (err, mesh) => {
     // objLoader.load('assets/models/my_cube.obj', async (err, mesh) => {
     // objLoader.load('assets/models/octahedron.obj', async (err, mesh) => {
     // objLoader.load('assets/models/teapot.obj', async (err, mesh) => {
@@ -540,32 +566,92 @@ document.addEventListener('DOMContentLoaded', () => {
     // objLoader.load('assets/models/skull.obj', async (err, mesh) => {
         console.dir(mesh);
 
-        let triangleData = getTriangleTextureData(mesh);
+        let triangleData = getTriangleVertexData(mesh)//.slice(0, 1503*6);
+        let total_number_of_triangles = (triangleData.length / 9);
 
         console.log('triangleData');
         console.dir(triangleData);
-        console.log('no of tris (triangleData): ' + (triangleData.length / 9));
+        console.log('no of tris (triangleData): ' +  total_number_of_triangles);
 
         console.log('trinagleData len: ' + triangleData.length);
+        // 2048 = width of texture, 2048 = height of texture, 4 = r,g,b, and a components
 
+        // aabb_array = new Float32Array(2048 * 2048 * 4);
+        // 2048 = width of texture, 2048 = height of texture, 4 = r,g,b, and a components
+
+        var vp0 = new Vector3();
+        var vp1 = new Vector3();
+        var vp2 = new Vector3();
+
+        var triangle_b_box_min = new Vector3();
+        var triangle_b_box_max = new Vector3();
+        var triangle_b_box_centroid = new Vector3();
+
+        var totalWork = new Uint32Array(total_number_of_triangles);
+        var aabb_array = new Float32Array(1024 * 1024 * 3);
+
+        for (let i = 0; i < total_number_of_triangles; i++) {
+            triangle_b_box_min.set(Infinity, Infinity, Infinity);
+            triangle_b_box_max.set(-Infinity, -Infinity, -Infinity);
+
+            // record vertex positions
+            vp0.set( triangleData[9 * i + 0], triangleData[9 * i + 1], triangleData[9 * i + 2] );
+            vp1.set( triangleData[9 * i + 3], triangleData[9 * i + 4], triangleData[9 * i + 5] );
+            vp2.set( triangleData[9 * i + 6], triangleData[9 * i + 7], triangleData[9 * i + 8] );
+
+            triangle_b_box_min.copy(triangle_b_box_min.min(vp0));
+            triangle_b_box_max.copy(triangle_b_box_max.max(vp0));
+            triangle_b_box_min.copy(triangle_b_box_min.min(vp1));
+            triangle_b_box_max.copy(triangle_b_box_max.max(vp1));
+            triangle_b_box_min.copy(triangle_b_box_min.min(vp2));
+            triangle_b_box_max.copy(triangle_b_box_max.max(vp2));
+
+            triangle_b_box_centroid.set((triangle_b_box_min.x + triangle_b_box_max.x) * 0.5,
+                                        (triangle_b_box_min.y + triangle_b_box_max.y) * 0.5,
+                                        (triangle_b_box_min.z + triangle_b_box_max.z) * 0.5);
+
+            aabb_array[9 * i + 0] = triangle_b_box_min.x;
+            aabb_array[9 * i + 1] = triangle_b_box_min.y;
+            aabb_array[9 * i + 2] = triangle_b_box_min.z;
+            aabb_array[9 * i + 3] = triangle_b_box_max.x;
+            aabb_array[9 * i + 4] = triangle_b_box_max.y;
+            aabb_array[9 * i + 5] = triangle_b_box_max.z;
+            aabb_array[9 * i + 6] = triangle_b_box_centroid.x;
+            aabb_array[9 * i + 7] = triangle_b_box_centroid.y;
+            aabb_array[9 * i + 8] = triangle_b_box_centroid.z;
+
+            totalWork[i] = i;
+        }
+
+        console.log('aabb_array: ');
+        console.dir(aabb_array);
+
+        let buildnodes = BVH_Build_Iterative(totalWork, aabb_array);
+        console.log('buildnodes: ');
+        console.dir(buildnodes);
+
+        // Copy the buildnodes array into the aabb_array
+        for (let n = 0; n < buildnodes.length; n++) {
+            aabb_array[9 * n + 0] = -1; // padding
+            aabb_array[9 * n + 1] = buildnodes[n].idRightChild;
+            aabb_array[9 * n + 2] = buildnodes[n].idLeftChild;
+            aabb_array[9 * n + 3] = buildnodes[n].minCorner.x;
+            aabb_array[9 * n + 4] = buildnodes[n].minCorner.y;
+            aabb_array[9 * n + 5] = buildnodes[n].minCorner.z;
+            aabb_array[9 * n + 6] = buildnodes[n].maxCorner.x;
+            aabb_array[9 * n + 7] = buildnodes[n].maxCorner.y;
+            aabb_array[9 * n + 8] = buildnodes[n].maxCorner.z;
+        }
+
+        raytraceApp({triangleData, bvhData: aabb_array});
 
         // return;
 
-        let [bvhObj, bvhData] = await buildBvhStructure(triangleData);
-        console.log('bvhData: ');
-        console.dir(bvhData);
-        console.dir(bvhObj);
+        // let [bvhObj, bvhData] = await buildBvhStructure(triangleData);
+        // console.log('bvhData: ');
+        // console.dir(bvhData);
+        // console.dir(bvhObj);
 
-        app({triangleData, bvhData});
-
-        // if(err){
-        // /*Handle error here*/
-        // }
-        // var vertices = result.vertices;
-        // var faces = result.faces;
-        // var normals = result.normals;
-        // var textureCoords = result.textureCoords;
-        // var facesMaterialsIndex = result.facesMaterialsIndex;
-        // var materials = result.materials;
+        // raytraceApp({triangleData, bvhData});
     });
 });
