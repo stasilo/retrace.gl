@@ -10,7 +10,7 @@ const getSource = ({options, ObjectList}) =>
     #define T_MIN 0.0001 //.001
     #define T_MAX 10000.0
 
-    #define MAX_HIT_DEPTH 4//4 //15 //50
+    #define MAX_HIT_DEPTH 5//4 //15 //50
     #define NUM_SAMPLES ${options.numSamples}
 
     // #define INFINITY
@@ -143,6 +143,16 @@ const getSource = ({options, ObjectList}) =>
 
         return vec3(x, y, z);
     }
+
+    // better algo from: https://karthikkaranth.me/blog/generating-random-points-in-a-hitable/
+    // (generates a more uniform distribution)
+
+    // vec3 randomPointInUnitSphere() {
+    //     float u = rand();
+    //     vec3 x = normalize(vec3(rand(), rand(), rand()));
+    //     float c = pow(u, 1./3.); //cbrt(u);
+    //     return deNan(x*c);
+    // }
 
     /*
      * BVH
@@ -324,16 +334,6 @@ const getSource = ({options, ObjectList}) =>
         15.
     );
 
-    // better algo from: https://karthikkaranth.me/blog/generating-random-points-in-a-hitable/
-    // (generates a more uniform distribution)
-
-    // vec3 randomPointInUnitSphere() {
-    //     float u = rand();
-    //     vec3 x = normalize(vec3(rand(), rand(), rand()));
-    //     float c = pow(u, 1./3.); //cbrt(u);
-    //     return deNan(x*c);
-    // }
-
     // polynomial approximation of reflectivity by angle
     // by cristophe schlick
 
@@ -465,8 +465,8 @@ const getSource = ({options, ObjectList}) =>
     }
 
     // amass emissive color
-    bool emit(HitRecord hitRecord, out vec3 color) {
-        vec3 emittedColor = vec3(0.);
+    bool emit(HitRecord hitRecord, out vec3 emittedColor) {
+        // vec3 emittedColor = vec3(0.);
 
         if(hitRecord.material.type == DIFFUSE_EMISSIVE) {
             emittedColor = hitRecord.material.emissiveIntensity * hitRecord.color;
@@ -562,28 +562,6 @@ const getSource = ({options, ObjectList}) =>
 
     	return result;
     }
-
-    // DENNA FUNGERAR AV NÅGON ANLEDNING!??????
-    // https://gist.github.com/DomNomNom/46bb1ce47f68d255fd5d
-    // float hitBvhBBox(vec3 minCorner, vec3 maxCorner, Ray ray) {
-    //     vec3 rayOrigin = ray.origin;
-    //     vec3 invDir = 1./ray.invDir;
-    //     // vec3 invDir = ray.invDir;
-    //
-    //     vec3 near = (minCorner - rayOrigin) * invDir;
-    //     vec3 far  = (maxCorner - rayOrigin) * invDir;
-    //
-    //     vec3 tmin = min(near, far);
-    //     vec3 tmax = max(near, far);
-    //
-    //     float t0 = max( max(tmin.x, tmin.y), tmin.z);
-    //     float t1 = min( min(tmax.x, tmax.y), tmax.z);
-    //
-    //     if (t1 > t0 || t0 < 0.0) return T_MAX;
-    //
-    //     return t0;
-    //
-    // }
 
     void hitSphere(Ray ray, Hitable hitable, float tMax, out HitRecord hitRecord) {
         vec3 oc = ray.origin - hitable.center;
@@ -715,7 +693,6 @@ const getSource = ({options, ObjectList}) =>
 
         float t = dot(edge2, qvec) * det;
 
-        // flytta ut detta!
     	if(t > T_MIN && t < tMax) {
             hitRecord.hasHit = true;
             hitRecord.hitT = t;
@@ -734,13 +711,10 @@ const getSource = ({options, ObjectList}) =>
      */
 
     void hitWorld(Ray ray, Hitable hitables[${ObjectList.length()}], float tMax, out HitRecord hitRecord) {
-        hitRecord.hasHit = false;
-
         HitRecord record;
         record.hasHit = false;
+        hitRecord.hasHit = false;
 
-        /// BVH ///////////////////////////////////
-        //
         int stackPtr = 0;
         int levelCounter = 0;
 
@@ -805,9 +779,8 @@ const getSource = ({options, ObjectList}) =>
                     vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
 
                     bvhHitTriangle(ray, v0, v1, v2, tMax, /* out => */ record);
-
                     if(record.hasHit) {
-                        record.color = vec3(0.0, 0.9, 0.0);
+                        record.color = vec3(0.0, 0.5, 0.0);
                         hitRecord = record;
                         tMax = record.hitT; // handle depth! ("z-index" :))
                         record.hasHit = false;
@@ -877,131 +850,6 @@ const getSource = ({options, ObjectList}) =>
     		skip = false; // reset skip
         }
 
-
-        // while (true) {
-        //     if (currentStackData.rayT < tMax) {
-        //         // // debug
-        //         // if (levelCounter == 5) {
-        //         //     vec3 n = vec3(0.);
-        //         //
-        //         //     float d = hitBox(currentNode.minCoords, currentNode.maxCoords, ray, n);
-        //         //     if (d < tMax) {
-        //         //         record.hasHit = true;
-        //         //         record.hitT = d;
-        //         //         record.normal = normalize(n);
-        //         //         record.material = LambertMaterial;
-        //         //         record.hitPoint = pointOnRay(ray, d);
-        //         //
-        //         //         record.color = vec3(0.9, 0.0, 0.0);
-        //         //         record.normal = n;
-        //         //
-        //         //         hitRecord = record;
-        //         //         record.hasHit = false;
-        //         //         tMax = d; //record.hitT; // handle depth! ("z-index" :))
-        //         //
-        //         //         break;
-        //         //     }
-        //         // }
-        //
-        //         float node0Offset = currentNode.meta.y;
-        //         float node1Offset = currentNode.meta.z;
-        //
-        //         if (node1Offset == -1.) { // this is a leaf node
-        //             int noOfTrisInNode = 1; //int(currentNode.meta.y) - int(currentNode.meta.x);
-        //             for(int triIdx = 0; triIdx < noOfTrisInNode; triIdx += 3) {
-        //                 float triangleOffset = currentNode.meta.x + float(triIdx);
-        //
-        //                 float xOffset = mod(triangleOffset, triTexWidth);
-        //                 float yOffset = floor(triangleOffset * oneOverTriTexWidth);
-        //
-        //                 vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
-        //
-        //                 xOffset = mod(triangleOffset + 1., triTexWidth);
-        //                 yOffset = floor((triangleOffset + 1.) * oneOverTriTexWidth);
-        //
-        //                 vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
-        //
-        //                 xOffset = mod(triangleOffset + 2., triTexWidth);
-        //                 yOffset = floor((triangleOffset + 2.) * oneOverTriTexWidth);
-        //
-        //                 vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
-        //
-        //                 bvhHitTriangle(ray, v0, v1, v2, tMax, /* out => */ record);
-        //
-        //                 if(record.hasHit) {
-        //                     record.color = vec3(0.0, 0.9, 0.0);
-        //                     hitRecord = record;
-        //                     tMax = record.hitT; // handle depth! ("z-index" :))
-        //                     record.hasHit = false;
-        //                 }
-        //             }
-        //         } else { // branch
-        //             levelCounter++;
-        //
-        //             node0 = getBvhNode(int(node0Offset));
-        //             node1 = getBvhNode(int(node1Offset));
-        //
-        //             slData0 = BvhStackData(
-        //                 int(node0Offset),
-        //                 hitBvhBBox(node0.minCoords, node0.maxCoords, ray)
-        //             );
-        //
-        //             slData1 = BvhStackData(
-        //                 int(node1Offset),
-        //                 hitBvhBBox(node1.minCoords, node1.maxCoords, ray)
-        //             );
-        //
-        //             // first sort the branch node data so that 'a' is the smallest
-    	// 			if (slData1.rayT < slData0.rayT) {
-    	// 				tmp = slData1;
-    	// 				slData1 = slData0;
-    	// 				slData0 = tmp;
-        //
-    	// 				tnp = node1;
-    	// 				node1 = node0;
-    	// 				node0 = tnp;
-    	// 			} // branch 'b' now has the larger rayT value of 'a' and 'b'
-        //
-    	// 			if (slData1.rayT < tMax) {// see if branch 'b' (the larger rayT) needs to be processed
-    	// 				currentStackData = slData1;
-    	// 				currentNode = node1;
-    	// 				skip = true; // this will prevent the stackPtr from decreasing by 1
-    	// 			}
-        //
-    	// 			if (slData0.rayT < tMax) { // see if branch 'a' (the smaller rayT) needs to be processed
-        //                 // if larger branch 'b' needed to be processed also,
-        //                 // cue larger branch 'b' for future round & increase stack pointer
-        //
-        //                 if (skip == true) {
-    	// 					stackLevels[stackPtr++] = slData1;
-    	// 				}
-        //
-    	// 				currentStackData = slData0;
-    	// 				currentNode = node0;
-    	// 				skip = true; // this will prevent the stackPtr from decreasing by 1
-    	// 			}
-        //         }
-        //     }
-        //
-        //     if (skip == false) {
-        //         // decrease pointer by 1 (0.0 is root level, 24.0 is maximum depth)
-        //         // & check if went past the root level
-        //         --stackPtr;
-        //         if (stackPtr < 0) {
-        //             break;
-        //         }
-        //
-        //         levelCounter = stackPtr;
-        //
-        //         currentStackData = stackLevels[stackPtr];
-        //         currentNode = getBvhNode(currentStackData.id);
-        //     }
-        //
-    	// 	skip = false; // reset skip
-        // }
-
-        /////////////////////////////////////////////////////////////////////////////////////////////
-
         for(int i = 0; i < ${ObjectList.length()}; i++) {
             //samples: 500 / 500, render time: 99.8s
             // if(hitables[i].geometry == SPHERE_GEOMETRY
@@ -1036,8 +884,6 @@ const getSource = ({options, ObjectList}) =>
         }
 
 
-        /////////////////////////////// BVH
-
         // regular triangle intersection (no bvh)
 
         // ivec2 triTexSize = textureSize(uTriangleTexture, 0);
@@ -1063,6 +909,7 @@ const getSource = ({options, ObjectList}) =>
         //
         //     vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
         //
+        //     // have we reached a padded section of the texture?
         //     if(v0.x == v1.x &&
         //         v1.x == v2.x &&
         //         v0.y == v1.y &&
@@ -1261,73 +1108,6 @@ const getSource = ({options, ObjectList}) =>
         #endif
 
         fragColor = vec4(color, 1.);
-
-        // BvhNode test = getBvhNode(0);
-        //
-        // BvhNode bajs = getBvhNode(int(test.meta.z));
-        // fragColor = vec4(bajs.maxCoords, 1.);
-
-        // fragColor = vec4(
-        //     0.6000010238418579,
-        //     0.20000100298023224,
-        //     0.500001,
-        //     1.0
-        // );
-
-        // // should look like
-        // fragColor = vec4(
-        //     0.5091178284416199,
-        //     0.1827109323272705,
-        //     0.5091178284416199,
-        //     1
-        // );
-
-        // BvhNode test = getBvhNode(600);
-        // fragColor = vec4(test.maxCoords, 1.);
-
-        // should look like:
-        // fragColor = vec4(
-        //     0.5091178284416199,
-        //     0.399251328540802,
-        //     0.2676621542701721,
-        //     1.0
-        // );
-
-        // BvhNode test = getBvhNode(2);
-        // fragColor = vec4(test.maxCoords, 1.);
-
-        // fragColor = vec4(
-        //     0.07036020768976212,
-        //     0.1827109323272705,
-        //     0.5091178284416199,
-        //     1.0
-        // );
-
-        // idx 1 (9)
-        // BvhNode test = getBvhNode(1);
-        // fragColor = vec4(test.maxCoords, 1.);
-        // should be purple
-        // fragColor = vec4(0.5091178284416199,
-        //     0.1827109323272705,
-        //     0.5091178284416199,
-        //     1.0
-        // );
-
-        //idx 0
-        // BvhNode test = getBvhNode(0);
-        // fragColor = vec4(test.maxCoords, 1.);
-        // fragColor = vec4(0.5091178284416199,
-        //     0.6091178522834778,
-        //     0.5091178284416199,
-        //     1.0);
-
-        // fragColor = vec4(test.meta, 1.);
-        // fragColor = vec4(0., 9., 3024., 1.);
-
-        // vec3 kaka = texelFetch(uBvhDataTexture, ivec2(2, 0), 0).xyz; // maxCoords first node
-        // fragColor = vec4(kaka, 1.);
-
-
     }
 `;
 

@@ -31,19 +31,19 @@ export default () => {
                 }
             `
         }),
-        // new Sphere({
-        //     center:[0.55, -0.27, -1.5],
-        //     // center:[0.55, 0.5, -1.],
-        //     radius: 0.25,
-        //     material: 'ShinyMetalMaterial',
-        //     color: '#eeeeee'
-        // }),
-        // new Sphere({
-        //     center: [-0.5, 5.4, 2.],
-        //     radius: 2.5,
-        //     material: 'LightMaterial',
-        //     color: '#ffffff'
-        // }),
+        new Sphere({
+            center:[0.55, -0.27, -1.5],
+            // center:[0.55, 0.5, -1.],
+            radius: 0.25,
+            material: 'ShinyMetalMaterial',
+            color: '#eeeeee'
+        }),
+        new Sphere({
+            center: [-0.5, 5.4, 2.],
+            radius: 2.5,
+            material: 'LightMaterial',
+            color: '#ffffff'
+        }),
         // correct normal (triangle visible)
         // new Triangle({
         //     vertices: [

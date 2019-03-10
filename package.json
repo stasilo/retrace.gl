@@ -22,7 +22,6 @@
     },
     "homepage": "",
     "dependencies": {
-        "expand-vertex-data": "^1.1.2",
         "normalize.css": "^8.0.0"
     },
     "devDependencies": {
@@ -66,7 +65,6 @@
         "style-loader": "^0.20.3",
         "three": "^0.102.1",
         "url-loader": "^1.0.1",
-        "webgl-obj-loader": "^2.0.3",
         "webpack": "^4.20.2",
         "webpack-cli": "^3.1.1",
         "webpack-dev-server": "^3.1.10",

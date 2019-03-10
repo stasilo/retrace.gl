@@ -1,349 +1,187 @@
+import { BvhBuildIterative } from './bvh-builder';
 import { Vector3 } from 'three';
 
-/* BVH (Bounding Volume Hierarchy) Iterative Builder */
-/*
-Inspired by: Thanassis Tsiodras (ttsiodras on GitHub)
-https://github.com/ttsiodras/renderer-cuda/blob/master/src/BVH.cpp
-Edited and Ported from C++ to Javascript by: Erich Loftis (erichlof on GitHub)
-https://github.com/erichlof/THREE.js-PathTracing-Renderer
-Cleaned up and made engine agnostic by Jakob Stasilowicz
-*/
+// import { vec3 } from 'gl-matrix';
 
-var stackptr = 0;
-var buildnodes = [];
-var leftWorkLists = [];
-var rightWorkLists = [];
-var parentList = [];
-var bestSplit = null;
-var bestAxis = null;
-var rightBranchCounter = 0;
-var leftBranchCounter = 0;
-var leftWorkCounter = 0;
-var rightWorkCounter = 0;
-var nullCodePathReached = false;
-var currentMinCorner = new Vector3();
-var currentMaxCorner = new Vector3();
-var testMinCorner = new Vector3();
-var testMaxCorner = new Vector3();
-var testCentroid = new Vector3();
-var currentCentroid = new Vector3();
-var centroidAverage = new Vector3();
-var LBottomCorner = new Vector3();
-var LTopCorner = new Vector3();
-var RBottomCorner = new Vector3();
-var RTopCorner = new Vector3();
-var k, value, side1, side2, side3, minCost, testSplit;
-var axis, countLeft, countRight;
-var lside1, lside2, lside3, rside1, rside2, rside3;
-var surfaceLeft, surfaceRight, totalCost;
-var currentList;
+export function getObjModelTriangleVertexData(mesh) {
+    // cube
+    // let scale = 0.5;
 
+    // // sphere
+    let scale = 0.2;
 
-export function BVH_FlatNode() {
-    this.idSelf = 0;
-    this.idLeftChild = 0;
-    this.idRightChild = 0;
-    this.idParent = 0;
-    this.minCorner = new Vector3();
-    this.maxCorner = new Vector3();
+    // teapot
+    // let scale = 0.01;
+
+    // hand
+    // let scale = 0.05;
+
+    // diamond
+    // let scale = 0.01;
+
+    // // bunny
+    // let scale = 4;
+
+    // octahedron
+    // let scale = 0.5; //0.5;
+
+    // teapot
+    // let scale = 0.01;
+
+    // box
+    // let modelTranslation = {
+    //     x: 0,//0.4,
+    //     y: -0.5,//-0.6,
+    //     z: 0//-0.4
+    // }
+
+    // // sphere
+    let modelTranslation = {
+        x: -0.3,//0.4,
+        y: -0.3,//-0.6,
+        z: -0.5//-0.4
+    }
+
+    // teapot
+    // let modelTranslation = {
+    //     x: -0.3,//0.4,
+    //     y: -1.5,//-0.6,
+    //     z: -0.5//-0.4
+    // }
+
+    // bunny
+    // let modelTranslation = {
+    //     x: 0.4,
+    //     y: -0.6,
+    //     z: -0.4
+    // }
+
+    // hand
+    // let modelTranslation = {
+    //     x: 1.5,//0.4,
+    //     y: 0.3,//-0.6,
+    //     z: 0.0//-0.4
+    // }
+
+    console.dir(mesh);
+
+    let vertices = mesh.vertices
+        .map(v => v.slice(0,3)
+        .map(vn => vn * scale));
+
+    // get face vertices
+    let faces = mesh.faces.map(face => {
+        let idxs = face.indices
+            .map(i => parseInt(i) - 1);
+
+        return [
+            vertices[idxs[0]],
+            vertices[idxs[1]],
+            vertices[idxs[2]],
+            //-1 // padding for alpha channel (rgbA)
+        ]
+    });
+
+    // encode triangles for texture packing
+
+    let id = 0;
+    let triangles = faces
+        .reduce((tris, face) => {
+            id++;
+
+            return [
+                ...tris,
+                // v0
+                // ...face[0], id, // rgba, a = id
+                face[0][0] + modelTranslation.x, face[0][1] + modelTranslation.y, face[0][2] + modelTranslation.z,
+                // v1 (g)
+                // ...face[1], id,
+                face[1][0] + modelTranslation.x, face[1][1] + modelTranslation.y, face[1][2] + modelTranslation.z,
+                // v2 (b)
+                // ...face[2], id
+                face[2][0] + modelTranslation.x, face[2][1] + modelTranslation.y, face[2][2] + modelTranslation.z
+            ];
+        }, []);
+
+    return triangles;
 }
 
-export function BVH_Create_Node(workList, aabb_array, idParent, isLeftBranch) {
-    // reset variables
-    currentMinCorner.set(Infinity, Infinity, Infinity);
-    currentMaxCorner.set(-Infinity, -Infinity, -Infinity);
-    if (workList.length < 1) {
-        return;
-    } else if (workList.length == 1) {
-        //console.log("worklist.length = 1 code path reached");
-        k = workList[0];
-        // create leaf node
-        let flatLeafNode = new BVH_FlatNode();
-        flatLeafNode.idSelf = buildnodes.length;
-        flatLeafNode.idLeftChild = -k - 1; // a negative value signifies leaf node - used as triangle id
-        flatLeafNode.idRightChild = -1;
-        flatLeafNode.idParent = idParent;
-        flatLeafNode.minCorner.set(aabb_array[9 * k + 0], aabb_array[9 * k + 1], aabb_array[9 * k + 2]);
-        flatLeafNode.maxCorner.set(aabb_array[9 * k + 3], aabb_array[9 * k + 4], aabb_array[9 * k + 5]);
-        buildnodes.push(flatLeafNode);
-        //console.log(flatLeafNode);
-        // if this is a right branch, fill in parent's missing link to this right child,
-        // now that we have assigned this right child an ID
-        if (!isLeftBranch)
-            buildnodes[idParent].idRightChild = flatLeafNode.idSelf;
-        return;
-    } // end else if (workList.length == 1)
-    else if (workList.length == 2) {
-        // construct bounding box around the current workList's triangle AABBs
-        for (let i = 0; i < workList.length; i++) {
-            k = workList[i];
-            testMinCorner.set(aabb_array[9 * k + 0], aabb_array[9 * k + 1], aabb_array[9 * k + 2]);
-            testMaxCorner.set(aabb_array[9 * k + 3], aabb_array[9 * k + 4], aabb_array[9 * k + 5]);
-            currentMinCorner.min(testMinCorner);
-            currentMaxCorner.max(testMaxCorner);
-        }
-        // create inner node
-        let flatnode0 = new BVH_FlatNode();
-        flatnode0.idSelf = buildnodes.length;
-        flatnode0.idLeftChild = buildnodes.length + 1;
-        flatnode0.idRightChild = buildnodes.length + 2;
-        flatnode0.idParent = idParent;
-        flatnode0.minCorner.copy(currentMinCorner);
-        flatnode0.maxCorner.copy(currentMaxCorner);
-        buildnodes.push(flatnode0);
-        //console.log(flatnode0);
-        // if this is a right branch, fill in parent's missing link to this right child,
-        // now that we have assigned this right child an ID
-        if (!isLeftBranch)
-            buildnodes[idParent].idRightChild = flatnode0.idSelf;
-        k = workList[0];
-        // create 'left' leaf node
-        let flatnode1 = new BVH_FlatNode();
-        flatnode1.idSelf = buildnodes.length;
-        flatnode1.idLeftChild = -k - 1;
-        flatnode1.idRightChild = -1;
-        flatnode1.idParent = flatnode0.idSelf;
-        flatnode1.minCorner.set(aabb_array[9 * k + 0], aabb_array[9 * k + 1], aabb_array[9 * k + 2]);
-        flatnode1.maxCorner.set(aabb_array[9 * k + 3], aabb_array[9 * k + 4], aabb_array[9 * k + 5]);
-        buildnodes.push(flatnode1);
-        //console.log(flatnode1);
-        k = workList[1];
-        // create 'right' leaf node
-        let flatnode2 = new BVH_FlatNode();
-        flatnode2.idSelf = buildnodes.length;
-        flatnode2.idLeftChild = -k - 1;
-        flatnode2.idRightChild = -1;
-        flatnode2.idParent = flatnode0.idSelf;
-        flatnode2.minCorner.set(aabb_array[9 * k + 0], aabb_array[9 * k + 1], aabb_array[9 * k + 2]);
-        flatnode2.maxCorner.set(aabb_array[9 * k + 3], aabb_array[9 * k + 4], aabb_array[9 * k + 5]);
-        buildnodes.push(flatnode2);
-        //console.log(flatnode2);
-        return;
-    } // end else if (workList.length == 2)
-    else if (workList.length > 2) {
-        centroidAverage.set(0, 0, 0);
-        // construct bounding box around all of the current workList's triangle AABBs
-        for (let i = 0; i < workList.length; i++) {
-            k = workList[i];
-            testMinCorner.set(aabb_array[9 * k + 0], aabb_array[9 * k + 1], aabb_array[9 * k + 2]);
-            testMaxCorner.set(aabb_array[9 * k + 3], aabb_array[9 * k + 4], aabb_array[9 * k + 5]);
-            currentCentroid.set(aabb_array[9 * k + 6], aabb_array[9 * k + 7], aabb_array[9 * k + 8]);
-            currentMinCorner.min(testMinCorner);
-            currentMaxCorner.max(testMaxCorner);
-            centroidAverage.add(currentCentroid);
-        }
-        centroidAverage.divideScalar(workList.length);
-        // create inner node
-        let flatnode = new BVH_FlatNode();
-        flatnode.idSelf = buildnodes.length;
-        flatnode.idLeftChild = buildnodes.length + 1; // traverse down the left branches first
-        flatnode.idRightChild = 0; // missing link will be filled in soon, don't know how deep the left branches will go
-        flatnode.idParent = idParent;
-        flatnode.minCorner.copy(currentMinCorner);
-        flatnode.maxCorner.copy(currentMaxCorner);
-        buildnodes.push(flatnode);
-        //console.log(flatnode);
-        // if this is a right branch, fill in parent's missing link to this right child,
-        // now that we have assigned this right child an ID
-        if (!isLeftBranch)
-            buildnodes[idParent].idRightChild = flatnode.idSelf;
-        side1 = currentMaxCorner.x - currentMinCorner.x; // length bbox along X-axis
-        side2 = currentMaxCorner.y - currentMinCorner.y; // length bbox along Y-axis
-        side3 = currentMaxCorner.z - currentMinCorner.z; // length bbox along Z-axis
-        minCost = workList.length * (side1 * side2 + side2 * side3 + side3 * side1);
-        // reset bestSplit and bestAxis
-        bestSplit = null;
-        bestAxis = null;
-        // Try all 3 axises X, Y, Z
-        for (let j = 0; j < 3; j++) { // 0 = X, 1 = Y, 2 = Z axis
-            axis = j;
-            // we will try dividing the triangle AABBs based on the current axis
-            // Create left and right bounding box
-            LBottomCorner.set(Infinity, Infinity, Infinity);
-            LTopCorner.set(-Infinity, -Infinity, -Infinity);
-            RBottomCorner.set(Infinity, Infinity, Infinity);
-            RTopCorner.set(-Infinity, -Infinity, -Infinity);
-            // The number of triangle AABBs in the left and right bboxes (needed to calculate SAH cost function)
-            countLeft = 0;
-            countRight = 0;
-            // allocate triangle AABBs in remaining workList list based on their bbox centers
-            // this is a fast O(N) pass, no triangle AABB sorting needed (yet)
-            for (let i = 0; i < workList.length; i++) {
-                k = workList[i];
-                testMinCorner.set(aabb_array[9 * k + 0], aabb_array[9 * k + 1], aabb_array[9 * k + 2]);
-                testMaxCorner.set(aabb_array[9 * k + 3], aabb_array[9 * k + 4], aabb_array[9 * k + 5]);
-                testCentroid.set(aabb_array[9 * k + 6], aabb_array[9 * k + 7], aabb_array[9 * k + 8]);
-                // get bbox center
-                if (axis == 0) { // X-axis
-                    value = testCentroid.x;
-                    testSplit = centroidAverage.x;
-                } else if (axis == 1) { // Y-axis
-                    value = testCentroid.y;
-                    testSplit = centroidAverage.y;
-                } else { // Z-axis
-                    value = testCentroid.z;
-                    testSplit = centroidAverage.z;
-                }
-                if (value < testSplit) {
-                    // if center is smaller then testSplit value, put triangle box in Left bbox
-                    LBottomCorner.min(testMinCorner);
-                    LTopCorner.max(testMaxCorner);
-                    countLeft++;
-                } else {
-                    // else put triangle box in Right bbox
-                    RBottomCorner.min(testMinCorner);
-                    RTopCorner.max(testMaxCorner);
-                    countRight++;
-                }
-            }
-            // First, check for bad partitionings, ie bins with 0 triangle AABBs make no sense
-            if (countLeft < 1 || countRight < 1) continue;
-            // Now use the Surface Area Heuristic to see if this split has a better "cost"
-            // It's a real partitioning, calculate the sides of Left and Right BBox
-            lside1 = LTopCorner.x - LBottomCorner.x;
-            lside2 = LTopCorner.y - LBottomCorner.y;
-            lside3 = LTopCorner.z - LBottomCorner.z;
-            rside1 = RTopCorner.x - RBottomCorner.x;
-            rside2 = RTopCorner.y - RBottomCorner.y;
-            rside3 = RTopCorner.z - RBottomCorner.z;
-            // calculate SurfaceArea of Left and Right BBox
-            surfaceLeft = (lside1 * lside2) + (lside2 * lside3) + (lside3 * lside1);
-            surfaceRight = (rside1 * rside2) + (rside2 * rside3) + (rside3 * rside1);
-            // calculate total cost by multiplying left and right bbox by number of triangle AABBs in each
-            totalCost = (surfaceLeft * countLeft) + (surfaceRight * countRight);
-            // keep track of cheapest split found so far
-            if (totalCost < minCost) {
-                minCost = totalCost;
-                bestSplit = testSplit;
-                bestAxis = axis;
-            }
-        } // end for (let j = 0; j < 3; j++)
-        // if no bestSplit was found (bestSplit still equals null), manually populate left/right lists later
-        if (bestSplit == null) {
-            nullCodePathReached = true;
-            //console.log("bestSplit==null code path reached");
-            //console.log("workList length: " + workList.length);
-        }
-    } // end else if (workList.length > 2)
-    leftWorkCounter = 0;
-    rightWorkCounter = 0;
-    // manually populate the current leftWorkLists and rightWorklists
-    if (nullCodePathReached) {
-        nullCodePathReached = false;
-        // this loop is to count how many elements we need for the left branch and the right branch
-        for (let i = 0; i < workList.length; i++) {
-            if (i % 2 == 0) {
-                leftWorkCounter++;
-            } else {
-                rightWorkCounter++;
-            }
-        }
-        // now that the size of each branch is known, we can initialize the left and right arrays
-        leftWorkLists[stackptr] = new Uint32Array(leftWorkCounter);
-        rightWorkLists[stackptr] = new Uint32Array(rightWorkCounter);
-        // reset counters for the loop coming up
-        leftWorkCounter = 0;
-        rightWorkCounter = 0;
-        for (let i = 0; i < workList.length; i++) {
-            k = workList[i];
-            if (i % 2 == 0) {
-                leftWorkLists[stackptr][leftWorkCounter] = k;
-                leftWorkCounter++;
-            } else {
-                rightWorkLists[stackptr][rightWorkCounter] = k;
-                rightWorkCounter++;
-            }
-        }
-        return; // bail out
-    }
-    // the following code can only be reached if (workList.length > 2) and bestSplit has been successfully set:
-    // other branches will 'return;' earlier
-    // distribute the triangle AABBs in the left or right child nodes
-    leftWorkCounter = 0;
-    rightWorkCounter = 0;
-    // this loop is to count how many elements we need for the left branch and the right branch
-    for (let i = 0; i < workList.length; i++) {
-        k = workList[i];
-        testCentroid.set(aabb_array[9 * k + 6], aabb_array[9 * k + 7], aabb_array[9 * k + 8]);
-        // get bbox center
-        if (bestAxis == 0) value = testCentroid.x; // X-axis
-        else if (bestAxis == 1) value = testCentroid.y; // Y-axis
-        else value = testCentroid.z; // Z-axis
-        if (value < bestSplit) {
-            leftWorkCounter++;
-        } else {
-            rightWorkCounter++;
-        }
-    }
-    // now that the size of each branch is known, we can initialize the left and right arrays
-    leftWorkLists[stackptr] = new Uint32Array(leftWorkCounter);
-    rightWorkLists[stackptr] = new Uint32Array(rightWorkCounter);
-    // reset counters for the loop coming up
-    leftWorkCounter = 0;
-    rightWorkCounter = 0;
-    // populate the current leftWorkLists and rightWorklists
-    for (let i = 0; i < workList.length; i++) {
-        k = workList[i];
-        testCentroid.set(aabb_array[9 * k + 6], aabb_array[9 * k + 7], aabb_array[9 * k + 8]);
-        // get bbox center
-        if (bestAxis == 0) value = testCentroid.x; // X-axis
-        else if (bestAxis == 1) value = testCentroid.y; // Y-axis
-        else value = testCentroid.z; // Z-axis
-        if (value < bestSplit) {
-            leftWorkLists[stackptr][leftWorkCounter] = k;
-            leftWorkCounter++;
-        } else {
-            rightWorkLists[stackptr][rightWorkCounter] = k;
-            rightWorkCounter++;
-        }
-    }
-} // end function BVH_Create_Node(workList, aabb_array, idParent, isLeftBranch)
 
-export function BVH_Build_Iterative(workList, aabb_array) {
-    currentList = workList;
-    //console.log("building root with " + currentList.length + " triangle AABBs");
-    //console.log(currentList);
-    // reset BVH builder arrays;
-    buildnodes = [];
-    leftWorkLists = [];
-    rightWorkLists = [];
-    parentList = [];
-    stackptr = 0;
-    nullCodePathReached = false;
-    parentList.push(buildnodes.length - 1);
-    // parent id of -1, meaning this is the root node, which has no parent
-    BVH_Create_Node(currentList, aabb_array, -1, true); // build root node
-    // build the tree using the "go down left branches until done, then ascend back up right branches" approach
-    while (stackptr > -1) {
-        // pop the next node off the stack
-        currentList = leftWorkLists[stackptr];
-        leftWorkLists[stackptr] = null;
-        if (currentList != undefined) {
-            //console.log("building left with " + currentList.length + " triangle AABBs");
-            //console.log(currentList);
-            stackptr++;
-            //console.log("stackptr: " + stackptr);
-            parentList.push(buildnodes.length - 1);
-            // build the left node
-            BVH_Create_Node(currentList, aabb_array, buildnodes.length - 1, true);
-            leftBranchCounter++;
-        } else {
-            currentList = rightWorkLists[stackptr];
-            if (currentList != undefined) {
-                //console.log("building right with " + currentList.length + " triangle AABBs");
-                //console.log(currentList);
-                stackptr++;
-                //console.log("stackptr: " + stackptr);
-                // build the right node
-                BVH_Create_Node(currentList, aabb_array, parentList.pop(), false);
-                rightWorkLists[stackptr - 1] = null;
-                rightBranchCounter++;
-            } else {
-                stackptr--;
-                //console.log("stackptr: " + stackptr);
-            }
-        }
-    } // end while (stackptr > -1)
+export function buildBvh(triangleData) {
+    let totalTriCount = (triangleData.length / 9); // 3 vertices * 3d point = 9
 
-    return buildnodes;
-} // end function BVH_Build_Iterative(workList, aabb_array)
+    console.log('triangleData');
+    console.dir(triangleData);
+    console.log('no of tris (triangleData): ' +  totalTriCount);
+    console.log('trinagleData len: ' + triangleData.length);
+
+    var vp0 = new Vector3();
+    var vp1 = new Vector3();
+    var vp2 = new Vector3();
+
+    var triBoundBoxMin = new Vector3();
+    var triBoundBoxMax = new Vector3();
+    var triBoundBoxCentroid = new Vector3();
+
+    var totalWork = new Uint32Array(totalTriCount);
+    var aabbArray = []; //new Float32Array(1024 * 1024 * 3);
+
+    for (let i = 0; i < totalTriCount; i++) {
+        triBoundBoxMin.set(Infinity, Infinity, Infinity);
+        triBoundBoxMax.set(-Infinity, -Infinity, -Infinity);
+
+        // record vertex positions
+        vp0.set( triangleData[9 * i + 0], triangleData[9 * i + 1], triangleData[9 * i + 2] );
+        vp1.set( triangleData[9 * i + 3], triangleData[9 * i + 4], triangleData[9 * i + 5] );
+        vp2.set( triangleData[9 * i + 6], triangleData[9 * i + 7], triangleData[9 * i + 8] );
+
+        triBoundBoxMin.copy(triBoundBoxMin.min(vp0));
+        triBoundBoxMax.copy(triBoundBoxMax.max(vp0));
+        triBoundBoxMin.copy(triBoundBoxMin.min(vp1));
+        triBoundBoxMax.copy(triBoundBoxMax.max(vp1));
+        triBoundBoxMin.copy(triBoundBoxMin.min(vp2));
+        triBoundBoxMax.copy(triBoundBoxMax.max(vp2));
+
+        triBoundBoxCentroid.set(
+            (triBoundBoxMin.x + triBoundBoxMax.x) * 0.5,
+            (triBoundBoxMin.y + triBoundBoxMax.y) * 0.5,
+            (triBoundBoxMin.z + triBoundBoxMax.z) * 0.5
+        );
+
+        aabbArray[9 * i + 0] = triBoundBoxMin.x;
+        aabbArray[9 * i + 1] = triBoundBoxMin.y;
+        aabbArray[9 * i + 2] = triBoundBoxMin.z;
+        aabbArray[9 * i + 3] = triBoundBoxMax.x;
+        aabbArray[9 * i + 4] = triBoundBoxMax.y;
+        aabbArray[9 * i + 5] = triBoundBoxMax.z;
+        aabbArray[9 * i + 6] = triBoundBoxCentroid.x;
+        aabbArray[9 * i + 7] = triBoundBoxCentroid.y;
+        aabbArray[9 * i + 8] = triBoundBoxCentroid.z;
+
+        totalWork[i] = i;
+    }
+
+    console.log('aabbArray: ');
+    console.dir(aabbArray);
+
+    let buildNodes = BvhBuildIterative(totalWork, aabbArray);
+
+    console.log('buildNodes: ');
+    console.dir(buildNodes);
+
+    // construct final flat bvh structure ready for sampler
+    let flatBvh = [];
+    for (let n = 0; n < buildNodes.length; n++) {
+        flatBvh[9 * n + 0] = -1; // padding
+        flatBvh[9 * n + 1] = buildNodes[n].idRightChild;
+        flatBvh[9 * n + 2] = buildNodes[n].idLeftChild;
+        flatBvh[9 * n + 3] = buildNodes[n].minCorner.x;
+        flatBvh[9 * n + 4] = buildNodes[n].minCorner.y;
+        flatBvh[9 * n + 5] = buildNodes[n].minCorner.z;
+        flatBvh[9 * n + 6] = buildNodes[n].maxCorner.x;
+        flatBvh[9 * n + 7] = buildNodes[n].maxCorner.y;
+        flatBvh[9 * n + 8] = buildNodes[n].maxCorner.z;
+    }
+
+    return flatBvh;
+}
