@@ -1,4 +1,4 @@
-import {definedNotNull} from '../utils';
+import {definedNotNull, glslFloat} from '../utils';
 
 const getSource = ({options, ObjectList}) =>
 `   #version 300 es
@@ -12,6 +12,9 @@ const getSource = ({options, ObjectList}) =>
 
     #define MAX_HIT_DEPTH 5//4 //15 //50
     #define NUM_SAMPLES ${options.numSamples}
+
+    #define DATA_TEX_SIZE ${glslFloat(options.dataTexSize)}
+    #define DATA_TEX_INV_SIZE ${glslFloat(1/options.dataTexSize)}
 
     // #define INFINITY
     #define PI 3.141592653589793
@@ -158,14 +161,6 @@ const getSource = ({options, ObjectList}) =>
      * BVH
      */
 
-    ivec2 triTexSize;
-    float triTexWidth;
-    float oneOverTriTexWidth;
-
-    ivec2 bvhTexSize;
-    float dataTexWidth;
-    float oneOverDataTexWidth;
-
     struct BvhNode {
         // [id, node0 offset, node1 offset]
         vec3 meta;
@@ -182,19 +177,19 @@ const getSource = ({options, ObjectList}) =>
 
     BvhNode getBvhNode(int index) {
         float offset = float(index) * 3.;
-        float xOffset = mod(offset, dataTexWidth);
-        // float yOffset = ceil(offset * oneOverDataTexWidth) - 1.;
-        float yOffset = floor(offset * oneOverDataTexWidth);
+        float xOffset = mod(offset, DATA_TEX_SIZE);
+        // float yOffset = ceil(offset * DATA_TEX_INV_SIZE) - 1.;
+        float yOffset = floor(offset * DATA_TEX_INV_SIZE);
 
         vec3 meta = texelFetch(uBvhDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-        xOffset = mod(offset + 1., dataTexWidth);
-        yOffset = floor((offset + 1.) * oneOverDataTexWidth);
+        xOffset = mod(offset + 1., DATA_TEX_SIZE);
+        yOffset = floor((offset + 1.) * DATA_TEX_INV_SIZE);
 
         vec3 minCoords = texelFetch(uBvhDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-        xOffset = mod(offset + 2., dataTexWidth);
-        yOffset = floor((offset + 2.) * oneOverDataTexWidth);
+        xOffset = mod(offset + 2., DATA_TEX_SIZE);
+        yOffset = floor((offset + 2.) * DATA_TEX_INV_SIZE);
 
         vec3 maxCoords = texelFetch(uBvhDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
@@ -550,10 +545,10 @@ const getSource = ({options, ObjectList}) =>
 
         float result = T_MAX;
 
-    	if (t1 > 0.0) { // if we are inside the box
-    		// normal = -sign(r.dir) * step(tmax, tmax.yzx) * step(tmax, tmax.zxy);
-    		result = t1;
-    	}
+    	// if (t1 > 0.0) { // if we are inside the box
+    	// 	// normal = -sign(r.dir) * step(tmax, tmax.yzx) * step(tmax, tmax.zxy);
+    	// 	result = t1;
+    	// }
 
     	if (t0 > 0.0) {// if we are outside the box
     		// normal = -sign(r.dir) * step(tmin.yzx, tmin) * step(tmin.zxy, tmin);
@@ -712,6 +707,7 @@ const getSource = ({options, ObjectList}) =>
 
     void hitWorld(Ray ray, Hitable hitables[${ObjectList.length()}], float tMax, out HitRecord hitRecord) {
         HitRecord record;
+
         record.hasHit = false;
         hitRecord.hasHit = false;
 
@@ -728,6 +724,7 @@ const getSource = ({options, ObjectList}) =>
 
         stackLevels[0] = currentStackData;
         bool skip = false;
+        int loopCounter = 0;
 
         while (true) {
             if (currentStackData.rayT < tMax) {
@@ -758,23 +755,20 @@ const getSource = ({options, ObjectList}) =>
                 float node1Offset = currentNode.meta.z;
 
                 if (node1Offset < 0.) { // this is a leaf node
-                    // each triangle's data is encoded in 8 rgba(or xyzw) texture slots
-                    // id = 8.0 * (-currentBoxNode.branch_A_Index - 1.0);
+                    float triangleOffset = 3. * (-node1Offset - 1.);
 
-                    float triangleOffset = 3. * (-node1Offset - 1.); // + float(triIdx);
-
-                    float xOffset = mod(triangleOffset, triTexWidth);
-                    float yOffset = floor(triangleOffset * oneOverTriTexWidth);
+                    float xOffset = mod(triangleOffset, DATA_TEX_SIZE);
+                    float yOffset = floor(triangleOffset * DATA_TEX_INV_SIZE);
 
                     vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    xOffset = mod(triangleOffset + 1., triTexWidth);
-                    yOffset = floor((triangleOffset + 1.) * oneOverTriTexWidth);
+                    xOffset = mod(triangleOffset + 1., DATA_TEX_SIZE);
+                    yOffset = floor((triangleOffset + 1.) * DATA_TEX_INV_SIZE);
 
                     vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    xOffset = mod(triangleOffset + 2., triTexWidth);
-                    yOffset = floor((triangleOffset + 2.) * oneOverTriTexWidth);
+                    xOffset = mod(triangleOffset + 2., DATA_TEX_SIZE);
+                    yOffset = floor((triangleOffset + 2.) * DATA_TEX_INV_SIZE);
 
                     vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
 
@@ -848,17 +842,15 @@ const getSource = ({options, ObjectList}) =>
             }
 
     		skip = false; // reset skip
+
+            if(loopCounter > 300) {
+                discard;
+            }
+
+            loopCounter++;
         }
 
         for(int i = 0; i < ${ObjectList.length()}; i++) {
-            //samples: 500 / 500, render time: 99.8s
-            // if(hitables[i].geometry == SPHERE_GEOMETRY
-            //     && hitBbox(hitables[i].bMin, hitables[i].bMax, ray, /* out => */ record))
-            // {
-            //     hitSphere(ray, hitables[i], tMax, /* out => */ record);
-            // }
-
-            // samples: 500 / 500, render time: 96.8s
             if(hitables[i].geometry == SPHERE_GEOMETRY) {
                 hitSphere(ray, hitables[i], tMax, /* out => */ record);
             }
@@ -867,7 +859,6 @@ const getSource = ({options, ObjectList}) =>
             //     hitXyRect(ray, hitables[i], T_MIN, tMax, /* out => */ record);
             // }
 
-            // bool hitTriangle(Ray ray, Hitable triangle, float tMax, out HitRecord hitRecord) {
             // if(hitables[i].geometry == TRIANGLE_GEOMETRY) {
             //     hitTriangle(ray, hitables[i], tMax, /* out => */ record);
             // }
@@ -886,26 +877,26 @@ const getSource = ({options, ObjectList}) =>
 
         // regular triangle intersection (no bvh)
 
-        // ivec2 triTexSize = textureSize(uTriangleTexture, 0);
-        // float triTexWidth = float(triTexSize.x);
-        // float oneOverTriTexWidth = 1. / triTexWidth;
+        // ivec2 DATA_TEX_SIZE = textureSize(uTriangleTexture, 0);
+        // float DATA_TEX_SIZE = float(DATA_TEX_SIZE.x);
+        // float DATA_TEX_INV_SIZE = 1. / DATA_TEX_SIZE;
         //
-        // for(int iX = 0; iX < triTexSize.x * triTexSize.y; iX++) {
+        // for(int iX = 0; iX < DATA_TEX_SIZE.x * DATA_TEX_SIZE.y; iX++) {
         //
 		// 	float triangleOffset = float(iX)*3.;
         //
-        //     float xOffset = mod(triangleOffset, triTexWidth);
-        //     float yOffset = floor(triangleOffset * oneOverTriTexWidth);
+        //     float xOffset = mod(triangleOffset, DATA_TEX_SIZE);
+        //     float yOffset = floor(triangleOffset * DATA_TEX_INV_SIZE);
         //
         //     vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
         //
-        //     xOffset = mod(triangleOffset + 1., triTexWidth);
-        //     yOffset = floor((triangleOffset + 1.) * oneOverTriTexWidth);
+        //     xOffset = mod(triangleOffset + 1., DATA_TEX_SIZE);
+        //     yOffset = floor((triangleOffset + 1.) * DATA_TEX_INV_SIZE);
         //
         //     vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
         //
-        //     xOffset = mod(triangleOffset + 2., triTexWidth);
-        //     yOffset = floor((triangleOffset + 2.) * oneOverTriTexWidth);
+        //     xOffset = mod(triangleOffset + 2., DATA_TEX_SIZE);
+        //     yOffset = floor((triangleOffset + 2.) * DATA_TEX_INV_SIZE);
         //
         //     vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
         //
@@ -974,12 +965,8 @@ const getSource = ({options, ObjectList}) =>
         float tMax = T_MAX;
 
         HitRecord hitRecord;
-        // hitWorld(ray, hitables, tMax, /* out => */ hitRecord);
-
         for(int hitCounts = 0; hitCounts < MAX_HIT_DEPTH; hitCounts++) {
             hitWorld(ray, hitables, tMax, /* out => */ hitRecord);
-            // vec3 emitted = emit(hitRecord);
-
             if(hitRecord.hasHit) {
                 vec3 emittedColor;
 
@@ -990,32 +977,13 @@ const getSource = ({options, ObjectList}) =>
 
                 ray.origin = hitRecord.hitPoint;
                 shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray);
-
-                // vec3 emitted = emit(hitRecord);
-                //
-                // ray.origin = hitRecord.hitPoint;
-                // if(!shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray)) {
-                //     color *= emitted;
-                //     break;
-                // }
             } else {
                 color *= background(ray.dir);
                 break;
             }
-
-
         }
 
         return color;
-    }
-
-    // Peter Shirley's tentFilter (Realistic Ray Tracing (2nd Edition, p. 60)
-    float tentFilter(float x) {
-    	if (x < 0.5)  {
-    		return sqrt(2.0 * x) - 1.0;
-        } else {
-            return 1.0 - sqrt(2.0 - (2.0 * x));
-        }
     }
 
     vec3 trace(Camera camera, Hitable hitables[${ObjectList.length()}]) {
@@ -1026,8 +994,6 @@ const getSource = ({options, ObjectList}) =>
             vec2 rUv = vec2( // jitter pixel location for anti-aliasing effect
                 uv.x + (rand() / uResolution.x),
                 uv.y + (rand() / uResolution.y)
-                // uv.x + (tentFilter(rand()) / uResolution.x),
-                // uv.y + (tentFilter(rand()) / uResolution.y)
             );
 
             // vec3 lookFrom = vec3(0.03-abs(sin(uv.x*cos(uTime*10.)*10.)), 0.9, 2.5+sin(uv.y*2.));
@@ -1059,15 +1025,6 @@ const getSource = ({options, ObjectList}) =>
 
         // set initial seed for stateful rng
         gRandSeed = uSeed * uv;///vec2(0.1, 0.1); //uSeed + 20.; //uv + uSeed;
-
-        // set global texture size stuff
-        triTexSize = textureSize(uTriangleTexture, 0);
-        triTexWidth = float(triTexSize.x);
-        oneOverTriTexWidth = 1. / triTexWidth;
-
-        bvhTexSize = textureSize(uBvhDataTexture, 0);
-        dataTexWidth = float(bvhTexSize.x);
-        oneOverDataTexWidth = 1. / dataTexWidth;
 
         #ifdef GLSL_CAMERA
             // // regular camera

@@ -17,6 +17,9 @@ import renderShader from './shaders/render.glsl';
 import ObjLoader from 'obj-mtl-loader';
 import { getObjModelTriangleVertexData, buildBvh} from './bvh';
 
+// import {OBJLoader, loadFile} from 'loaders.gl';
+
+
 import {
     flatten,
     definedNotNull,
@@ -30,6 +33,7 @@ import 'normalize.css/normalize.css';
 import './styles/index.scss';
 
 const defaultMaxSampleCount = 3;
+const dataTextureSize = 2187;
 
 async function raytraceApp({triangleData, bvhData}) {
     const params = queryString.parse(location.search);
@@ -87,8 +91,7 @@ async function raytraceApp({triangleData, bvhData}) {
     // raytrace framebuffer
     let traceFboColorTarget = app.createTexture2D(app.width, app.height, {
         type: gl.FLOAT,
-        // interalFormat: gl.RGBA16F,
-        // interalFormat: gl.R32F,
+        internalFormat: gl.RGBA32F,
         format: gl.RGBA
     });
 
@@ -98,8 +101,7 @@ async function raytraceApp({triangleData, bvhData}) {
     // framebuffer for accumulating samples
     let accumFboColorTarget = app.createTexture2D(app.width, app.height, {
         type: gl.FLOAT,
-        // interalFormat: gl.RGBA16F,
-        // interalFormat: gl.R32F,
+        internalFormat: gl.RGBA32F,
         format: gl.RGBA
     });
 
@@ -116,7 +118,8 @@ async function raytraceApp({triangleData, bvhData}) {
         options: {
             realTime: params.realTime,
             glslCamera: false,
-            numSamples: shaderSampleCount
+            numSamples: shaderSampleCount,
+            dataTexSize: dataTextureSize
         },
         ObjectList: scene
     }));
@@ -136,36 +139,37 @@ async function raytraceApp({triangleData, bvhData}) {
 
     // uniforms
 
-    let bvhTexHeight = 1024;
-    let bvhTexWidth = 1024;
 
-    let triangleTexHeight = 1024;
-    let triangleTexWidth = 1024;
+    console.log(`data texture dimensions: ${dataTextureSize}x${dataTextureSize}`);
 
-    console.log(`triangle texture dimensions: ${triangleTexWidth}x${triangleTexHeight}`);
-    console.log(`bvh text dimensions: ${bvhTexWidth}x${bvhTexHeight}`);
+    // let bvhDataPadded = [
+    //     ...bvhData,
+    //     ...Array(dataTextureSize*dataTextureSize*3 - bvhData.length)
+    //         .fill(0)
+    // ];
+    //
+    // let triangleDataPadded = [
+    //     ...triangleData,
+    //     ...Array(dataTextureSize*dataTextureSize*3 - triangleData.length)
+    //         .fill(0)
+    // ];
 
-    let bvhDataPadded = [
-        ...bvhData,
-        ...Array((bvhTexHeight*3)*(bvhTexWidth*3) - (bvhData.length/9))
-            .fill(-1337)
-    ];
+    let triangleDataPadded = new Float32Array(dataTextureSize*dataTextureSize*3);
+    let bvhDataPadded = new Float32Array(dataTextureSize*dataTextureSize*3);
 
-    let triangleDataPadded = [
-        ...triangleData,
-        ...Array((triangleTexWidth*3)*(triangleTexHeight*3) - (triangleData.length/9))
-            .fill(-1337)
-    ];
+    for (let n = 0; n < triangleData.length; n++) {
+        triangleDataPadded[n] = triangleData[n];
+    }
 
-    let triangleTexture = app.createTexture2D(new Float32Array(triangleDataPadded), triangleTexWidth, triangleTexHeight, {
+    for (let n = 0; n < bvhData.length; n++) {
+        bvhDataPadded[n] = bvhData[n];
+    }
+
+    let triangleTexture = app.createTexture2D(triangleDataPadded, dataTextureSize, dataTextureSize, {
         type: gl.FLOAT,
-        // interalFormat: gl.RGBA16F,
-        // interalFormat: gl.RGBA32F,
+        internalFormat: gl.RGB32F,
         format: gl.RGB,
-
         generateMipmaps: false,
-        // minFilter: gl.LINEAR,
-        // magFilter: gl.LINEAR,
         minFilter: gl.NEAREST,
         magFilter: gl.NEAREST,
         wrapS: gl.CLAMP_TO_EDGE,
@@ -173,12 +177,10 @@ async function raytraceApp({triangleData, bvhData}) {
         flipY: false
     });
 
-    let bvhDataTexture = app.createTexture2D(new Float32Array(bvhDataPadded), bvhTexWidth, bvhTexHeight, {
+    let bvhDataTexture = app.createTexture2D(bvhDataPadded, dataTextureSize, dataTextureSize, {
         type: gl.FLOAT,
-        // interalFormat: gl.RGBA16F,
-        // interalFormat: gl.RGBA32F,
+        internalFormat: gl.RGB32F,
         format: gl.RGB,
-
         generateMipmaps: false,
         minFilter: gl.NEAREST,
         magFilter: gl.NEAREST,
@@ -248,28 +250,29 @@ async function raytraceApp({triangleData, bvhData}) {
             // draw new rendered sample blended with accumulated
             // samples in accumFbo to traceFbo frambuffer
 
-            app.drawFramebuffer(traceFbo)
+            app.drawFramebuffer(traceFbo);
                 // .clear();
 
             rayTraceDrawCall
                 .uniform('uTime', time * 0.01)
                 .uniform('uSeed', vec2.fromValues(random(), random()))
+                .texture('uBvhDataTexture', bvhDataTexture)
                 .draw();
 
             ////////////////
-            app.drawFramebuffer(accumFbo)
-                // .clear();
-
-            renderDrawCall
-                // .texture('traceTexture', traceFbo.colorAttachments[0])
-                .draw();
-
-            // draw rendered result in traceFbo to screen
-            app.defaultDrawFramebuffer()
-                // .clear();
-
-            renderDrawCall
-                .draw();
+            // app.drawFramebuffer(accumFbo):
+            //     // .clear();
+            //
+            // renderDrawCall
+            //     // .texture('traceTexture', traceFbo.colorAttachments[0])
+            //     .draw();
+            //
+            // // draw rendered result in traceFbo to screen
+            // app.defaultDrawFramebuffer():
+            //     // .clear();
+            //
+            // renderDrawCall
+            //     .draw();
 
             // stats.end();
 
@@ -278,17 +281,17 @@ async function raytraceApp({triangleData, bvhData}) {
             // copy rendered result in traceFbo to accumFbo frambuffer
             // for blending in the next raytrace draw call
 
-            // app.readFramebuffer(traceFbo)
-            //     .drawFramebuffer(accumFbo)
-            //     .clear()
-            //     .blitFramebuffer(PicoGL.COLOR_BUFFER_BIT);
-            //
-            // // draw rendered result in traceFbo to screen
-            // app.defaultDrawFramebuffer()
-            //     .clear();
-            //
-            // renderDrawCall
-            //     .draw();
+            app.readFramebuffer(traceFbo)
+                .drawFramebuffer(accumFbo)
+                .clear()
+                .blitFramebuffer(PicoGL.COLOR_BUFFER_BIT);
+
+            // draw rendered result in traceFbo to screen
+            app.defaultDrawFramebuffer()
+                .clear();
+
+            renderDrawCall
+                .draw();
 
             ///////////////////////////////////////////////////////////
         });
@@ -322,16 +325,27 @@ async function raytraceApp({triangleData, bvhData}) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    // fetch('/assets/models/hand.obj')
+    //     .then(data => {
+    //         let res = OBJLoader.parseText(data);
+    //         console.dir(res);
+    //
+    //     });
+
+    // loadFile('assets/models/hand.obj', OBJLoader).then(data => {
+    //     console.dir(data);
+    // });
+
     const objLoader = new ObjLoader();
 
     // objLoader.load('assets/models/hand.obj', async (err, mesh) => {
     // objLoader.load('assets/models/my_cube.obj', async (err, mesh) => {
     // objLoader.load('assets/models/octahedron.obj', async (err, mesh) => {
     // objLoader.load('assets/models/teapot.obj', async (err, mesh) => {
-    // objLoader.load('assets/models/bunny.obj', async (err, mesh) => {
     // objLoader.load('assets/models/skull.obj', async (err, mesh) => {
 
-    objLoader.load('assets/models/sphere.obj', async (err, mesh) => {
+    objLoader.load('assets/models/bunny.obj', async (err, mesh) => {
+    // objLoader.load('assets/models/sphere.obj', async (err, mesh) => {
         const triangleData = getObjModelTriangleVertexData(mesh);
         const bvhData = buildBvh(triangleData);
 

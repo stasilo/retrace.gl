@@ -14,6 +14,9 @@ module.exports = {
     node: {
         fs: 'empty'
     },
+    watchOptions: {
+        ignored: /node_modules/
+    },
     module: {
         rules: [
             {

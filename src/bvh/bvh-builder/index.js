@@ -7,7 +7,6 @@
  * Edited and Ported from C++ to Javascript by: Erich Loftis (erichlof on GitHub)
  * https://github.com/erichlof/THREE.js-PathTracing-Renderer
  *
- * Cleaned up and made engine agnostic by Jakob Stasilowicz
  */
 
 import { Vector3 } from 'three';
@@ -383,7 +382,7 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
     }
 } // end function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch)
 
-export function BvhBuildIterative(workList, aabb_array) {
+export function bvhBuildIterative(workList, aabb_array) {
     currentList = workList;
     //console.log("building root with " + currentList.length + " triangle AABBs");
     //console.log(currentList);

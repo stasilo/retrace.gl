@@ -1,66 +1,32 @@
-import { BvhBuildIterative } from './bvh-builder';
+import { bvhBuildIterative } from './bvh-builder';
 import { Vector3 } from 'three';
 
 // import { vec3 } from 'gl-matrix';
 
 export function getObjModelTriangleVertexData(mesh) {
-    // cube
-    // let scale = 0.5;
 
     // // sphere
-    let scale = 0.2;
-
-    // teapot
-    // let scale = 0.01;
-
-    // hand
-    // let scale = 0.05;
-
-    // diamond
-    // let scale = 0.01;
-
-    // // bunny
-    // let scale = 4;
-
-    // octahedron
-    // let scale = 0.5; //0.5;
-
-    // teapot
-    // let scale = 0.01;
-
-    // box
-    // let modelTranslation = {
-    //     x: 0,//0.4,
-    //     y: -0.5,//-0.6,
-    //     z: 0//-0.4
-    // }
-
-    // // sphere
-    let modelTranslation = {
-        x: -0.3,//0.4,
-        y: -0.3,//-0.6,
-        z: -0.5//-0.4
-    }
-
-    // teapot
+    // let scale = 0.2;
     // let modelTranslation = {
     //     x: -0.3,//0.4,
-    //     y: -1.5,//-0.6,
+    //     y: -0.3,//-0.6,
     //     z: -0.5//-0.4
     // }
 
     // bunny
-    // let modelTranslation = {
-    //     x: 0.4,
-    //     y: -0.6,
-    //     z: -0.4
-    // }
+    let scale = 8;
+    let modelTranslation = {
+        x: 0.4,
+        y: -0.6,
+        z: -0.4
+    }
 
     // hand
+    // let scale = 0.05;
     // let modelTranslation = {
-    //     x: 1.5,//0.4,
-    //     y: 0.3,//-0.6,
-    //     z: 0.0//-0.4
+    //     x: 1.0,
+    //     y: 0.3,
+    //     z: -0.9
     // }
 
     console.dir(mesh);
@@ -74,18 +40,28 @@ export function getObjModelTriangleVertexData(mesh) {
         let idxs = face.indices
             .map(i => parseInt(i) - 1);
 
-        return [
-            vertices[idxs[0]],
-            vertices[idxs[1]],
-            vertices[idxs[2]],
-            //-1 // padding for alpha channel (rgbA)
-        ]
-    });
+        // convert quad polygons to triangles
+        // https://stackoverflow.com/questions/23723993/converting-quadriladerals-in-an-obj-file-into-triangles
+        // 0 (i) (i + 1)  [for i in 1..(n - 2)]
 
-    // encode triangles for texture packing
+        let faces = [...Array(idxs.length - 2)].map((_, i) => {
+            return [
+                vertices[idxs[0]],
+                vertices[idxs[i + 1]],
+                vertices[idxs[i + 2]]
+            ];
+        });
+
+        return faces;
+    })
+    .reduce((allFaces, faceArr) => { // flatten
+        return [...allFaces, ...faceArr];
+    }, []);
+
+    // encode triangles for bvh contrusction & texture packing
 
     let id = 0;
-    let triangles = faces
+    let triangles = faces//.slice(0, 1200)
         .reduce((tris, face) => {
             id++;
 
@@ -124,7 +100,7 @@ export function buildBvh(triangleData) {
     var triBoundBoxCentroid = new Vector3();
 
     var totalWork = new Uint32Array(totalTriCount);
-    var aabbArray = []; //new Float32Array(1024 * 1024 * 3);
+    var aabbArray = [];
 
     for (let i = 0; i < totalTriCount; i++) {
         triBoundBoxMin.set(Infinity, Infinity, Infinity);
@@ -151,9 +127,11 @@ export function buildBvh(triangleData) {
         aabbArray[9 * i + 0] = triBoundBoxMin.x;
         aabbArray[9 * i + 1] = triBoundBoxMin.y;
         aabbArray[9 * i + 2] = triBoundBoxMin.z;
+
         aabbArray[9 * i + 3] = triBoundBoxMax.x;
         aabbArray[9 * i + 4] = triBoundBoxMax.y;
         aabbArray[9 * i + 5] = triBoundBoxMax.z;
+
         aabbArray[9 * i + 6] = triBoundBoxCentroid.x;
         aabbArray[9 * i + 7] = triBoundBoxCentroid.y;
         aabbArray[9 * i + 8] = triBoundBoxCentroid.z;
@@ -164,7 +142,7 @@ export function buildBvh(triangleData) {
     console.log('aabbArray: ');
     console.dir(aabbArray);
 
-    let buildNodes = BvhBuildIterative(totalWork, aabbArray);
+    let buildNodes = bvhBuildIterative(totalWork, aabbArray);
 
     console.log('buildNodes: ');
     console.dir(buildNodes);
@@ -175,9 +153,11 @@ export function buildBvh(triangleData) {
         flatBvh[9 * n + 0] = -1; // padding
         flatBvh[9 * n + 1] = buildNodes[n].idRightChild;
         flatBvh[9 * n + 2] = buildNodes[n].idLeftChild;
+
         flatBvh[9 * n + 3] = buildNodes[n].minCorner.x;
         flatBvh[9 * n + 4] = buildNodes[n].minCorner.y;
         flatBvh[9 * n + 5] = buildNodes[n].minCorner.z;
+
         flatBvh[9 * n + 6] = buildNodes[n].maxCorner.x;
         flatBvh[9 * n + 7] = buildNodes[n].maxCorner.y;
         flatBvh[9 * n + 8] = buildNodes[n].maxCorner.z;
