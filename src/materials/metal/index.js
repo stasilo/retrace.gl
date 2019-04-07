@@ -4,9 +4,12 @@ import {materialTypes} from '../model-material';
 import {defined} from '../../utils';
 
 class MetalMaterial extends ModelMaterial {
-    constructor({name, fuzz, albedo}) {
+    constructor({name, color, fuzz, albedo}) {
         super({
             name,
+            color: defined(color)
+                ? color
+                : '#ffffff',
             type: materialTypes.metal,
             albedo: defined(albedo)
                 ? albedo

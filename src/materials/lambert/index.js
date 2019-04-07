@@ -4,9 +4,12 @@ import {materialTypes} from '../model-material';
 import {defined} from '../../utils';
 
 class LambertMaterial extends ModelMaterial {
-    constructor({name, albedo}) {
+    constructor({name, color, albedo}) {
         super({
             name,
+            color: defined(color)
+                ? color
+                : '#ffffff',
             type: materialTypes.lambert,
             albedo: defined(albedo)
                 ? albedo

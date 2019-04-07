@@ -12,7 +12,8 @@ import EmissiveMaterial from '../../materials/emissive';
 import {
     random,
     normedColor,
-    normedColorStr
+    normedColorStr,
+    degToRad
 } from '../../utils';
 
 export default async () => {
@@ -20,14 +21,17 @@ export default async () => {
         materials: [
             new MetalMaterial({
                 name: 'fuzzy-metal',
-                fuzz: 0.2,
-                albedo: [0.9, 0.9, 0.9]
+                color: '#775b2b',
+                fuzz: 0.3,
+                albedo: [1.0, 1.0, 1.0]
             }),
             new LambertMaterial({
-                name: 'lambert'
+                name: 'lambert',
+                color: '#aaaaaa',
             }),
             new EmissiveMaterial({
                 name: 'emissive',
+                color: '#101010',
                 intensity: 10
             })
         ],
@@ -37,34 +41,41 @@ export default async () => {
                 color: '#775b2b',
                 material: 'fuzzy-metal',
                 scale: 8,
-                modelTranslation: {
+                position: {
                     x: 0.4,
                     y: -0.6,
                     z: -0.4
+                },
+                rotation: {
+                    y: degToRad(90)
                 }
             }),
             await new ObjModel({
                 url: 'assets/models/hand.obj',
-                color: '#aaaaaa',
                 material: 'lambert',
                 scale: 0.05,
-                modelTranslation: {
-                    x: -0.6,
-                    y: 0.7,
-                    z: -1.6
+                position: {
+                    x: 0.3,
+                    y: 0.4,
+                    z: -1.8
+                },
+                rotation: {
+                    x: degToRad(-60),
+                    y: 0, //degToRad(30),
+                    z: degToRad(30)
                 }
             }),
-            await new ObjModel({
-                url: 'assets/models/sphere.obj',
-                color: '#0000ff',
-                material: 'lambert',
-                scale: 0.1,
-                modelTranslation: {
-                    x: 1.4,
-                    y: 0.2,
-                    z: -1.4
-                }
-            }),
+            // await new ObjModel({
+            //     url: 'assets/models/sphere.obj',
+            //     color: '#0000ff',
+            //     material: 'lambert',
+            //     scale: 0.1,
+            //     position: {
+            //         x: 1.4,
+            //         y: 0.2,
+            //         z: -1.4
+            //     }
+            // }),
             new Sphere({
                 center: [0., -301, -5.],
                 radius: 300.5,
@@ -89,7 +100,7 @@ export default async () => {
                 color: '#eeeeee'
             }),
             new Sphere({
-                center:[1.3, -0.27, -0.9],
+                center:[1.0, -0.27, -0.6],
                 // center:[0.55, 0.5, -1.],
                 radius: 0.25,
                 material: 'GlassMaterial',

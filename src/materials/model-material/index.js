@@ -11,6 +11,7 @@ class ModelMaterial {
     constructor({
         name,
         type,
+        color,
         albedo,
         fuzz,
         refIdx,
@@ -23,7 +24,7 @@ class ModelMaterial {
         this.fuzz = fuzz;
         this.refIdx = refIdx;
         this.emissiveIntensity = emissiveIntensity;
-        this.color = '#ff0000';
+        this.color = color;
     }
 
     toArray() {
@@ -53,7 +54,7 @@ class ModelMaterial {
             ...this.albedo,
 
             // matData4
-            // ...normedColor(this.color)
+            ...normedColor(this.color)
         ];
     }
 }

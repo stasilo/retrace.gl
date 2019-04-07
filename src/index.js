@@ -14,8 +14,7 @@ import vertShader from './shaders/vert.glsl';
 import rayTraceShader from './shaders/raytracer.glsl.js';
 import renderShader from './shaders/render.glsl';
 
-import {loadObjModel} from './model-loaders/obj';
-import {buildBvh, buildSceneBvh} from './bvh';
+import {buildSceneBvh} from './bvh';
 
 import {
     flatten,
@@ -50,11 +49,7 @@ async function raytraceApp() {
         spectorGlDebug.displayUI();
     }
 
-    console.log('Waiting for scene creation: ');
-    
     let scene = await createMeshScene();
-    console.dir(scene);
-    console.dir(scene.materials.getMaterialData());
     const materialData = scene.materials.getMaterialData();
     const {bvhData, triangleData} = buildSceneBvh(scene);
 

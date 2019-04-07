@@ -10,9 +10,12 @@ import {defined} from '../../utils';
 // float emissiveIntensity;
 
 class EmissiveMaterial extends ModelMaterial {
-    constructor({name, albedo, intensity}) {
+    constructor({name, color, albedo, intensity}) {
         super({
             name,
+            color: defined(color)
+                ? color
+                : '#ffffff',
             type: materialTypes.emissive,
             albedo: defined(albedo)
                 ? albedo
