@@ -6,6 +6,10 @@ const defined = obj => typeof obj !== 'undefined';
 const definedNotNull = obj => defined(obj) && obj != null;
 
 const isFn = fn => typeof fn === 'function';
+const range = (start, end) =>
+    Array.from({length: (end - start)},
+        (v, k) => k + start
+    );
 
 // array manipulation
 
@@ -85,6 +89,7 @@ module.exports = {
     defined,
     definedNotNull,
     isFn,
+    range,
     reverse,
     flatten,
     random,

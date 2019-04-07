@@ -7,7 +7,7 @@ import {
     normedColorStr
 } from '../../utils';
 
-import ObjectList from '../../dtos/object-list';
+import Scene from '../../dtos/scene';
 
 let randomSpheres = [...Array(3)].map((_, i) =>
     new Sphere({
@@ -18,7 +18,7 @@ let randomSpheres = [...Array(3)].map((_, i) =>
     })
 );
 
-const sceneObjects = new ObjectList([
+const sceneObjects = new Scene([
     new Sphere({
         id: 0,
         center: [0., -301, -5.],
@@ -76,7 +76,7 @@ const sceneObjects = new ObjectList([
     new Sphere({
         center:[0.0, -0.05, -1.8],
         radius: 0.5,
-        material: 'FuzzyMetalMaterial',
+        material: 'MetalMaterial',
         color: '#ffffff'
     }),
     ...randomSpheres

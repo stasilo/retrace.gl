@@ -23,9 +23,11 @@ import {
 // };
 
 function Hitable({material, color}) {
-    this.id = null; // id is assigned by an ObjectList
+    this.id = null; // id is assigned by an Scene
     this.material = material;
     this.color = color;
+
+    this.includeInBvh = false;
 
     this.updateTextureColor = (__uv, __p) => `
         hitables[${this.id}].color = procTexture${this.id}(${__uv}, ${__p});

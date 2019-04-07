@@ -1,22 +1,21 @@
 import {definedNotNull, glslFloat} from '../utils';
 
-const getSource = ({options, ObjectList}) =>
+const getSource = ({options, Scene}) =>
 `   #version 300 es
     precision highp float;
     precision highp int;
     precision highp sampler2D;
 
-    #define FLT_MAX 3.402823466e+38
+    //#define FLT_MAX 3.402823466e+38
     #define T_MIN 0.0001 //.001
     #define T_MAX 10000.0
 
-    #define MAX_HIT_DEPTH 5//4 //15 //50
+    #define MAX_HIT_DEPTH 10//4 //15 //50
     #define NUM_SAMPLES ${options.numSamples}
 
     #define DATA_TEX_SIZE ${glslFloat(options.dataTexSize)}
     #define DATA_TEX_INV_SIZE ${glslFloat(1/options.dataTexSize)}
 
-    // #define INFINITY
     #define PI 3.141592653589793
 
     #define DEG_TO_RAD(deg) deg * PI / 180.;
@@ -51,6 +50,7 @@ const getSource = ({options, ObjectList}) =>
 
     uniform sampler2D uTriangleTexture;
     uniform sampler2D uBvhDataTexture;
+    uniform sampler2D uMaterialDataTexture;
 
     in vec2 uv;
     out vec4 fragColor;
@@ -204,7 +204,7 @@ const getSource = ({options, ObjectList}) =>
      * Textures
      */
 
-    ${ObjectList.getTextureDefinitions()}
+    ${Scene.getTextureDefinitions()}
 
     /*
      * Camera (mostly left for reference)
@@ -276,10 +276,10 @@ const getSource = ({options, ObjectList}) =>
      * Materials
      */
 
-    #define LAMBERT 1
-    #define METAL 2
-    #define DIALECTRIC 3
-    #define DIFFUSE_EMISSIVE 4
+    #define LAMBERT_MATERIAL_TYPE 1
+    #define METAL_MATERIAL_TYPE 2
+    #define DIALECTRIC_MATERIAL_TYPE 3
+    #define DIFFUSE_EMISSIVE_MATERIAL_TYPE 4
 
     struct Material {
         int type;
@@ -290,7 +290,7 @@ const getSource = ({options, ObjectList}) =>
     };
 
     Material LambertMaterial = Material(
-        LAMBERT,
+        LAMBERT_MATERIAL_TYPE,
         vec3(1.),
         0.,
         0.,
@@ -298,7 +298,7 @@ const getSource = ({options, ObjectList}) =>
     );
 
     Material ShinyMetalMaterial = Material(
-        METAL,
+        METAL_MATERIAL_TYPE,
         vec3(0.8),
         0.01,
         0.,
@@ -306,7 +306,7 @@ const getSource = ({options, ObjectList}) =>
     );
 
     Material FuzzyMetalMaterial = Material(
-        METAL,
+        METAL_MATERIAL_TYPE,
         vec3(0.9),
         0.45,
         0.,
@@ -314,7 +314,7 @@ const getSource = ({options, ObjectList}) =>
     );
 
     Material GlassMaterial = Material(
-        DIALECTRIC,
+        DIALECTRIC_MATERIAL_TYPE,
         vec3(1.),
         0.,
         1.8, //1.7
@@ -322,12 +322,45 @@ const getSource = ({options, ObjectList}) =>
     );
 
     Material LightMaterial = Material(
-        DIFFUSE_EMISSIVE,
+        DIFFUSE_EMISSIVE_MATERIAL_TYPE,
         vec3(1.),
         0.,
         0., //1.7
         15.
     );
+
+    Material getPackedMaterial(int index) {
+        float offset = float(index) * 3.;
+
+        float xOffset = mod(offset, DATA_TEX_SIZE);
+        float yOffset = floor(offset * DATA_TEX_INV_SIZE);
+
+        vec3 matData1 = texelFetch(uMaterialDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        xOffset = mod(offset + 1., DATA_TEX_SIZE);
+        yOffset = floor((offset + 1.) * DATA_TEX_INV_SIZE);
+
+        vec3 matData2 = texelFetch(uMaterialDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        xOffset = mod(offset + 2., DATA_TEX_SIZE);
+        yOffset = floor((offset + 2.) * DATA_TEX_INV_SIZE);
+
+        vec3 matData3 = texelFetch(uMaterialDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        // int type;
+        // vec3 albedo;
+        // float fuzz;
+        // float refIdx;
+        // float emissiveIntensity;
+
+        return Material(
+            int(matData1.x), // int type
+            matData3, // vec3 albedo
+            matData1.y, // float fuzz
+            matData1.z, // float refIdx
+            matData2.x // float emissiveIntensity
+        );
+    }
 
     // polynomial approximation of reflectivity by angle
     // by cristophe schlick
@@ -394,7 +427,7 @@ const getSource = ({options, ObjectList}) =>
 
         // LAMBERT / DIFFUSE
 
-        if(hitRecord.material.type == LAMBERT) {
+        if(hitRecord.material.type == LAMBERT_MATERIAL_TYPE) {
             // get lambertian random reflection direction
             ray.dir = hitRecord.normal + randomPointInUnitSphere();
             ray.invDir = 1./ray.dir;
@@ -404,7 +437,7 @@ const getSource = ({options, ObjectList}) =>
 
         // REFLECTIVE / METAL
 
-        if(hitRecord.material.type == METAL) {
+        if(hitRecord.material.type == METAL_MATERIAL_TYPE) {
             vec3 reflected = reflect(normalize(ray.dir), hitRecord.normal);
             vec3 dir = reflected + hitRecord.material.fuzz * randomPointInUnitSphere();
 
@@ -419,7 +452,7 @@ const getSource = ({options, ObjectList}) =>
 
         // DIALECTRIC / GLASS
 
-        if(hitRecord.material.type == DIALECTRIC) {
+        if(hitRecord.material.type == DIALECTRIC_MATERIAL_TYPE) {
             float cosine;
             float niOverNt;
             float reflectProb;
@@ -463,7 +496,7 @@ const getSource = ({options, ObjectList}) =>
     bool emit(HitRecord hitRecord, out vec3 emittedColor) {
         // vec3 emittedColor = vec3(0.);
 
-        if(hitRecord.material.type == DIFFUSE_EMISSIVE) {
+        if(hitRecord.material.type == DIFFUSE_EMISSIVE_MATERIAL_TYPE) {
             emittedColor = hitRecord.material.emissiveIntensity * hitRecord.color;
             return true;
         }
@@ -531,31 +564,18 @@ const getSource = ({options, ObjectList}) =>
     }
 
     float hitBvhBBox( vec3 minCorner, vec3 maxCorner, Ray r) {
-    	vec3 near = (minCorner - r.origin) * r.invDir;
+        vec3 near = (minCorner - r.origin) * r.invDir;
     	vec3 far  = (maxCorner - r.origin) * r.invDir;
 
-    	vec3 tmin = min(near, far);
-    	vec3 tmax = max(near, far);
+        vec3 tmin = min(near, far);
+        vec3 tmax = max(near, far);
 
-    	float t0 = max( max(tmin.x, tmin.y), tmin.z);
-    	float t1 = min( min(tmax.x, tmax.y), tmax.z);
+        float t0 = max( max(tmin.x, tmin.y), tmin.z);
+        float t1 = min( min(tmax.x, tmax.y), tmax.z);
 
-    	if (t0 > t1)
-            return T_MAX;
+        if (t0 > t1 || t1 < 0.0) return T_MAX;
 
-        float result = T_MAX;
-
-    	// if (t1 > 0.0) { // if we are inside the box
-    	// 	// normal = -sign(r.dir) * step(tmax, tmax.yzx) * step(tmax, tmax.zxy);
-    	// 	result = t1;
-    	// }
-
-    	if (t0 > 0.0) {// if we are outside the box
-    		// normal = -sign(r.dir) * step(tmin.yzx, tmin) * step(tmin.zxy, tmin);
-    		result = t0;
-    	}
-
-    	return result;
+        return t0;
     }
 
     void hitSphere(Ray ray, Hitable hitable, float tMax, out HitRecord hitRecord) {
@@ -667,7 +687,6 @@ const getSource = ({options, ObjectList}) =>
     	vec3 edge1 = v1 - v0;
     	vec3 edge2 = v2 - v0;
     	vec3 pvec = cross(r.dir, edge2);
-        // vec3 n = cross(tri.v1 - tri.v0, tri.v2 - tri.v0);
         vec3 n = cross(edge1, edge2);
 
         float det = 1.0 / dot(edge1, pvec);
@@ -692,7 +711,6 @@ const getSource = ({options, ObjectList}) =>
             hitRecord.hasHit = true;
             hitRecord.hitT = t;
             hitRecord.normal = normalize(n);
-            hitRecord.material = LambertMaterial;
             hitRecord.hitPoint = pointOnRay(r, t);
 
             return true;
@@ -705,7 +723,7 @@ const getSource = ({options, ObjectList}) =>
      * World
      */
 
-    void hitWorld(Ray ray, Hitable hitables[${ObjectList.length()}], float tMax, out HitRecord hitRecord) {
+    void hitWorld(Ray ray, Hitable hitables[${Scene.length()}], float tMax, out HitRecord hitRecord) {
         HitRecord record;
 
         record.hasHit = false;
@@ -755,7 +773,7 @@ const getSource = ({options, ObjectList}) =>
                 float node1Offset = currentNode.meta.z;
 
                 if (node1Offset < 0.) { // this is a leaf node
-                    float triangleOffset = 3. * (-node1Offset - 1.);
+                    float triangleOffset = 5. * (-node1Offset - 1.);
 
                     float xOffset = mod(triangleOffset, DATA_TEX_SIZE);
                     float yOffset = floor(triangleOffset * DATA_TEX_INV_SIZE);
@@ -774,8 +792,20 @@ const getSource = ({options, ObjectList}) =>
 
                     bvhHitTriangle(ray, v0, v1, v2, tMax, /* out => */ record);
                     if(record.hasHit) {
-                        record.color = vec3(0.0, 0.5, 0.0);
+                        xOffset = mod(triangleOffset + 3., DATA_TEX_SIZE);
+                        yOffset = floor((triangleOffset + 3.) * DATA_TEX_INV_SIZE);
+
+                        vec3 color = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        xOffset = mod(triangleOffset + 4., DATA_TEX_SIZE);
+                        yOffset = floor((triangleOffset + 4.) * DATA_TEX_INV_SIZE);
+
+                        vec3 meta = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        int materialId = int(meta.x);
+
+                        record.color = color;
                         hitRecord = record;
+                        hitRecord.material = getPackedMaterial(materialId);
                         tMax = record.hitT; // handle depth! ("z-index" :))
                         record.hasHit = false;
                     }
@@ -850,7 +880,7 @@ const getSource = ({options, ObjectList}) =>
             loopCounter++;
         }
 
-        for(int i = 0; i < ${ObjectList.length()}; i++) {
+        for(int i = 0; i < ${Scene.length()}; i++) {
             if(hitables[i].geometry == SPHERE_GEOMETRY) {
                 hitSphere(ray, hitables[i], tMax, /* out => */ record);
             }
@@ -865,7 +895,7 @@ const getSource = ({options, ObjectList}) =>
 
             if(record.hasHit) {
                 // inefficient hack to do dynamic hitable colors, textures & proc. textures
-                // ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
+                // ${Scene.updateTextureColors('uv', 'record.hitPoint')}
                 record.color = hitables[i].color;
 
                 hitRecord = record;
@@ -936,7 +966,7 @@ const getSource = ({options, ObjectList}) =>
         //
         //     if(record.hasHit) {
         //         // inefficient hack to do dynamic hitable colors, textures & proc. textures
-        //         // ${ObjectList.updateTextureColors('uv', 'record.hitPoint')}
+        //         // ${Scene.updateTextureColors('uv', 'record.hitPoint')}
         //         record.color = vec3(1.0, 0.0, 1.0);
         //
         //         hitRecord = record;
@@ -960,7 +990,7 @@ const getSource = ({options, ObjectList}) =>
     }
 
     // colorize
-    vec3 paint(Ray ray, Hitable hitables[${ObjectList.length()}]) {
+    vec3 paint(Ray ray, Hitable hitables[${Scene.length()}]) {
         vec3 color = vec3(1.0);
         float tMax = T_MAX;
 
@@ -986,7 +1016,7 @@ const getSource = ({options, ObjectList}) =>
         return color;
     }
 
-    vec3 trace(Camera camera, Hitable hitables[${ObjectList.length()}]) {
+    vec3 trace(Camera camera, Hitable hitables[${Scene.length()}]) {
         vec3 color = vec3(0.);
 
         // trace
@@ -1052,7 +1082,7 @@ const getSource = ({options, ObjectList}) =>
             );
         #endif
 
-        ${ObjectList.getDefinition()}
+        ${Scene.getDefinition()}
 
         vec3 color = trace(camera, hitables);
         color = sqrt(color); // correct gamma

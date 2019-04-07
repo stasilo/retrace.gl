@@ -7,9 +7,11 @@
  * Edited and Ported from C++ to Javascript by: Erich Loftis (erichlof on GitHub)
  * https://github.com/erichlof/THREE.js-PathTracing-Renderer
  *
+ * Clean up and engine agnostic refactor by: Jakob Stasilowicz (stasilo on GitHub)
+ *
  */
 
-import { Vector3 } from 'three';
+import { vec3 } from 'gl-matrix';
 
 var stackptr = 0;
 var buildNodes = [];
@@ -27,20 +29,20 @@ var rightWorkCounter = 0;
 
 var nullCodePathReached = false;
 
-var currentMinCorner = new Vector3();
-var currentMaxCorner = new Vector3();
+var currentMinCorner = vec3.create();
+var currentMaxCorner = vec3.create();
 
-var testMinCorner = new Vector3();
-var testMaxCorner = new Vector3();
-var testCentroid = new Vector3();
+var testMinCorner = vec3.create();
+var testMaxCorner = vec3.create();
+var testCentroid = vec3.create();
 
-var currentCentroid = new Vector3();
-var centroidAverage = new Vector3();
+var currentCentroid = vec3.create();
+var centroidAverage = vec3.create();
 
-var lBottomCorner = new Vector3();
-var lTopCorner = new Vector3();
-var rBottomCorner = new Vector3();
-var rTopCorner = new Vector3();
+var lBottomCorner = vec3.create();
+var lTopCorner = vec3.create();
+var rBottomCorner = vec3.create();
+var rTopCorner = vec3.create();
 
 var k, value, side1, side2, side3, minCost, testSplit;
 var axis, countLeft, countRight;
@@ -54,14 +56,14 @@ export function BvhFlatNode() {
     this.idLeftChild = 0;
     this.idRightChild = 0;
     this.idParent = 0;
-    this.minCorner = new Vector3();
-    this.maxCorner = new Vector3();
+    this.minCorner = vec3.create();
+    this.maxCorner = vec3.create();
 }
 
-export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
+export function bvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
     // reset variables
-    currentMinCorner.set(Infinity, Infinity, Infinity);
-    currentMaxCorner.set(-Infinity, -Infinity, -Infinity);
+    currentMinCorner = vec3.fromValues(Infinity, Infinity, Infinity);
+    currentMaxCorner = vec3.fromValues(-Infinity, -Infinity, -Infinity);
 
     if (workList.length < 1) {
         return;
@@ -77,12 +79,20 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
         flatLeafNode.idRightChild = -1;
         flatLeafNode.idParent = idParent;
 
-        flatLeafNode.minCorner.set(aabb_array[9 * k + 0], aabb_array[9 * k + 1], aabb_array[9 * k + 2]);
-        flatLeafNode.maxCorner.set(aabb_array[9 * k + 3], aabb_array[9 * k + 4], aabb_array[9 * k + 5]);
+        flatLeafNode.minCorner = vec3.fromValues(
+            aabb_array[9 * k + 0],
+            aabb_array[9 * k + 1],
+            aabb_array[9 * k + 2]
+        );
+
+        flatLeafNode.maxCorner = vec3.fromValues(
+            aabb_array[9 * k + 3],
+            aabb_array[9 * k + 4],
+            aabb_array[9 * k + 5]
+        );
 
         buildNodes.push(flatLeafNode);
 
-        //console.log(flatLeafNode);
         // if this is a right branch, fill in parent's missing link to this right child,
         // now that we have assigned this right child an ID
         if (!isLeftBranch) {
@@ -94,11 +104,21 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
         // construct bounding box around the current workList's triangle AABBs
         for (let i = 0; i < workList.length; i++) {
             k = workList[i];
-            testMinCorner.set(aabb_array[9 * k + 0], aabb_array[9 * k + 1], aabb_array[9 * k + 2]);
-            testMaxCorner.set(aabb_array[9 * k + 3], aabb_array[9 * k + 4], aabb_array[9 * k + 5]);
 
-            currentMinCorner.min(testMinCorner);
-            currentMaxCorner.max(testMaxCorner);
+            testMinCorner = vec3.fromValues(
+                aabb_array[9 * k + 0],
+                aabb_array[9 * k + 1],
+                aabb_array[9 * k + 2]
+            );
+
+            testMaxCorner = vec3.fromValues(
+                aabb_array[9 * k + 3],
+                aabb_array[9 * k + 4],
+                aabb_array[9 * k + 5]
+            );
+
+            vec3.min(currentMinCorner, currentMinCorner, testMinCorner);
+            vec3.max(currentMaxCorner, currentMaxCorner, testMaxCorner);
         }
 
         // create inner node
@@ -109,11 +129,10 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
         flatnode0.idRightChild = buildNodes.length + 2;
         flatnode0.idParent = idParent;
 
-        flatnode0.minCorner.copy(currentMinCorner);
-        flatnode0.maxCorner.copy(currentMaxCorner);
+        flatnode0.minCorner = vec3.clone(currentMinCorner);
+        flatnode0.maxCorner = vec3.clone(currentMaxCorner);
 
         buildNodes.push(flatnode0);
-        //console.log(flatnode0);
 
         // if this is a right branch, fill in parent's missing link to this right child,
         // now that we have assigned this right child an ID
@@ -131,12 +150,20 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
         flatnode1.idRightChild = -1;
         flatnode1.idParent = flatnode0.idSelf;
 
-        flatnode1.minCorner.set(aabb_array[9 * k + 0], aabb_array[9 * k + 1], aabb_array[9 * k + 2]);
-        flatnode1.maxCorner.set(aabb_array[9 * k + 3], aabb_array[9 * k + 4], aabb_array[9 * k + 5]);
+        flatnode1.minCorner = vec3.fromValues(
+            aabb_array[9 * k + 0],
+            aabb_array[9 * k + 1],
+            aabb_array[9 * k + 2]
+        );
+
+        flatnode1.maxCorner = vec3.fromValues(
+            aabb_array[9 * k + 3],
+            aabb_array[9 * k + 4],
+            aabb_array[9 * k + 5]
+        );
 
         buildNodes.push(flatnode1);
 
-        //console.log(flatnode1);
         k = workList[1];
 
         // create 'right' leaf node
@@ -147,30 +174,60 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
         flatnode2.idRightChild = -1;
         flatnode2.idParent = flatnode0.idSelf;
 
-        flatnode2.minCorner.set(aabb_array[9 * k + 0], aabb_array[9 * k + 1], aabb_array[9 * k + 2]);
-        flatnode2.maxCorner.set(aabb_array[9 * k + 3], aabb_array[9 * k + 4], aabb_array[9 * k + 5]);
+        flatnode2.minCorner = vec3.fromValues(
+            aabb_array[9 * k + 0],
+            aabb_array[9 * k + 1],
+            aabb_array[9 * k + 2]
+        );
+
+        flatnode2.maxCorner = vec3.fromValues(
+            aabb_array[9 * k + 3],
+            aabb_array[9 * k + 4],
+            aabb_array[9 * k + 5]
+        );
 
         buildNodes.push(flatnode2);
-        //console.log(flatnode2);
+
         return;
     } else if (workList.length > 2) { // end else if (workList.length == 2)
-        centroidAverage.set(0, 0, 0);
+        centroidAverage = vec3.fromValues(0, 0, 0);
 
         // construct bounding box around all of the current workList's triangle AABBs
         for (let i = 0; i < workList.length; i++) {
             k = workList[i];
-            testMinCorner.set(aabb_array[9 * k + 0], aabb_array[9 * k + 1], aabb_array[9 * k + 2]);
-            testMaxCorner.set(aabb_array[9 * k + 3], aabb_array[9 * k + 4], aabb_array[9 * k + 5]);
 
-            currentCentroid.set(aabb_array[9 * k + 6], aabb_array[9 * k + 7], aabb_array[9 * k + 8]);
+            testMinCorner = vec3.fromValues(
+                aabb_array[9 * k + 0],
+                aabb_array[9 * k + 1],
+                aabb_array[9 * k + 2]
+            );
 
-            currentMinCorner.min(testMinCorner);
-            currentMaxCorner.max(testMaxCorner);
+            testMaxCorner = vec3.fromValues(
+                aabb_array[9 * k + 3],
+                aabb_array[9 * k + 4],
+                aabb_array[9 * k + 5]
+            );
 
-            centroidAverage.add(currentCentroid);
+            currentCentroid = vec3.fromValues(
+                aabb_array[9 * k + 6],
+                aabb_array[9 * k + 7],
+                aabb_array[9 * k + 8]
+            );
+
+            vec3.min(currentMinCorner, currentMinCorner, testMinCorner);
+            vec3.max(currentMaxCorner, currentMaxCorner, testMaxCorner);
+            vec3.add(centroidAverage, centroidAverage, currentCentroid);
         }
 
-        centroidAverage.divideScalar(workList.length);
+        // divide each member of centroidAverage by scalar workList.length
+        vec3.divide(
+            centroidAverage,
+            centroidAverage,
+            vec3.fromValues(
+                ...Array(3).fill(workList.length)
+            )
+        );
+
         // create inner node
         let flatnode = new BvhFlatNode();
 
@@ -178,9 +235,8 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
         flatnode.idLeftChild = buildNodes.length + 1; // traverse down the left branches first
         flatnode.idRightChild = 0; // missing link will be filled in soon, don't know how deep the left branches will go
         flatnode.idParent = idParent;
-
-        flatnode.minCorner.copy(currentMinCorner);
-        flatnode.maxCorner.copy(currentMaxCorner);
+        flatnode.minCorner = vec3.clone(currentMinCorner);
+        flatnode.maxCorner = vec3.clone(currentMaxCorner);
 
         buildNodes.push(flatnode);
         //console.log(flatnode);
@@ -191,10 +247,15 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
             buildNodes[idParent].idRightChild = flatnode.idSelf;
         }
 
-        side1 = currentMaxCorner.x - currentMinCorner.x; // length bbox along X-axis
-        side2 = currentMaxCorner.y - currentMinCorner.y; // length bbox along Y-axis
-        side3 = currentMaxCorner.z - currentMinCorner.z; // length bbox along Z-axis
-        minCost = workList.length * (side1 * side2 + side2 * side3 + side3 * side1);
+        side1 = currentMaxCorner[0]
+            - currentMinCorner[0]; // length bbox along X-axis
+        side2 = currentMaxCorner[1]
+            - currentMinCorner[1]; // length bbox along Y-axis
+        side3 = currentMaxCorner[2]
+            - currentMinCorner[2]; // length bbox along Z-axis
+
+        minCost = workList.length
+            * (side1 * side2 + side2 * side3 + side3 * side1);
 
         // reset bestSplit and bestAxis
         bestSplit = null;
@@ -206,10 +267,10 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
 
             // we will try dividing the triangle AABBs based on the current axis
             // create left and right bounding box
-            lBottomCorner.set(Infinity, Infinity, Infinity);
-            lTopCorner.set(-Infinity, -Infinity, -Infinity);
-            rBottomCorner.set(Infinity, Infinity, Infinity);
-            rTopCorner.set(-Infinity, -Infinity, -Infinity);
+            lBottomCorner = vec3.fromValues(Infinity, Infinity, Infinity);
+            lTopCorner = vec3.fromValues(-Infinity, -Infinity, -Infinity);
+            rBottomCorner = vec3.fromValues(Infinity, Infinity, Infinity);
+            rTopCorner = vec3.fromValues(-Infinity, -Infinity, -Infinity);
 
             // The number of triangle AABBs in the left and right bboxes (needed to calculate SAH cost function)
             countLeft = 0;
@@ -220,31 +281,45 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
             for (let i = 0; i < workList.length; i++) {
                 k = workList[i];
 
-                testMinCorner.set(aabb_array[9 * k + 0], aabb_array[9 * k + 1], aabb_array[9 * k + 2]);
-                testMaxCorner.set(aabb_array[9 * k + 3], aabb_array[9 * k + 4], aabb_array[9 * k + 5]);
-                testCentroid.set(aabb_array[9 * k + 6], aabb_array[9 * k + 7], aabb_array[9 * k + 8]);
+                testMinCorner = vec3.fromValues(
+                    aabb_array[9 * k + 0],
+                    aabb_array[9 * k + 1],
+                    aabb_array[9 * k + 2]
+                );
+
+                testMaxCorner = vec3.fromValues(
+                    aabb_array[9 * k + 3],
+                    aabb_array[9 * k + 4],
+                    aabb_array[9 * k + 5]
+                );
+
+                testCentroid = vec3.fromValues(
+                    aabb_array[9 * k + 6],
+                    aabb_array[9 * k + 7],
+                    aabb_array[9 * k + 8]
+                );
 
                 // get bbox center
                 if (axis == 0) { // x-axis
-                    value = testCentroid.x;
-                    testSplit = centroidAverage.x;
+                    value = testCentroid[0];
+                    testSplit = centroidAverage[0];
                 } else if (axis == 1) { // y-axis
-                    value = testCentroid.y;
-                    testSplit = centroidAverage.y;
+                    value = testCentroid[1];
+                    testSplit = centroidAverage[1];
                 } else { // z-axis
-                    value = testCentroid.z;
-                    testSplit = centroidAverage.z;
+                    value = testCentroid[2];
+                    testSplit = centroidAverage[2];
                 }
 
                 if (value < testSplit) {
                     // if center is smaller then testSplit value, put triangle box in Left bbox
-                    lBottomCorner.min(testMinCorner);
-                    lTopCorner.max(testMaxCorner);
+                    vec3.min(lBottomCorner, lBottomCorner, testMinCorner);
+                    vec3.max(lTopCorner, lTopCorner, testMaxCorner);
                     countLeft++;
                 } else {
                     // else put triangle box in Right bbox
-                    rBottomCorner.min(testMinCorner);
-                    rTopCorner.max(testMaxCorner);
+                    vec3.min(rBottomCorner, rBottomCorner, testMinCorner);
+                    vec3.max(rTopCorner, rTopCorner, testMaxCorner);
                     countRight++;
                 }
             }
@@ -256,19 +331,26 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
 
             // Now use the Surface Area Heuristic to see if this split has a better "cost"
             // It's a real partitioning, calculate the sides of Left and Right BBox
-            lside1 = lTopCorner.x - lBottomCorner.x;
-            lside2 = lTopCorner.y - lBottomCorner.y;
-            lside3 = lTopCorner.z - lBottomCorner.z;
-            rside1 = rTopCorner.x - rBottomCorner.x;
-            rside2 = rTopCorner.y - rBottomCorner.y;
-            rside3 = rTopCorner.z - rBottomCorner.z;
+            lside1 = lTopCorner[0] - lBottomCorner[0];
+            lside2 = lTopCorner[1] - lBottomCorner[1];
+            lside3 = lTopCorner[2] - lBottomCorner[2];
+
+            rside1 = rTopCorner[0] - rBottomCorner[0];
+            rside2 = rTopCorner[1] - rBottomCorner[1];
+            rside3 = rTopCorner[2] - rBottomCorner[2];
 
             // calculate SurfaceArea of Left and Right BBox
-            surfaceLeft = (lside1 * lside2) + (lside2 * lside3) + (lside3 * lside1);
-            surfaceRight = (rside1 * rside2) + (rside2 * rside3) + (rside3 * rside1);
+            surfaceLeft = (lside1 * lside2)
+                + (lside2 * lside3)
+                + (lside3 * lside1);
+
+            surfaceRight = (rside1 * rside2)
+                + (rside2 * rside3)
+                + (rside3 * rside1);
 
             // calculate total cost by multiplying left and right bbox by number of triangle AABBs in each
-            totalCost = (surfaceLeft * countLeft) + (surfaceRight * countRight);
+            totalCost = (surfaceLeft * countLeft)
+                + (surfaceRight * countRight);
 
             // keep track of cheapest split found so far
             if (totalCost < minCost) {
@@ -332,15 +414,20 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
     // this loop is to count how many elements we need for the left branch and the right branch
     for (let i = 0; i < workList.length; i++) {
         k = workList[i];
-        testCentroid.set(aabb_array[9 * k + 6], aabb_array[9 * k + 7], aabb_array[9 * k + 8]);
+
+        testCentroid = vec3.fromValues(
+            aabb_array[9 * k + 6],
+            aabb_array[9 * k + 7],
+            aabb_array[9 * k + 8]
+        );
 
         // get bbox center
         if (bestAxis == 0) {
-            value = testCentroid.x; // x-axis
+            value = testCentroid[0]; // x-axis
         } else if (bestAxis == 1) { 
-            value = testCentroid.y; // y-axis
+            value = testCentroid[1]; // y-axis
         } else {
-            value = testCentroid.z; // z-axis
+            value = testCentroid[2]; // z-axis
         }
 
         if (value < bestSplit) {
@@ -361,15 +448,20 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
     // populate the current leftWorkLists and rightWorklists
     for (let i = 0; i < workList.length; i++) {
         k = workList[i];
-        testCentroid.set(aabb_array[9 * k + 6], aabb_array[9 * k + 7], aabb_array[9 * k + 8]);
+
+        testCentroid = vec3.fromValues(
+            aabb_array[9 * k + 6],
+            aabb_array[9 * k + 7],
+            aabb_array[9 * k + 8]
+        );
 
         // get bbox center
         if (bestAxis == 0) {
-            value = testCentroid.x; // x-axis
+            value = testCentroid[0]; // x-axis
         } else if (bestAxis == 1) {
-            value = testCentroid.y; // y-axis
+            value = testCentroid[1]; // y-axis
         } else {
-            value = testCentroid.z; // z-axis
+            value = testCentroid[2]; // z-axis
         }
 
         if (value < bestSplit) {
@@ -380,7 +472,7 @@ export function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch) {
             rightWorkCounter++;
         }
     }
-} // end function BvhCreateNode(workList, aabb_array, idParent, isLeftBranch)
+} // end function bvhCreateNode(workList, aabb_array, idParent, isLeftBranch)
 
 export function bvhBuildIterative(workList, aabb_array) {
     currentList = workList;
@@ -399,7 +491,7 @@ export function bvhBuildIterative(workList, aabb_array) {
     parentList.push(buildNodes.length - 1);
 
     // parent id of -1, meaning this is the root node, which has no parent
-    BvhCreateNode(currentList, aabb_array, -1, true); // build root node
+    bvhCreateNode(currentList, aabb_array, -1, true); // build root node
 
     // build the tree using the "go down left branches until done, then ascend back up right branches" approach
     while (stackptr > -1) {
@@ -414,7 +506,7 @@ export function bvhBuildIterative(workList, aabb_array) {
             //console.log("stackptr: " + stackptr);
             parentList.push(buildNodes.length - 1);
             // build the left node
-            BvhCreateNode(currentList, aabb_array, buildNodes.length - 1, true);
+            bvhCreateNode(currentList, aabb_array, buildNodes.length - 1, true);
             leftBranchCounter++;
         } else {
             currentList = rightWorkLists[stackptr];
@@ -426,7 +518,7 @@ export function bvhBuildIterative(workList, aabb_array) {
                 //console.log("stackptr: " + stackptr);
 
                 // build the right node
-                BvhCreateNode(currentList, aabb_array, parentList.pop(), false);
+                bvhCreateNode(currentList, aabb_array, parentList.pop(), false);
                 rightWorkLists[stackptr - 1] = null;
                 rightBranchCounter++;
             } else {
@@ -437,4 +529,4 @@ export function bvhBuildIterative(workList, aabb_array) {
     } // end while (stackptr > -1)
 
     return buildNodes;
-} // end function BvhBuildIterative(workList, aabb_array)
+} // end function bvhBuildIterative(workList, aabb_array)

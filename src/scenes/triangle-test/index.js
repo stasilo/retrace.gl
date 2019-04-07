@@ -8,9 +8,9 @@ import {
     normedColorStr
 } from '../../utils';
 
-import ObjectList from '../../dtos/object-list';
+import Scene from '../../dtos/scene';
 
-const sceneObjects = new ObjectList([
+const sceneObjects = new Scene([
     new Sphere({
         center: [0., -301, -5.],
         radius: 300.5,
