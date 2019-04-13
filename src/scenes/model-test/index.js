@@ -23,8 +23,8 @@ export default async () => {
             new MetalMaterial({
                 name: 'fuzzy-metal',
                 color: '#775b2b',
-                fuzz: 0.4,
-                albedo: [1.0, 1.0, 1.0]
+                fuzz: 0.25,
+                albedo: [0.5, 0.5, 0.5]
             }),
             new LambertMaterial({
                 name: 'lambert',

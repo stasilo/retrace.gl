@@ -307,7 +307,7 @@ const getSource = ({options, Scene}) =>
         0.,
         vec3(-1.)
     );
-    
+
     Material ShinyMetalMaterial = Material(
         METAL_MATERIAL_TYPE,
         vec3(0.8),
@@ -921,7 +921,7 @@ const getSource = ({options, Scene}) =>
             record.hasHit = true;
             record.hitT = tMax;
             record.material = getPackedMaterial(materialId);
-            record.color = record.material.color; //vec3(1.0, 0., 0.); //color;
+            record.color = record.material.color; //color;
             record.hitPoint = pointOnRay(ray, tMax);
 
             hitRecord = record;
@@ -937,13 +937,6 @@ const getSource = ({options, Scene}) =>
             } else {
                 hitRecord.normal = normalize(cross(v1 - v0, v2 - v0));
             }
-
-
-
-
-            // vec3(vd0.xyz), vec3(vd0.w, vd1.xy), vec3(vd1.zw, vd2.x)
-            // intersec.uv = triangleW * vec2(vd4.zw) + triangleU * vec2(vd5.xy) + triangleV * vec2(vd5.zw);
-
         }
 
         for(int i = 0; i < ${Scene.length()}; i++) {

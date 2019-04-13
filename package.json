@@ -65,7 +65,6 @@
         "spectorjs": "^0.9.5",
         "stats.js": "^0.17.0",
         "style-loader": "^0.20.3",
-        "three": "^0.102.1",
         "url-loader": "^1.1.2",
         "webpack": "^4.29.6",
         "webpack-cli": "^3.3.0",
