@@ -15,10 +15,14 @@ import {
 class ObjModel {
     includeInBvh = true;
 
-    constructor({url, scale, position, rotation, material}) {
+    constructor({url, material, smoothShading, scale, position, rotation}) {
         this.url = url;
         this.material = material;
         this._triangleData = null;
+
+        this.smoothShading = defined(smoothShading)
+            ? smoothShading
+            : false;
 
         this.scale = defined(scale)
             ? scale
@@ -42,6 +46,7 @@ class ObjModel {
                 : [])
         };
 
+        // "await new Obj()"
         return (async () => {
             this.mesh = await this.loadModel();
             return this;
@@ -52,6 +57,7 @@ class ObjModel {
         if(!this._triangleData) {
             this._triangleData = encodeObjModelTriangleVertexData({
                 mesh: this.mesh,
+                smoothShading: this.smoothShading,
                 scale: this.scale,
                 position: this.position,
                 rotation: this.rotation,

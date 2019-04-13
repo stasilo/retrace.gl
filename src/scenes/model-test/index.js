@@ -8,6 +8,7 @@ import Scene from '../../dtos/scene';
 import MetalMaterial from '../../materials/metal';
 import LambertMaterial from '../../materials/lambert';
 import EmissiveMaterial from '../../materials/emissive';
+import DialectricMaterial from '../../materials/dialectric';
 
 import {
     random,
@@ -22,7 +23,7 @@ export default async () => {
             new MetalMaterial({
                 name: 'fuzzy-metal',
                 color: '#775b2b',
-                fuzz: 0.3,
+                fuzz: 0.4,
                 albedo: [1.0, 1.0, 1.0]
             }),
             new LambertMaterial({
@@ -33,38 +34,101 @@ export default async () => {
                 name: 'emissive',
                 color: '#101010',
                 intensity: 10
+            }),
+            new DialectricMaterial({
+                name: 'glass'
             })
         ],
         geometries: [
+            // await new ObjModel({
+            //     url: 'assets/models/bunny.obj',
+            //     material: 'fuzzy-metal', //'lambert',
+            //     scale: 8,
+            //     position: {
+            //         x: -0.8,
+            //         y: -0.6,
+            //         z: -0.4
+            //     },
+            //     // 0.35, -0.18, -1.5
+            //     rotation: {
+            //         y: degToRad(160)
+            //     }
+            // }),
             await new ObjModel({
-                url: 'assets/models/bunny.obj',
-                color: '#775b2b',
-                material: 'fuzzy-metal',
-                scale: 8,
+                url: 'assets/models/hand.obj',
+                material: 'glass', //'fuzzy-metal',
+                smoothShading: true,
+                scale: 0.05,
                 position: {
-                    x: 0.4,
+                    x: 0.5,
+                    y: 0.35,
+                    z: -1.8
+                },
+                rotation: {
+                    // y: degToRad(-60),
+                    y: degToRad(-70)
+                }
+                // rotation: {
+                //     x: degToRad(-60),
+                //     y: 0, //degToRad(30),
+                //     z: degToRad(30)
+                // }
+            }),
+            await new ObjModel({
+                url: 'assets/models/deer.obj',
+                material: 'fuzzy-metal',
+                smoothShading: true,
+                scale: 0.0012,
+                position: {
+                    x: -0.2,
                     y: -0.6,
                     z: -0.4
                 },
                 rotation: {
-                    y: degToRad(90)
+                    y: degToRad(0)
                 }
             }),
-            await new ObjModel({
-                url: 'assets/models/hand.obj',
-                material: 'lambert',
-                scale: 0.05,
-                position: {
-                    x: 0.3,
-                    y: 0.4,
-                    z: -1.8
-                },
-                rotation: {
-                    x: degToRad(-60),
-                    y: 0, //degToRad(30),
-                    z: degToRad(30)
-                }
-            }),
+            // await new ObjModel({
+            //     url: 'assets/models/cat.obj',
+            //     material: 'glass',
+            //     scale: 0.004,
+            //     position: {
+            //         x: -0.3,
+            //         y: -0.6,
+            //         z: -0.5
+            //     },
+            //     rotation: {
+            //         y: degToRad(0)
+            //     }
+            // }),
+            // await new ObjModel({
+            //     url: 'assets/models/cat.obj',
+            //     material: 'lambert',
+            //     scale: 0.005,
+            //     position: {
+            //         x: -0.2,
+            //         y: -0.6,
+            //         z: -0.4
+            //     },
+            //     rotation: {
+            //         y: degToRad(0)
+            //     }
+            // }),
+            // await new ObjModel({
+            //     url: 'assets/models/suzanne.obj',
+            //     material: 'fuzzy-metal',
+            //     scale: 0.9,
+            //     position: {
+            //         x: -0.2,
+            //         y: 0.4,
+            //         z: -0.4
+            //     },
+            //     rotation: {
+            //         // x: degToRad(0),
+            //         y: degToRad(30),
+            //         // z: degToRad(-30)
+            //     }
+            // }),
             // await new ObjModel({
             //     url: 'assets/models/sphere.obj',
             //     color: '#0000ff',
@@ -93,21 +157,20 @@ export default async () => {
                 `
             }),
             new Sphere({
-                center:[0.35, -0.18, -1.5],
-                // center:[0.55, 0.5, -1.],
+                center:[0.65, -0.18, -1.5],
                 radius: 0.34,
                 material: 'ShinyMetalMaterial',
                 color: '#eeeeee'
             }),
             new Sphere({
-                center:[1.0, -0.27, -0.6],
-                // center:[0.55, 0.5, -1.],
+                center:[1.0, -0.27, -0.3],
                 radius: 0.25,
                 material: 'GlassMaterial',
                 color: '#eeeeee'
             }),
             new Sphere({
-                center: [-0.3, 9.4, 3.],
+                // center: [4.8, 9.4, 3.],
+                center: [-1.8, 10.4, 1.],
                 radius: 4,
                 material: 'LightMaterial',
                 color: '#ddffff'

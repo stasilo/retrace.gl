@@ -1,8 +1,8 @@
 import {vec3} from 'gl-matrix';
 import {bvhBuildIterative} from './bvh-builder';
 
-// 3 * vec3() vertices + 1 * vec3() meta data
-const triDataSize = 12;
+// 3 * vec3() vertices + 3 * vec3() nromal + 1 * vec3() meta data
+const triDataSize = 21;
 
 export function buildSceneBvh(scene) {
     let triangles = scene.bvhHitables

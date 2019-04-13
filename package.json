@@ -53,6 +53,7 @@
         "loaders.gl": "^0.3.5",
         "lodash.chunk": "^4.2.0",
         "node-sass": "^4.11.0",
+        "normals": "^1.1.0",
         "obj-mtl-loader": "0.0.5",
         "optimize-css-assets-webpack-plugin": "^4.0.3",
         "picogl": "^0.10.1",

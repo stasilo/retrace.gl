@@ -299,6 +299,15 @@ const getSource = ({options, Scene}) =>
         vec3(-1.)
     );
 
+    Material GlassMaterial = Material(
+        DIALECTRIC_MATERIAL_TYPE,
+        vec3(1.),
+        0.,
+        1.8, //1.7
+        0.,
+        vec3(-1.)
+    );
+    
     Material ShinyMetalMaterial = Material(
         METAL_MATERIAL_TYPE,
         vec3(0.8),
@@ -313,15 +322,6 @@ const getSource = ({options, Scene}) =>
         vec3(0.9),
         0.45,
         0.,
-        0.,
-        vec3(-1.)
-    );
-
-    Material GlassMaterial = Material(
-        DIALECTRIC_MATERIAL_TYPE,
-        vec3(1.),
-        0.,
-        1.8, //1.7
         0.,
         vec3(-1.)
     );
@@ -431,6 +431,7 @@ const getSource = ({options, Scene}) =>
         vec3 hitPoint;
         float hitT;
         vec3 normal;
+        vec2 uv;
 
         Material material;
         vec3 color;
@@ -719,18 +720,12 @@ const getSource = ({options, Scene}) =>
 
         float t = dot(edge2, qvec) * det;
 
-    	// if(t > T_MIN && t < tMax) {
-        //     hitRecord.hasHit = true;
-        //     hitRecord.hitT = t;
-        //     hitRecord.normal = normalize(n);
-        //     hitRecord.hitPoint = pointOnRay(r, t);
-        //
-        //     return true;
-        // }
-
         if(t > T_MIN && t < tMax) {
+            hitRecord.uv = vec2(u, v);
             hitRecord.hasHit = true;
             hitRecord.hitT = t;
+
+            return true;
         }
 
         return false;
@@ -746,8 +741,9 @@ const getSource = ({options, Scene}) =>
         record.hasHit = false;
         hitRecord.hasHit = false;
 
-        bool lookupTriangle = false;
+        bool triangleLookup = false;
         float triangleLookupOffset = 0.;
+        vec2 triangleUv;
 
         int stackPtr = 0;
         int levelCounter = 0;
@@ -793,7 +789,8 @@ const getSource = ({options, Scene}) =>
                 float node1Offset = currentNode.meta.z;
 
                 if (node1Offset < 0.) { // this is a leaf node
-                    float triangleOffset = 4. * (-node1Offset - 1.);
+                    // float triangleOffset = 4. * (-node1Offset - 1.);
+                    float triangleOffset = 7. * (-node1Offset - 1.);
 
                     float xOffset = mod(triangleOffset, DATA_TEX_SIZE);
                     float yOffset = floor(triangleOffset * DATA_TEX_INV_SIZE);
@@ -812,8 +809,9 @@ const getSource = ({options, Scene}) =>
 
                     bvhHitTriangle(ray, v0, v1, v2, tMax, /* out => */ record);
                     if(record.hasHit) {
-                        lookupTriangle = true;
+                        triangleLookup = true;
                         triangleLookupOffset = triangleOffset;
+                        triangleUv = record.uv;
                         tMax = record.hitT; // handle depth! ("z-index" :))
                         record.hasHit = false;
                     }
@@ -888,37 +886,64 @@ const getSource = ({options, Scene}) =>
             loopCounter++;
         }
 
-        if(lookupTriangle) {
+        if(triangleLookup) {
             float xOffset = mod(triangleLookupOffset, DATA_TEX_SIZE);
             float yOffset = floor(triangleLookupOffset * DATA_TEX_INV_SIZE);
-
             vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
 
             xOffset = mod(triangleLookupOffset + 1., DATA_TEX_SIZE);
             yOffset = floor((triangleLookupOffset + 1.) * DATA_TEX_INV_SIZE);
-
             vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
 
             xOffset = mod(triangleLookupOffset + 2., DATA_TEX_SIZE);
             yOffset = floor((triangleLookupOffset + 2.) * DATA_TEX_INV_SIZE);
-
             vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
 
             xOffset = mod(triangleLookupOffset + 3., DATA_TEX_SIZE);
             yOffset = floor((triangleLookupOffset + 3.) * DATA_TEX_INV_SIZE);
-
             vec3 meta = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+            xOffset = mod(triangleLookupOffset + 4., DATA_TEX_SIZE);
+            yOffset = floor((triangleLookupOffset + 4.) * DATA_TEX_INV_SIZE);
+            vec3 n0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+            xOffset = mod(triangleLookupOffset + 5., DATA_TEX_SIZE);
+            yOffset = floor((triangleLookupOffset + 5.) * DATA_TEX_INV_SIZE);
+            vec3 n1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+            xOffset = mod(triangleLookupOffset + 6., DATA_TEX_SIZE);
+            yOffset = floor((triangleLookupOffset + 6.) * DATA_TEX_INV_SIZE);
+            vec3 n2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+
             int materialId = int(meta.x);
+            bool smoothShading = bool(meta.y);
 
             record.hasHit = true;
             record.hitT = tMax;
             record.material = getPackedMaterial(materialId);
             record.color = record.material.color; //vec3(1.0, 0., 0.); //color;
-            record.normal = normalize(cross(v1 - v0, v2 - v0));
             record.hitPoint = pointOnRay(ray, tMax);
 
             hitRecord = record;
             hitRecord.color = hitRecord.material.color;
+
+            if(smoothShading == true) {
+                float triangleW = 1.0 - triangleUv.x - triangleUv.y;
+        		hitRecord.normal = normalize(
+                    triangleW * n0
+                        + triangleUv.x * n1
+                        + triangleUv.y * n2
+                );
+            } else {
+                hitRecord.normal = normalize(cross(v1 - v0, v2 - v0));
+            }
+
+
+
+
+            // vec3(vd0.xyz), vec3(vd0.w, vd1.xy), vec3(vd1.zw, vd2.x)
+            // intersec.uv = triangleW * vec2(vd4.zw) + triangleU * vec2(vd5.xy) + triangleV * vec2(vd5.zw);
+
         }
 
         for(int i = 0; i < ${Scene.length()}; i++) {
