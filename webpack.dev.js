@@ -86,6 +86,10 @@ module.exports = {
             from: './src/assets/models/',
             to: 'assets/models/',
         }]),
+        new CopyWebpackPlugin([{
+            from: './src/assets/images/',
+            to: 'assets/images/',
+        }]),
         new HtmlWebpackPlugin({
             template: './index.html',
             inject: true

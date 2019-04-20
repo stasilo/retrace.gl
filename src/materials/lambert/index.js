@@ -1,9 +1,9 @@
-import ModelMaterial from '../model-material';
-import {materialTypes} from '../model-material';
+import BaseMaterial from '../base-material';
+import {materialTypes} from '../base-material';
 
 import {defined} from '../../utils';
 
-class LambertMaterial extends ModelMaterial {
+class LambertMaterial extends BaseMaterial {
     constructor({name, color, albedo}) {
         super({
             name,

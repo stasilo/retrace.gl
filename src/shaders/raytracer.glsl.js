@@ -1,4 +1,5 @@
 import {definedNotNull, glslFloat} from '../utils';
+import {geometryTypes} from '../bvh';
 
 const getSource = ({options, Scene}) =>
 `   #version 300 es
@@ -6,7 +7,6 @@ const getSource = ({options, Scene}) =>
     precision highp int;
     precision highp sampler2D;
 
-    //#define FLT_MAX 3.402823466e+38
     #define T_MIN 0.0001 //.001
     #define T_MAX 10000.0
 
@@ -44,16 +44,39 @@ const getSource = ({options, Scene}) =>
         uniform sampler2D accumTexture;
     #endif
 
+    in vec2 uv;
+    out vec4 fragColor;
+
+    // scene textures
+
+    ${Scene.textures.getTextures().map(texture =>
+        `uniform sampler2D uSceneTex${texture.id};`
+    ).join('\n')}
+
+    vec4 getSceneTexture(int textureId, vec2 uv) {
+        vec4 color;
+
+        switch(textureId) {
+            ${Scene.textures.getTextures().map(texture => `
+                case ${texture.id}:
+                    color = texture(uSceneTex${texture.id}, uv);
+                    break;
+            `).join('\n')};
+
+            default:
+                break;
+        }
+
+        return color;
+    }
+
     /*
      * Model bvh & triangle data
      */
 
-    uniform sampler2D uTriangleTexture;
+    uniform sampler2D uGeometryDataTexture;
     uniform sampler2D uBvhDataTexture;
     uniform sampler2D uMaterialDataTexture;
-
-    in vec2 uv;
-    out vec4 fragColor;
 
     /*
      * Camera
@@ -160,6 +183,9 @@ const getSource = ({options, Scene}) =>
     /*
      * BVH
      */
+
+    #define BVH_TRIANGLE_GEOMETRY ${glslFloat(geometryTypes.triangle)}
+    #define BVH_SPHERE_GEOMETRY ${glslFloat(geometryTypes.sphere)}
 
     struct BvhNode {
         // [id, node0 offset, node1 offset]
@@ -696,7 +722,7 @@ const getSource = ({options, Scene}) =>
         return false;
     }
 
-    bool bvhHitTriangle(in Ray r, vec3 v0, vec3 v1, vec3 v2, in float tMax, inout HitRecord hitRecord) {
+    bool hitBvhTriangle(in Ray r, vec3 v0, vec3 v1, vec3 v2, in float tMax, inout HitRecord hitRecord) {
     	vec3 edge1 = v1 - v0;
     	vec3 edge2 = v2 - v0;
     	vec3 pvec = cross(r.dir, edge2);
@@ -731,6 +757,82 @@ const getSource = ({options, Scene}) =>
         return false;
     }
 
+    void hitBvhSphere(Ray ray, vec3 center, float radius, float tMax, out HitRecord hitRecord) {
+        vec3 oc = ray.origin - center;
+
+        float a = dot(ray.dir, ray.dir);
+        float b = 2. * dot(oc, ray.dir);
+        float c = dot(oc, oc) - radius * radius;
+
+        float discriminant = b*b - 4.*a*c;
+
+        if(discriminant > 0.) {
+            float t;
+
+            t = (-b - sqrt(discriminant)) / (2. * a);
+            if(t < tMax && t > T_MIN) {
+                hitRecord.hasHit = true;
+                hitRecord.hitT = t;
+
+                return;
+            }
+
+            t = (-b + sqrt(discriminant)) / (2. * a);
+            if(t < tMax && t > T_MIN) {
+                hitRecord.hasHit = true;
+                hitRecord.hitT = t;
+
+                return;
+            }
+
+            // float t;
+            //
+            // t = (-b - sqrt(discriminant)) / (2. * a);
+            // if(t < tMax && t > T_MIN) {
+            //     hitRecord.hasHit = true;
+            //     hitRecord.hitT = t;
+            //     hitRecord.hitPoint = pointOnRay(ray, t);
+            //     hitRecord.normal = normalize(
+            //         (hitRecord.hitPoint - hitable.center) / hitable.radius
+            //     );
+            //
+            //     hitRecord.material = hitable.material;
+            //
+            //     return;
+            // }
+            //
+            // t = (-b + sqrt(discriminant)) / (2. * a);
+            // if(t < tMax && t > T_MIN) {
+            //     hitRecord.hasHit = true;
+            //     hitRecord.hitT = t;
+            //     hitRecord.hitPoint = pointOnRay(ray, t);
+            //     hitRecord.normal = normalize(
+            //         (hitRecord.hitPoint - hitable.center) / hitable.radius
+            //     );
+            //
+            //     hitRecord.material = hitable.material;
+            //
+            //     return;
+            // }
+        }
+
+        hitRecord.hasHit = false;
+        hitRecord.hitT = tMax;
+    }
+
+    vec2 getSphereUv(vec3 p) {
+        float phi = atan(p.z, p.x);
+        float theta = asin(p.y);
+
+        float xOffsetAngle = 0.; //1.4;
+        float yOffsetAngle = 0.;
+
+        float u = 1. - (phi + xOffsetAngle + PI) / (2. * PI);
+        float v = (theta + yOffsetAngle + PI/2.) / PI;
+
+        return vec2(u, v);
+    }
+
     /*
      * World
      */
@@ -742,7 +844,9 @@ const getSource = ({options, Scene}) =>
         hitRecord.hasHit = false;
 
         bool triangleLookup = false;
-        float triangleLookupOffset = 0.;
+        bool sphereLookup = false;
+
+        float lookupOffset = 0.;
         vec2 triangleUv;
 
         int stackPtr = 0;
@@ -788,32 +892,57 @@ const getSource = ({options, Scene}) =>
                 float node0Offset = currentNode.meta.y;
                 float node1Offset = currentNode.meta.z;
 
-                if (node1Offset < 0.) { // this is a leaf node
-                    // float triangleOffset = 4. * (-node1Offset - 1.);
-                    float triangleOffset = 7. * (-node1Offset - 1.);
+                if(node1Offset < 0.) { // this is a leaf node
+                    float geoOffset = 7. * (-node1Offset - 1.);
 
-                    float xOffset = mod(triangleOffset, DATA_TEX_SIZE);
-                    float yOffset = floor(triangleOffset * DATA_TEX_INV_SIZE);
+                    float xOffset = mod(geoOffset + 3., DATA_TEX_SIZE);
+                    float yOffset = floor((geoOffset + 3.) * DATA_TEX_INV_SIZE);
 
-                    vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+                    vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                    float geoType = meta.z;
 
-                    xOffset = mod(triangleOffset + 1., DATA_TEX_SIZE);
-                    yOffset = floor((triangleOffset + 1.) * DATA_TEX_INV_SIZE);
+                    if(geoType == BVH_TRIANGLE_GEOMETRY) {
+                        xOffset = mod(geoOffset, DATA_TEX_SIZE);
+                        yOffset = floor(geoOffset * DATA_TEX_INV_SIZE);
+                        vec3 v0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        xOffset = mod(geoOffset + 1., DATA_TEX_SIZE);
+                        yOffset = floor((geoOffset + 1.) * DATA_TEX_INV_SIZE);
+                        vec3 v1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    xOffset = mod(triangleOffset + 2., DATA_TEX_SIZE);
-                    yOffset = floor((triangleOffset + 2.) * DATA_TEX_INV_SIZE);
+                        xOffset = mod(geoOffset + 2., DATA_TEX_SIZE);
+                        yOffset = floor((geoOffset + 2.) * DATA_TEX_INV_SIZE);
+                        vec3 v2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        hitBvhTriangle(ray, v0, v1, v2, tMax, /* out => */ record);
+                        if(record.hasHit) {
+                            triangleLookup = true;
+                            sphereLookup = false;
+                            lookupOffset = geoOffset;
+                            triangleUv = record.uv;
+                            tMax = record.hitT;
+                            record.hasHit = false;
+                        }
+                    }
 
-                    bvhHitTriangle(ray, v0, v1, v2, tMax, /* out => */ record);
-                    if(record.hasHit) {
-                        triangleLookup = true;
-                        triangleLookupOffset = triangleOffset;
-                        triangleUv = record.uv;
-                        tMax = record.hitT; // handle depth! ("z-index" :))
-                        record.hasHit = false;
+                    if(geoType == BVH_SPHERE_GEOMETRY) {
+                        xOffset = mod(geoOffset, DATA_TEX_SIZE);
+                        yOffset = floor(geoOffset * DATA_TEX_INV_SIZE);
+                        vec3 center = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        xOffset = mod(geoOffset + 1., DATA_TEX_SIZE);
+                        yOffset = floor((geoOffset + 1.) * DATA_TEX_INV_SIZE);
+                        float radius = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).x;
+
+                        hitBvhSphere(ray, center, radius, tMax, /* out => */ record);
+                        if(record.hasHit) {
+                            triangleLookup = false;
+                            sphereLookup = true;
+                            lookupOffset = geoOffset;
+                            tMax = record.hitT; // handle depth! ("z-index" :))
+                            record.hasHit = false;
+                        }
+
                     }
                 } else { // branch
                     levelCounter++;
@@ -832,7 +961,7 @@ const getSource = ({options, Scene}) =>
                     );
 
                     // first sort the branch node data so that 'a' is the smallest
-    				if (slData1.rayT < slData0.rayT) {
+    				if(slData1.rayT < slData0.rayT) {
     					tmp = slData1;
     					slData1 = slData0;
     					slData0 = tmp;
@@ -842,17 +971,17 @@ const getSource = ({options, Scene}) =>
     					node0 = tnp;
     				} // branch 'b' now has the larger rayT value of 'a' and 'b'
 
-    				if (slData1.rayT < tMax) {// see if branch 'b' (the larger rayT) needs to be processed
+    				if(slData1.rayT < tMax) {// see if branch 'b' (the larger rayT) needs to be processed
     					currentStackData = slData1;
     					currentNode = node1;
     					skip = true; // this will prevent the stackPtr from decreasing by 1
     				}
 
-    				if (slData0.rayT < tMax) { // see if branch 'a' (the smaller rayT) needs to be processed
+    				if(slData0.rayT < tMax) { // see if branch 'a' (the smaller rayT) needs to be processed
                         // if larger branch 'b' needed to be processed also,
                         // cue larger branch 'b' for future round & increase stack pointer
 
-                        if (skip == true) {
+                        if(skip == true) {
     						stackLevels[stackPtr++] = slData1;
     					}
 
@@ -863,7 +992,7 @@ const getSource = ({options, Scene}) =>
                 }
             }
 
-            if (skip == false) {
+            if(skip == false) {
                 // decrease pointer by 1 (0.0 is root level, 24.0 is maximum depth)
                 // & check if went past the root level
                 --stackPtr;
@@ -887,33 +1016,33 @@ const getSource = ({options, Scene}) =>
         }
 
         if(triangleLookup) {
-            float xOffset = mod(triangleLookupOffset, DATA_TEX_SIZE);
-            float yOffset = floor(triangleLookupOffset * DATA_TEX_INV_SIZE);
-            vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+            float xOffset = mod(lookupOffset, DATA_TEX_SIZE);
+            float yOffset = floor(lookupOffset * DATA_TEX_INV_SIZE);
+            vec3 v0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-            xOffset = mod(triangleLookupOffset + 1., DATA_TEX_SIZE);
-            yOffset = floor((triangleLookupOffset + 1.) * DATA_TEX_INV_SIZE);
-            vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+            xOffset = mod(lookupOffset + 1., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 1.) * DATA_TEX_INV_SIZE);
+            vec3 v1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-            xOffset = mod(triangleLookupOffset + 2., DATA_TEX_SIZE);
-            yOffset = floor((triangleLookupOffset + 2.) * DATA_TEX_INV_SIZE);
-            vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+            xOffset = mod(lookupOffset + 2., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 2.) * DATA_TEX_INV_SIZE);
+            vec3 v2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-            xOffset = mod(triangleLookupOffset + 3., DATA_TEX_SIZE);
-            yOffset = floor((triangleLookupOffset + 3.) * DATA_TEX_INV_SIZE);
-            vec3 meta = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+            xOffset = mod(lookupOffset + 3., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 3.) * DATA_TEX_INV_SIZE);
+            vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-            xOffset = mod(triangleLookupOffset + 4., DATA_TEX_SIZE);
-            yOffset = floor((triangleLookupOffset + 4.) * DATA_TEX_INV_SIZE);
-            vec3 n0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+            xOffset = mod(lookupOffset + 4., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 4.) * DATA_TEX_INV_SIZE);
+            vec3 n0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-            xOffset = mod(triangleLookupOffset + 5., DATA_TEX_SIZE);
-            yOffset = floor((triangleLookupOffset + 5.) * DATA_TEX_INV_SIZE);
-            vec3 n1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+            xOffset = mod(lookupOffset + 5., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 5.) * DATA_TEX_INV_SIZE);
+            vec3 n1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-            xOffset = mod(triangleLookupOffset + 6., DATA_TEX_SIZE);
-            yOffset = floor((triangleLookupOffset + 6.) * DATA_TEX_INV_SIZE);
-            vec3 n2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+            xOffset = mod(lookupOffset + 6., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 6.) * DATA_TEX_INV_SIZE);
+            vec3 n2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
             int materialId = int(meta.x);
             bool smoothShading = bool(meta.y);
@@ -937,6 +1066,42 @@ const getSource = ({options, Scene}) =>
             } else {
                 hitRecord.normal = normalize(cross(v1 - v0, v2 - v0));
             }
+        }
+
+        if(sphereLookup) {
+            float xOffset = mod(lookupOffset, DATA_TEX_SIZE);
+            float yOffset = floor(lookupOffset * DATA_TEX_INV_SIZE);
+            vec3 center = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+            xOffset = mod(lookupOffset + 1., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 1.) * DATA_TEX_INV_SIZE);
+            vec3 data = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+            float radius = data.x;
+            int textureId = int(data.y);
+
+            xOffset = mod(lookupOffset + 3., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 3.) * DATA_TEX_INV_SIZE);
+            vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+            int materialId = int(meta.x);
+
+            record.hasHit = true;
+            record.hitT = tMax;
+            record.material = getPackedMaterial(materialId);
+            record.hitPoint = pointOnRay(ray, tMax);
+
+            if(textureId != -1) {
+                vec3 p = (record.hitPoint - center) / radius;
+                vec2 uv = getSphereUv(p);
+                record.color = getSceneTexture(textureId, uv).rgb;
+            } else {
+                record.color = record.material.color;
+            }
+
+            record.normal = normalize(
+                (record.hitPoint - center) / radius
+            );
+
+            hitRecord = record;
         }
 
         for(int i = 0; i < ${Scene.length()}; i++) {
@@ -966,28 +1131,28 @@ const getSource = ({options, Scene}) =>
 
         // regular triangle intersection (no bvh)
 
-        // ivec2 DATA_TEX_SIZE = textureSize(uTriangleTexture, 0);
+        // ivec2 DATA_TEX_SIZE = textureSize(uGeometryDataTexture, 0);
         // float DATA_TEX_SIZE = float(DATA_TEX_SIZE.x);
         // float DATA_TEX_INV_SIZE = 1. / DATA_TEX_SIZE;
         //
         // for(int iX = 0; iX < DATA_TEX_SIZE.x * DATA_TEX_SIZE.y; iX++) {
         //
-		// 	float triangleOffset = float(iX)*3.;
+		// 	float geoOffset = float(iX)*3.;
         //
-        //     float xOffset = mod(triangleOffset, DATA_TEX_SIZE);
-        //     float yOffset = floor(triangleOffset * DATA_TEX_INV_SIZE);
+        //     float xOffset = mod(geoOffset, DATA_TEX_SIZE);
+        //     float yOffset = floor(geoOffset * DATA_TEX_INV_SIZE);
         //
-        //     vec3 v0 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+        //     vec3 v0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
         //
-        //     xOffset = mod(triangleOffset + 1., DATA_TEX_SIZE);
-        //     yOffset = floor((triangleOffset + 1.) * DATA_TEX_INV_SIZE);
+        //     xOffset = mod(geoOffset + 1., DATA_TEX_SIZE);
+        //     yOffset = floor((geoOffset + 1.) * DATA_TEX_INV_SIZE);
         //
-        //     vec3 v1 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+        //     vec3 v1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
         //
-        //     xOffset = mod(triangleOffset + 2., DATA_TEX_SIZE);
-        //     yOffset = floor((triangleOffset + 2.) * DATA_TEX_INV_SIZE);
+        //     xOffset = mod(geoOffset + 2., DATA_TEX_SIZE);
+        //     yOffset = floor((geoOffset + 2.) * DATA_TEX_INV_SIZE);
         //
-        //     vec3 v2 = texelFetch(uTriangleTexture, ivec2(xOffset, yOffset), 0).xyz;
+        //     vec3 v2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
         //
         //     // have we reached a padded section of the texture?
         //     if(v0.x == v1.x &&

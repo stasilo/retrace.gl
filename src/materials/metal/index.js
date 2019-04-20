@@ -1,9 +1,9 @@
-import ModelMaterial from '../model-material';
-import {materialTypes} from '../model-material';
+import BaseMaterial from '../base-material';
+import {materialTypes} from '../base-material';
 
 import {defined} from '../../utils';
 
-class MetalMaterial extends ModelMaterial {
+class MetalMaterial extends BaseMaterial {
     constructor({name, color, fuzz, albedo}) {
         super({
             name,

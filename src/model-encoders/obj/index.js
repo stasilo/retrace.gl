@@ -11,6 +11,8 @@ import {
     glslFloat,
 } from '../../utils';
 
+import {geometryTypes} from '../../bvh';
+
 function encodeObjModelTriangleVertexData({
     mesh,
     scale,
@@ -107,10 +109,8 @@ function encodeObjModelTriangleVertexData({
 
     // encode triangles for bvh construction & texture packing
 
-    let id = 0;
     let triangles = faces
-        .reduce((tris, face) => {
-            id++;
+        .reduce((tris, face, id) => {
             return tris.concat([
                 // vec3 v0
                 face[0][0],
@@ -130,7 +130,7 @@ function encodeObjModelTriangleVertexData({
                 // vec3 meta
                 materialId,
                 smoothShading ? 1 : 0,
-                0,
+                geometryTypes.triangle,
 
                 // vec3 n0
                 face[3][0],

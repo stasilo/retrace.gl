@@ -25,8 +25,18 @@ const flatten = ([x, ...xs]) => typeof x !== 'undefined'
 
 // random no stuff
 
-const random = (max = 1, min = 0) =>
-    Math.random() * (max - min) + min;
+const random = (max = 1, min) => {
+    if(defined(min)) { 
+        [min, max] = [max, min];
+    } else { 
+        min = 0;
+    }
+
+    return Math.random() * (max - min) + min;
+}
+
+const randomIdx = (max = 1, min = 0) =>
+    Math.floor(random(max, min));
 
 const randomSign = () =>
     random() < 0.5 ? -1 : 1;
@@ -39,6 +49,12 @@ const pluckRandom = (arr) =>
 const degToRad = (d) => d * Math.PI / 180;
 const radToDeg = (r) => r * 180 / Math.PI;
 
+// glsl inject helpers
+
+const glslFloat = (n) => Number.isInteger(n)
+    ? n + '.0'
+    : n.toString();
+
 // color stuff
 
 const isHexColor = (str) =>
@@ -50,14 +66,8 @@ const normedColorStr = (color) =>
 const normedColor = (color) => {
     return hexRgb(color, {format: 'array'})
         .slice(0, 3) // skip alpha channel
-        .map(rgb => parseFloat(rgb/255)); // normalize
+        .map(rgb => glslFloat(parseFloat(rgb/255))); // normalize
 }
-
-// glsl inject helpers
-
-const glslFloat = (n) => Number.isInteger(n)
-    ? n + '.0'
-    : n.toString();
 
 // animation
 
@@ -85,6 +95,17 @@ const animationFrame = (render) => {
     }
 }
 
+// image stuff
+
+const loadImage = async (url) =>
+    new Promise((resolve, reject) => {
+        let image = new Image();
+        image.onload = () =>
+            resolve(image);
+        image.src = url;
+    });
+
+
 module.exports = {
     defined,
     definedNotNull,
@@ -93,6 +114,7 @@ module.exports = {
     reverse,
     flatten,
     random,
+    randomIdx,
     randomSign,
     pluckRandom,
     degToRad,
@@ -101,5 +123,6 @@ module.exports = {
     normedColor,
     normedColorStr,
     glslFloat,
-    animationFrame
+    animationFrame,
+    loadImage
 };

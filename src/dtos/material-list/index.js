@@ -1,12 +1,16 @@
+import {defined, definedNotNull} from '../../utils';
+
 class MaterialList {
     elements = [];
 
     constructor(materials) {
-        this.elements = materials
-            .map((material, i) => {
-                material.id = i;
-                return material;
-            });
+        this.elements = definedNotNull(materials)
+            ? materials
+                .map((material, i) => {
+                    material.id = i;
+                    return material;
+                })
+            : []; 
     }
 
     addMaterial(material) {

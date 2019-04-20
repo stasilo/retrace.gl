@@ -1,88 +1,127 @@
 import {vec3} from 'gl-matrix';
 import {bvhBuildIterative} from './bvh-builder';
 
-// 3 * vec3() vertices + 3 * vec3() nromal + 1 * vec3() meta data
-const triDataSize = 21;
+import {range} from '../utils';
 
-export function buildSceneBvh(scene) {
-    let triangles = scene.bvhHitables
-        .reduce((tris, geometry) =>
-            tris.concat(geometry.triangleData)
+const geometryTypes = {
+    triangle: 1,
+    sphere: 2
+};
+
+// 3 * vec3() vertices + 3 * vec3() nromal + 1 * vec3() meta data
+const geoBlockDataSize = 21;
+
+function buildSceneBvh(scene) {
+    let geometries = scene.bvhHitables
+        .reduce((geos, geometry) =>
+            geos.concat(geometry.geometryData)
         , []);
 
     return {
-        bvhData: buildBvh(triangles),
-        triangleData: triangles
+        bvhData: buildBvh(geometries),
+        geometryData: geometries
     }
 }
 
-export function buildBvh(triangleData) {
-    let totalTriCount = (triangleData.length / triDataSize);
+function buildBvh(geometryData) {
+    let totalGeoCount = (geometryData.length / geoBlockDataSize);
 
     let vp0 = vec3.create();
     let vp1 = vec3.create();
     let vp2 = vec3.create();
 
-    let triBoundBoxMin = vec3.create();
-    let triBoundBoxMax = vec3.create();
-    let triBoundBoxCentroid = vec3.create();
+    let geoBoundBoxMin = vec3.create();
+    let geoBoundBoxMax = vec3.create();
+    let geoBoundBoxCentroid = vec3.create();
 
-    let totalWork = new Uint32Array(totalTriCount);
+    let totalWork = new Uint32Array(totalGeoCount);
     let aabbArray = [];
 
-    for (let i = 0; i < totalTriCount; i++) {
-        triBoundBoxMin = vec3.fromValues(Infinity, Infinity, Infinity);
-        triBoundBoxMax = vec3.fromValues(-Infinity, -Infinity, -Infinity);
+    range(0, totalGeoCount)
+        .forEach(i => {
+            geoBoundBoxMin = vec3.fromValues(Infinity, Infinity, Infinity);
+            geoBoundBoxMax = vec3.fromValues(-Infinity, -Infinity, -Infinity);
 
-        // record vertex positions
+            const geoType = geometryData[geoBlockDataSize * i + 11];
 
-        vp0 = vec3.fromValues(
-            triangleData[triDataSize * i + 0],
-            triangleData[triDataSize * i + 1],
-            triangleData[triDataSize * i + 2]
-        );
+            switch(geoType) {
+                case geometryTypes.triangle:
+                    // record vertex positions
+                    vp0 = vec3.fromValues(
+                        geometryData[geoBlockDataSize * i + 0],
+                        geometryData[geoBlockDataSize * i + 1],
+                        geometryData[geoBlockDataSize * i + 2]
+                    );
 
-        vp1 = vec3.fromValues(
-            triangleData[triDataSize * i + 3],
-            triangleData[triDataSize * i + 4],
-            triangleData[triDataSize * i + 5]
-        );
+                    vp1 = vec3.fromValues(
+                        geometryData[geoBlockDataSize * i + 3],
+                        geometryData[geoBlockDataSize * i + 4],
+                        geometryData[geoBlockDataSize * i + 5]
+                    );
 
-        vp2 = vec3.fromValues(
-            triangleData[triDataSize * i + 6],
-            triangleData[triDataSize * i + 7],
-            triangleData[triDataSize * i + 8]
-        );
+                    vp2 = vec3.fromValues(
+                        geometryData[geoBlockDataSize * i + 6],
+                        geometryData[geoBlockDataSize * i + 7],
+                        geometryData[geoBlockDataSize * i + 8]
+                    );
 
-        vec3.min(triBoundBoxMin, triBoundBoxMin, vp0);
-        vec3.max(triBoundBoxMax, triBoundBoxMax, vp0);
+                    vec3.min(geoBoundBoxMin, geoBoundBoxMin, vp0);
+                    vec3.max(geoBoundBoxMax, geoBoundBoxMax, vp0);
 
-        vec3.min(triBoundBoxMin, triBoundBoxMin, vp1);
-        vec3.max(triBoundBoxMax, triBoundBoxMax, vp1);
+                    vec3.min(geoBoundBoxMin, geoBoundBoxMin, vp1);
+                    vec3.max(geoBoundBoxMax, geoBoundBoxMax, vp1);
 
-        vec3.min(triBoundBoxMin, triBoundBoxMin, vp2);
-        vec3.max(triBoundBoxMax, triBoundBoxMax, vp2);
+                    vec3.min(geoBoundBoxMin, geoBoundBoxMin, vp2);
+                    vec3.max(geoBoundBoxMax, geoBoundBoxMax, vp2);
 
-        triBoundBoxCentroid = vec3.fromValues(
-            (triBoundBoxMin[0] + triBoundBoxMax[0]) * 0.5,
-            (triBoundBoxMin[1] + triBoundBoxMax[1]) * 0.5,
-            (triBoundBoxMin[2] + triBoundBoxMax[2]) * 0.5
-        );
+                    geoBoundBoxCentroid = vec3.fromValues(
+                        (geoBoundBoxMin[0] + geoBoundBoxMax[0]) * 0.5,
+                        (geoBoundBoxMin[1] + geoBoundBoxMax[1]) * 0.5,
+                        (geoBoundBoxMin[2] + geoBoundBoxMax[2]) * 0.5
+                    );
 
-        aabbArray[9 * i + 0] = triBoundBoxMin[0];
-        aabbArray[9 * i + 1] = triBoundBoxMin[1];
-        aabbArray[9 * i + 2] = triBoundBoxMin[2];
+                    break;
 
-        aabbArray[9 * i + 3] = triBoundBoxMax[0];
-        aabbArray[9 * i + 4] = triBoundBoxMax[1];
-        aabbArray[9 * i + 5] = triBoundBoxMax[2];
+                case geometryTypes.sphere:
+                    // sphere pos
+                    let position = vec3.fromValues(
+                        geometryData[geoBlockDataSize * i + 0],
+                        geometryData[geoBlockDataSize * i + 1],
+                        geometryData[geoBlockDataSize * i + 2]
+                    );
 
-        aabbArray[9 * i + 6] = triBoundBoxCentroid[0];
-        aabbArray[9 * i + 7] = triBoundBoxCentroid[1];
-        aabbArray[9 * i + 8] = triBoundBoxCentroid[2];
+                    let radius = vec3.fromValues(
+                        geometryData[geoBlockDataSize * i + 3],
+                        geometryData[geoBlockDataSize * i + 3],
+                        geometryData[geoBlockDataSize * i + 3]
+                    );
 
-        totalWork[i] = i;
-    }
+                    vec3.sub(geoBoundBoxMin, position, radius);
+                    vec3.add(geoBoundBoxMax, position, radius);
+
+                    geoBoundBoxCentroid = position;
+
+                    break;
+
+                default:
+                    break;
+            }
+
+
+            aabbArray[9 * i + 0] = geoBoundBoxMin[0];
+            aabbArray[9 * i + 1] = geoBoundBoxMin[1];
+            aabbArray[9 * i + 2] = geoBoundBoxMin[2];
+
+            aabbArray[9 * i + 3] = geoBoundBoxMax[0];
+            aabbArray[9 * i + 4] = geoBoundBoxMax[1];
+            aabbArray[9 * i + 5] = geoBoundBoxMax[2];
+
+            aabbArray[9 * i + 6] = geoBoundBoxCentroid[0];
+            aabbArray[9 * i + 7] = geoBoundBoxCentroid[1];
+            aabbArray[9 * i + 8] = geoBoundBoxCentroid[2];
+
+            totalWork[i] = i;
+        });
 
     // build the bvh
     let buildNodes = bvhBuildIterative(totalWork, aabbArray);
@@ -106,4 +145,9 @@ export function buildBvh(triangleData) {
         }, []);
 
     return flatBvh;
+}
+
+export {
+    geometryTypes,
+    buildSceneBvh,
 }

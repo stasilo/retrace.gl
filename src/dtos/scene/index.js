@@ -1,4 +1,5 @@
 import MaterialList from '../../dtos/material-list';
+import TextureList from '../../dtos/texture-list';
 
 import {
     defined,
@@ -9,13 +10,14 @@ import {
 } from '../../utils';
 
 class Scene {
-    constructor({geometries, materials}) {
+    constructor({materials, textures, geometries}) {
         if(!geometries.length) {
             return;
         }
 
         this.objIdCounter = 0;
         this.materials = new MaterialList(materials);
+        this.textures = new TextureList(textures);
 
         this.bvhHitables = geometries
             .filter(hitable =>
@@ -35,8 +37,27 @@ class Scene {
                     }
                 }
 
+                if(defined(hitable.texture)) {
+                    console.log('looking up: ' + hitable.texture);
+
+                    const texture = this.textures.elements
+                        .find(texture => 
+                            texture.name === hitable.texture
+                        );
+
+                    if(defined(texture)) {
+                        hitable.texture = {
+                            texture: hitable.texture,
+                            textureId: texture.id
+                        }
+                    }
+                }
+
                 return hitable;
             });
+
+        console.log('this.bvhHitables: ');
+        console.dir(this.bvhHitables);
 
         this.hitables = geometries
             .filter(hitable =>

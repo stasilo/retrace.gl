@@ -18,7 +18,7 @@ class ObjModel {
     constructor({url, material, smoothShading, scale, position, rotation}) {
         this.url = url;
         this.material = material;
-        this._triangleData = null;
+        this._geometryData = null;
 
         this.smoothShading = defined(smoothShading)
             ? smoothShading
@@ -53,9 +53,9 @@ class ObjModel {
         })();
     }
 
-    get triangleData() {
-        if(!this._triangleData) {
-            this._triangleData = encodeObjModelTriangleVertexData({
+    get geometryData() {
+        if(!this._geometryData) {
+            this._geometryData = encodeObjModelTriangleVertexData({
                 mesh: this.mesh,
                 smoothShading: this.smoothShading,
                 scale: this.scale,
@@ -65,7 +65,7 @@ class ObjModel {
             });
         }
 
-        return this._triangleData;
+        return this._geometryData;
     }
 
     async loadModel() {

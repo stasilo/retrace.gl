@@ -1,5 +1,5 @@
-import ModelMaterial from '../model-material';
-import {materialTypes} from '../model-material';
+import BaseMaterial from '../base-material';
+import {materialTypes} from '../base-material';
 
 import {defined} from '../../utils';
 
@@ -9,7 +9,7 @@ import {defined} from '../../utils';
 // float refIdx;
 // float emissiveIntensity;
 
-class EmissiveMaterial extends ModelMaterial {
+class EmissiveMaterial extends BaseMaterial {
     constructor({name, color, albedo, intensity}) {
         super({
             name,

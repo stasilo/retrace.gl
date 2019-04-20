@@ -1,4 +1,8 @@
-import {normedColor} from '../../utils';
+import {
+    defined,
+    isHexColor,
+    normedColor
+} from '../../utils';
 
 const materialTypes = {
     lambert: 1,
@@ -7,7 +11,7 @@ const materialTypes = {
     emissive: 4
 }
 
-class ModelMaterial {
+class BaseMaterial {
     constructor({
         name,
         type,
@@ -24,7 +28,11 @@ class ModelMaterial {
         this.fuzz = fuzz;
         this.refIdx = refIdx;
         this.emissiveIntensity = emissiveIntensity;
-        this.color = color;
+        this.color = defined(color)
+            ? isHexColor(color)
+                ? normedColor(color)
+                : color
+            : [-1, -1, -1];
     }
 
     toArray() {
@@ -54,10 +62,10 @@ class ModelMaterial {
             ...this.albedo,
 
             // matData4
-            ...normedColor(this.color)
+            ...this.color
         ];
     }
 }
 
 export {materialTypes};
-export default ModelMaterial;
+export default BaseMaterial;

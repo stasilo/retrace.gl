@@ -1,7 +1,9 @@
 import Sphere from '../../models/sphere';
 import XyRect from '../../models/xy-rect';
 import Triangle from '../../models/triangle';
+
 import ObjModel from '../../models/obj-model';
+import BvhSphere from '../../models/bvh-sphere';
 
 import Scene from '../../dtos/scene';
 
@@ -74,6 +76,15 @@ export default async () => {
                 //     z: degToRad(30)
                 // }
             }),
+            new BvhSphere({
+                material: 'lambert',
+                position: {
+                    x: 1.35,
+                    y: -0.18,
+                    z: -2
+                },
+                radius: 0.25
+            }),
             await new ObjModel({
                 url: 'assets/models/deer.obj',
                 material: 'fuzzy-metal',
@@ -88,6 +99,7 @@ export default async () => {
                     y: degToRad(0)
                 }
             }),
+
             // await new ObjModel({
             //     url: 'assets/models/cat.obj',
             //     material: 'glass',
@@ -96,19 +108,6 @@ export default async () => {
             //         x: -0.3,
             //         y: -0.6,
             //         z: -0.5
-            //     },
-            //     rotation: {
-            //         y: degToRad(0)
-            //     }
-            // }),
-            // await new ObjModel({
-            //     url: 'assets/models/cat.obj',
-            //     material: 'lambert',
-            //     scale: 0.005,
-            //     position: {
-            //         x: -0.2,
-            //         y: -0.6,
-            //         z: -0.4
             //     },
             //     rotation: {
             //         y: degToRad(0)
@@ -156,12 +155,12 @@ export default async () => {
                     }
                 `
             }),
-            new Sphere({
-                center:[0.65, -0.18, -1.5],
-                radius: 0.34,
-                material: 'ShinyMetalMaterial',
-                color: '#eeeeee'
-            }),
+            // new Sphere({
+            //     center:[0.65, -0.18, -1.5],
+            //     radius: 0.34,
+            //     material: 'ShinyMetalMaterial',
+            //     color: '#eeeeee'
+            // }),
             new Sphere({
                 center:[1.0, -0.27, -0.3],
                 radius: 0.25,
