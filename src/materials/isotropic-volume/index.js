@@ -25,7 +25,8 @@ class IsotropicMaterial extends BaseMaterial {
             emissiveIntensity: 0,
             density: defined(density)
                 ? density
-                : 0.5
+                : 0.5,
+            volumeScale: 0
         });
     }
 }

@@ -11,7 +11,9 @@ import MetalMaterial from '../../materials/metal';
 import LambertMaterial from '../../materials/lambert';
 import EmissiveMaterial from '../../materials/emissive';
 import DialectricMaterial from '../../materials/dialectric';
-import IsotropicMaterial from '../../materials/isotropic';
+
+import IsotropicVolumeMaterial from '../../materials/isotropic-volume';
+import AnisotropicVolumeMaterial from '../../materials/anisotropic-volume';
 
 import {
     random,
@@ -274,11 +276,18 @@ export default async () => {
             }))
         ],
         materials: [
-            new IsotropicMaterial({
+            // new IsotropicVolumeMaterial({
+            //     name: `volume`,
+            //     color: '#ff0000',
+            //     density: 0.7, //0.6, //0.4,
+            //     albedo: [1.0, 1.0, 1.0]
+            // }),
+            new AnisotropicVolumeMaterial({
                 name: `volume`,
                 color: '#ff0000',
-                density: 0.6, //0.4,
-                albedo: [1.0, 1.0, 1.0]
+                albedo: [1.0, 1.0, 1.0],
+                density: 1, //0.7, //0.6, //0.4,
+                volumeScale: 5
             }),
             new LambertMaterial({
                 name: `lambert-white`,
@@ -300,7 +309,7 @@ export default async () => {
             new EmissiveMaterial({
                 name: `ceil-light`,
                 color: '#ffffff',
-                intensity: 1 //0.05
+                intensity: 0.5 //0.05
             }),
             new DialectricMaterial({
                 name: 'glass'
@@ -308,8 +317,8 @@ export default async () => {
             ...range(0, 50).map(i =>
                 new EmissiveMaterial({
                     name: `emissive-${i}`,
-                    color: [random()*0.1, random()*0.1, random()*0.1],
-                    intensity: random(250, 500) //random(30, 50)
+                    color: '#ffffff',
+                    intensity: random(10, 20) // random(25, 50) //random(30, 50)
                 })
             ),
             ...range(0, 50).map(i =>

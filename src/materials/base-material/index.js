@@ -9,7 +9,8 @@ const materialTypes = {
     metal: 2,
     dialetric: 3,
     emissive: 4,
-    isotropic: 5
+    isotropic: 5,
+    anisotropic: 6
 }
 
 class BaseMaterial {
@@ -21,7 +22,8 @@ class BaseMaterial {
         fuzz,
         refIdx,
         emissiveIntensity,
-        density
+        density,
+        volumeScale
     }) {
         this.id = -1;
         this.name = name;
@@ -31,6 +33,7 @@ class BaseMaterial {
         this.refIdx = refIdx;
         this.emissiveIntensity = emissiveIntensity;
         this.density = density;
+        this.volumeScale = volumeScale;
         this.color = defined(color)
             ? isHexColor(color)
                 ? normedColor(color)
@@ -59,7 +62,7 @@ class BaseMaterial {
             // matData2
             this.emissiveIntensity,
             this.density,
-            -1,
+            this.volumeScale,
 
             // matData3
             ...this.albedo,
