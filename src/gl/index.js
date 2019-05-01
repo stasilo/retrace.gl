@@ -5,7 +5,13 @@ let gl, glCanvas, glApp;
 
 export function getGlInstances() {
     if(!defined(glCanvas)) {
-        glCanvas = document.getElementById('gl-canvas');
+        glCanvas = document.createElement('canvas');
+        glCanvas.setAttribute('id', 'gl-canvas');
+
+        glCanvas.setAttribute('width', window.innerWidth / 2);
+        glCanvas.setAttribute('height', window.innerHeight / 2);
+
+        document.body.appendChild(glCanvas);
         gl = glCanvas.getContext('webgl2');
 
         glApp = PicoGL.createApp(glCanvas)

@@ -71,24 +71,15 @@ export default async () => {
                 }
             }),
             new Sphere({
-                // material: 'volume',
-                // // material: 'white-light',
-                // // -0.8 till 1.2
-                // position: {
-                //     x: 0.5,
-                //     y: 1,
-                //     z: -0.5
-                // },
-                // radius: 3
                 material: 'volume',
                 // material: 'white-light',
                 // -0.8 till 1.2
                 position: {
                     x: 0.5,
-                    y: 1.5,
+                    y: 0,
                     z: -0.5
                 },
-                radius: 3
+                radius: 3.5
             }),
             // new Sphere({
             //     material: 'metal-white',
@@ -183,7 +174,6 @@ export default async () => {
                     float s = sin(500.*uv.x)*sin(500.*uv.y);
 
                     if(s < 0.) {
-                        //tColor = vec4(${random()}, ${random()}, ${random()}, 1.0);
                         tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
                     } else {
                         tColor = vec4(0.05, 0.05, 0.05, 1.);
@@ -304,12 +294,12 @@ export default async () => {
             new EmissiveMaterial({
                 name: `white-light`,
                 color: '#ffffff',
-                intensity: 100
+                intensity: 30
             }),
             new EmissiveMaterial({
                 name: `ceil-light`,
                 color: '#ffffff',
-                intensity: 0.5 //0.05
+                intensity: 0.2 //0.05
             }),
             new DialectricMaterial({
                 name: 'glass'

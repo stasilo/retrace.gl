@@ -33,8 +33,9 @@ const dataTextureSize = 2048;
 
 const {glCanvas, gl, glApp} = getGlInstances();
 
-async function raytraceApp() {
+async function raytraceApp(scene) {
     const params = queryString.parse(location.search);
+
     const maxSampleCount = definedNotNull(params.sampleCount)
         ? params.sampleCount
         : defaultMaxSampleCount;
@@ -47,7 +48,6 @@ async function raytraceApp() {
         spectorGlDebug.displayUI();
     }
 
-    const scene = await createScene();
     const materialData = scene.materials.getMaterialData();
     const sceneTextures = scene.textures.getTextures();
     const {bvhData, geometryData} = buildSceneBvh(scene);
@@ -58,12 +58,12 @@ async function raytraceApp() {
 
     // for triangle scene
     const camera = createCamera({
-        lookFrom: [3.1, 1.8, 1.9],
-        lookAt: [-0.25, -0.1, -1.5],
+        lookFrom: [3.1, 1.2, 1.9],
+        lookAt: [-0.25, 0.1, -1.5],
         vUp: [0, 1, 0],
         vfov: 40, //35, //25,
         aperture: 0.015,
-        aspect: glCanvas.width/glCanvas.height
+        aspect: glCanvas.width/glCanvas.height,
     });
 
     // const camera = createCamera({
@@ -326,4 +326,15 @@ async function raytraceApp() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', raytraceApp);
+document.addEventListener('DOMContentLoaded', async () => {
+    const scene = await createScene();
+    raytraceApp(scene);
+
+    document.onkeypress = function (e) {
+        e = e || window.event;
+
+        if(e.keyCode == 13) {
+            console.log('enter!');
+        }
+    };
+});
