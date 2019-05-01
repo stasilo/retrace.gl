@@ -5,11 +5,29 @@ import hexRgb from 'hex-rgb';
 const defined = obj => typeof obj !== 'undefined';
 const definedNotNull = obj => defined(obj) && obj != null;
 const isFn = fn => typeof fn === 'function';
+const isArray = a => Array.isArray(a);
+const isObj = obj => typeof obj === 'object';
 
 const range = (start, end) =>
     Array.from({length: (end - start)},
         (v, k) => k + start
     );
+
+// const range2d = (xStart, xEnd, yStart, yEnd) =>
+//     zip(range(xStart, xEnd), range(yStart, yEnd))
+
+const range2d = (xStart, xEnd, yStart, yEnd) => {
+    var combos = [];
+
+    range(xStart, xEnd).forEach(a1 => {
+        range(yStart, yEnd).forEach(a2 => {
+            combos.push([a1, a2]);
+        });
+    });
+
+    return combos;
+}
+
 
 // array manipulation
 
@@ -22,6 +40,13 @@ const flatten = ([x, ...xs]) => typeof x !== 'undefined'
         ? [...flatten(x), ...flatten(xs)]
         : [x, ...flatten(xs)]
     : [];
+
+const zip = (arr, ...arrs) =>
+    arr.map((val, i) =>
+        arrs.reduce((a, arr) =>
+            [...a, arr[i]], [val]
+        )
+    );
 
 // random no stuff
 
@@ -41,8 +66,16 @@ const randomIdx = (max = 1, min = 0) =>
 const randomSign = () =>
     random() < 0.5 ? -1 : 1;
 
+const randomBool = () =>
+    random() < 0.5 ? 0 : 1;
+
 const pluckRandom = (arr) =>
     arr[parseInt(random(arr.length))];
+
+const maybe = (cb, p = 0.5) =>
+    random() > p
+        ? cb()
+        : null;
 
 // math stuff
 
@@ -110,12 +143,18 @@ module.exports = {
     defined,
     definedNotNull,
     isFn,
+    isArray,
+    isObj,
     range,
+    range2d,
     reverse,
+    zip,
     flatten,
     random,
     randomIdx,
     randomSign,
+    randomBool,
+    maybe,
     pluckRandom,
     degToRad,
     radToDeg,

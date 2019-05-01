@@ -1,6 +1,8 @@
 import {definedNotNull, glslFloat} from '../utils';
 import {geometryTypes} from '../bvh';
 
+import simplexNoise from './lib/noise/simplex.glsl';
+
 const getSource = ({options, Scene}) =>
 `   #version 300 es
     precision highp float;
@@ -8,7 +10,7 @@ const getSource = ({options, Scene}) =>
     precision highp sampler2D;
 
     #define T_MIN 0.0001 //.001
-    #define T_MAX 10000.0
+    #define T_MAX 3.402823466e+38 //10000.0
 
     #define MAX_HIT_DEPTH 5//4 //15 //50
     #define NUM_SAMPLES ${options.numSamples}
@@ -47,7 +49,15 @@ const getSource = ({options, Scene}) =>
     in vec2 uv;
     out vec4 fragColor;
 
-    // scene textures
+    /*
+     * "Includes"
+     */
+
+    ${simplexNoise}
+
+    /*
+     * Textures
+     */
 
     ${Scene.textures.getTextures().map(texture =>
         `uniform sampler2D uSceneTex${texture.id};`
@@ -227,12 +237,6 @@ const getSource = ({options, Scene}) =>
     }
 
     /*
-     * Textures
-     */
-
-    ${Scene.getTextureDefinitions()}
-
-    /*
      * Camera (mostly left for reference)
      */
 
@@ -306,60 +310,22 @@ const getSource = ({options, Scene}) =>
     #define METAL_MATERIAL_TYPE 2
     #define DIALECTRIC_MATERIAL_TYPE 3
     #define DIFFUSE_EMISSIVE_MATERIAL_TYPE 4
+    #define ISOTROPIC_VOLUME_MATERIAL_TYPE 5
 
     struct Material {
         int type;
         vec3 albedo;
-        float fuzz;
-        float refIdx;
-        float emissiveIntensity;
         vec3 color;
+
+        // fuzz for metal mats
+        float fuzz;
+        // refraction index for dialectric mats
+        float refIdx;
+        // intensity for emissive  mats
+        float emissiveIntensity;
+        // for isotropic volume mats
+        float density;
     };
-
-    Material LambertMaterial = Material(
-        LAMBERT_MATERIAL_TYPE,
-        vec3(1.),
-        0.,
-        0.,
-        0.,
-        vec3(-1.)
-    );
-
-    Material GlassMaterial = Material(
-        DIALECTRIC_MATERIAL_TYPE,
-        vec3(1.),
-        0.,
-        1.8, //1.7
-        0.,
-        vec3(-1.)
-    );
-
-    Material ShinyMetalMaterial = Material(
-        METAL_MATERIAL_TYPE,
-        vec3(0.8),
-        0.01,
-        0.,
-        0.,
-        vec3(-1.)
-    );
-
-    Material FuzzyMetalMaterial = Material(
-        METAL_MATERIAL_TYPE,
-        vec3(0.9),
-        0.45,
-        0.,
-        0.,
-        vec3(-1.)
-    );
-
-    Material LightMaterial = Material(
-        DIFFUSE_EMISSIVE_MATERIAL_TYPE,
-        vec3(1.),
-        0.,
-        0., //1.7
-        15.,
-        vec3(-1.)
-    );
 
     Material getPackedMaterial(int index) {
         float offset = float(index) * 4.;
@@ -394,11 +360,12 @@ const getSource = ({options, Scene}) =>
         return Material(
             int(matData1.x), // int type
             matData3, // vec3 albedo
+            matData4, // vec3 color
+
             matData1.y, // float fuzz
             matData1.z, // float refIdx
             matData2.x, // float emissiveIntensity
-            // vec3(1.0, 0., 0.)
-            matData4 // vec3 color
+            matData2.y // float density
         );
     }
 
@@ -411,6 +378,22 @@ const getSource = ({options, Scene}) =>
 
         return r0 + (1.-r0)*pow((1. - cosine), 5.);
     }
+
+    // cheap inhomogeneous/anisotropic volumes (no raymarching)
+    // "Chapter 28: Ray Tracing Inhomogeneous Volumes", p. 521, Nvidia Ray tracing Gems
+    // see also: http://psgraphics.blogspot.com/2009/05/neat-trick-for-ray-collisions-in.html
+
+    float sampleVolumeDistance(Ray ray) {
+        float t = 0.;
+        const float max_extinction = 1.0;
+
+        do {
+            t -= log(1. - rand()) / max_extinction;
+        } while (snoise(ray.origin + ray.dir*t) < rand()*max_extinction);
+
+        return t;
+    }
+
 
     /*
      * Ray handling
@@ -530,6 +513,21 @@ const getSource = ({options, Scene}) =>
             return true;
         }
 
+        // VOLUMES
+
+        if(hitRecord.material.type == ISOTROPIC_VOLUME_MATERIAL_TYPE) {
+            ray.dir = vec3(rand(), rand(), rand());
+            ray.invDir = 1./ray.dir;
+            color *= hitRecord.material.albedo * hitRecord.color;
+            // color = hitRecord.material.albedo * hitRecord.color;
+
+            // scattered = Ray(rec.p, hash33(rec.p));
+            // attenuation = rec.material.albedo;
+            // return true;
+
+            return true;
+        }
+
         return false;
     }
 
@@ -549,61 +547,6 @@ const getSource = ({options, Scene}) =>
      *  geometry handling
      */
 
-    #define SPHERE_GEOMETRY 1
-    #define XY_RECT_GEOMETRY 2
-    #define TRIANGLE_GEOMETRY 3
-
-    struct Hitable {
-        int geometry;
-        Material material;
-        vec3 color;
-
-        // bounding box
-        vec3 bMin, bMax;
-
-        // sphere
-        vec3 center;
-        float radius;
-
-        // xy rect
-        float x0, x1, y0, y1;
-        float k;
-
-        // triangle
-        vec3 v0, v1, v2;
-
-        // normal (triangle face normal)
-        vec3 normal;
-    };
-
-    float hitBox( vec3 minCorner, vec3 maxCorner, Ray r, out vec3 normal) {
-    	vec3 near = (minCorner - r.origin) * r.invDir;
-    	vec3 far  = (maxCorner - r.origin) * r.invDir;
-
-    	vec3 tmin = min(near, far);
-    	vec3 tmax = max(near, far);
-
-    	float t0 = max( max(tmin.x, tmin.y), tmin.z);
-    	float t1 = min( min(tmax.x, tmax.y), tmax.z);
-
-    	if (t0 > t1)
-            return T_MAX;
-
-        float result = T_MAX;
-
-    	if (t1 > 0.0) { // if we are inside the box
-    		normal = -sign(r.dir) * step(tmax, tmax.yzx) * step(tmax, tmax.zxy);
-    		result = t1;
-    	}
-
-    	if (t0 > 0.0) {// if we are outside the box
-    		normal = -sign(r.dir) * step(tmin.yzx, tmin) * step(tmin.zxy, tmin);
-    		result = t0;
-    	}
-
-    	return result;
-    }
-
     float hitBvhBBox( vec3 minCorner, vec3 maxCorner, Ray r) {
         vec3 near = (minCorner - r.origin) * r.invDir;
     	vec3 far  = (maxCorner - r.origin) * r.invDir;
@@ -619,119 +562,20 @@ const getSource = ({options, Scene}) =>
         return t0;
     }
 
-    void hitSphere(Ray ray, Hitable hitable, float tMax, out HitRecord hitRecord) {
-        vec3 oc = ray.origin - hitable.center;
-
-        float a = dot(ray.dir, ray.dir);
-        float b = 2. * dot(oc, ray.dir);
-        float c = dot(oc, oc) - hitable.radius * hitable.radius;
-
-        float discriminant = b*b - 4.*a*c;
-
-        if(discriminant > 0.) {
-            float t;
-
-            t = (-b - sqrt(discriminant)) / (2. * a);
-            if(t < tMax && t > T_MIN) {
-                hitRecord.hasHit = true;
-                hitRecord.hitT = t;
-                hitRecord.hitPoint = pointOnRay(ray, t);
-                hitRecord.normal = normalize(
-                    (hitRecord.hitPoint - hitable.center) / hitable.radius
-                );
-
-                hitRecord.material = hitable.material;
-
-                return;
-            }
-
-            t = (-b + sqrt(discriminant)) / (2. * a);
-            if(t < tMax && t > T_MIN) {
-                hitRecord.hasHit = true;
-                hitRecord.hitT = t;
-                hitRecord.hitPoint = pointOnRay(ray, t);
-                hitRecord.normal = normalize(
-                    (hitRecord.hitPoint - hitable.center) / hitable.radius
-                );
-
-                hitRecord.material = hitable.material;
-
-                return;
-            }
-        }
-
-        hitRecord.hasHit = false;
-        hitRecord.hitT = tMax;
-    }
-
-    void hitXyRect(Ray ray, Hitable rect, float tMin, float tMax, out HitRecord hitRecord) {
-        float t = (rect.k - ray.origin.z) / ray.dir.z;
-        if(t < tMin || t > tMax) {
-            hitRecord.hasHit = false;
-            return;
-            // hitRecord.hitT = t; //tMax;
-        }
-
-        float x = ray.origin.x + t*ray.dir.x;
-        float y = ray.origin.y + t*ray.dir.y;
-
-        if(x < rect.x0 || x > rect.x1 || y < rect.y0 || y > rect.y1) {
-            hitRecord.hasHit = false;
-            return;
-            // hitRecord.hitT = t; //tMax;
-        }
-
-        hitRecord.hasHit = true;
-        hitRecord.hitT = t;
-        hitRecord.material = rect.material;
-        hitRecord.hitPoint = pointOnRay(ray, t);
-        hitRecord.normal = vec3(0., 0., 1.);
-        //hitRecord.uv = vec2((x-x0)/(x1-x0), (y-y0)/(y1-y0));
-    }
-
-    // by iq
-    //https://www.shadertoy.com/view/MlGcDz
-    bool hitTriangle(in Ray r, in Hitable tri, float tMax, inout HitRecord hitRecord) {
-        vec3 v1v0 = tri.v1 - tri.v0;
-        vec3 v2v0 = tri.v2 - tri.v0;
-        vec3 rov0 = r.origin - tri.v0;
-
-        vec3  n = cross( v1v0, v2v0 );
-        vec3  q = cross( rov0, r.dir );
-        float d = 1.0/dot( r.dir, n );
-
-        float u = d*dot( -q, v2v0 );
-        float v = d*dot(  q, v1v0 );
-
-        float t = d*dot( -n, rov0 );
-
-        if( u<0.0 || v<0.0 || (u+v)>1.0 ) {
-            t = -1.0;
-        }
-
-        if(t > T_MIN && t < tMax) {
-            hitRecord.hasHit = true;
-            hitRecord.hitT = t;
-            hitRecord.normal = normalize(n);
-            hitRecord.material = tri.material;
-            hitRecord.hitPoint = pointOnRay(r, t);
-
-            return true;
-        }
-
-        return false;
-    }
-
-    bool hitBvhTriangle(in Ray r, vec3 v0, vec3 v1, vec3 v2, in float tMax, inout HitRecord hitRecord) {
+    bool hitBvhTriangle(in Ray r, bool doubleSided, vec3 v0, vec3 v1, vec3 v2, in float tMax, inout HitRecord hitRecord) {
     	vec3 edge1 = v1 - v0;
     	vec3 edge2 = v2 - v0;
     	vec3 pvec = cross(r.dir, edge2);
-        // vec3 n = cross(edge1, edge2);
 
         float det = 1.0 / dot(edge1, pvec);
+
     	// comment out the following line if double-sided triangles are wanted, or
     	// uncomment the following line if back-face culling is desired (single-sided triangles)
-    	if (det <= 0.0) return false;
+        // if (det <= 0.0) return false;
+
+        if(!doubleSided && det <= 0.0) {
+            return false;
+        }
 
     	vec3 tvec = r.origin - v0;
     	float u = dot(tvec, pvec) * det;
@@ -757,7 +601,7 @@ const getSource = ({options, Scene}) =>
         return false;
     }
 
-    void hitBvhSphere(Ray ray, vec3 center, float radius, float tMax, out HitRecord hitRecord) {
+    void hitSphere(Ray ray, vec3 center, float radius, float tMin, float tMax, out HitRecord hitRecord) {
         vec3 oc = ray.origin - center;
 
         float a = dot(ray.dir, ray.dir);
@@ -770,7 +614,7 @@ const getSource = ({options, Scene}) =>
             float t;
 
             t = (-b - sqrt(discriminant)) / (2. * a);
-            if(t < tMax && t > T_MIN) {
+            if(t < tMax && t > tMin) {
                 hitRecord.hasHit = true;
                 hitRecord.hitT = t;
 
@@ -778,47 +622,62 @@ const getSource = ({options, Scene}) =>
             }
 
             t = (-b + sqrt(discriminant)) / (2. * a);
-            if(t < tMax && t > T_MIN) {
+            if(t < tMax && t > tMin) {
                 hitRecord.hasHit = true;
                 hitRecord.hitT = t;
 
                 return;
             }
-
-            // float t;
-            //
-            // t = (-b - sqrt(discriminant)) / (2. * a);
-            // if(t < tMax && t > T_MIN) {
-            //     hitRecord.hasHit = true;
-            //     hitRecord.hitT = t;
-            //     hitRecord.hitPoint = pointOnRay(ray, t);
-            //     hitRecord.normal = normalize(
-            //         (hitRecord.hitPoint - hitable.center) / hitable.radius
-            //     );
-            //
-            //     hitRecord.material = hitable.material;
-            //
-            //     return;
-            // }
-            //
-            // t = (-b + sqrt(discriminant)) / (2. * a);
-            // if(t < tMax && t > T_MIN) {
-            //     hitRecord.hasHit = true;
-            //     hitRecord.hitT = t;
-            //     hitRecord.hitPoint = pointOnRay(ray, t);
-            //     hitRecord.normal = normalize(
-            //         (hitRecord.hitPoint - hitable.center) / hitable.radius
-            //     );
-            //
-            //     hitRecord.material = hitable.material;
-            //
-            //     return;
-            // }
         }
 
         hitRecord.hasHit = false;
         hitRecord.hitT = tMax;
     }
+
+    // void hitSphere(Ray ray, Hitable hitable, float tMax, out HitRecord hitRecord) {
+    //     vec3 oc = ray.origin - hitable.center;
+    //
+    //     float a = dot(ray.dir, ray.dir);
+    //     float b = 2. * dot(oc, ray.dir);
+    //     float c = dot(oc, oc) - hitable.radius * hitable.radius;
+    //
+    //     float discriminant = b*b - 4.*a*c;
+    //
+    //     if(discriminant > 0.) {
+    //         float t;
+    //
+    //         t = (-b - sqrt(discriminant)) / (2. * a);
+    //         if(t < tMax && t > T_MIN) {
+    //             hitRecord.hasHit = true;
+    //             hitRecord.hitT = t;
+    //             hitRecord.hitPoint = pointOnRay(ray, t);
+    //             hitRecord.normal = normalize(
+    //                 (hitRecord.hitPoint - hitable.center) / hitable.radius
+    //             );
+    //
+    //             hitRecord.material = hitable.material;
+    //
+    //             return;
+    //         }
+    //
+    //         t = (-b + sqrt(discriminant)) / (2. * a);
+    //         if(t < tMax && t > T_MIN) {
+    //             hitRecord.hasHit = true;
+    //             hitRecord.hitT = t;
+    //             hitRecord.hitPoint = pointOnRay(ray, t);
+    //             hitRecord.normal = normalize(
+    //                 (hitRecord.hitPoint - hitable.center) / hitable.radius
+    //             );
+    //
+    //             hitRecord.material = hitable.material;
+    //
+    //             return;
+    //         }
+    //     }
+    //
+    //     hitRecord.hasHit = false;
+    //     hitRecord.hitT = tMax;
+    // }
 
     vec2 getSphereUv(vec3 p) {
         float phi = atan(p.z, p.x);
@@ -837,7 +696,7 @@ const getSource = ({options, Scene}) =>
      * World
      */
 
-    void hitWorld(Ray ray, Hitable hitables[${Scene.length()}], float tMax, out HitRecord hitRecord) {
+    void hitWorld(Ray ray, float tMax, out HitRecord hitRecord) {
         HitRecord record;
 
         record.hasHit = false;
@@ -893,13 +752,20 @@ const getSource = ({options, Scene}) =>
                 float node1Offset = currentNode.meta.z;
 
                 if(node1Offset < 0.) { // this is a leaf node
-                    float geoOffset = 7. * (-node1Offset - 1.);
+                    float geoOffset = 11. * (-node1Offset - 1.);
 
-                    float xOffset = mod(geoOffset + 3., DATA_TEX_SIZE);
-                    float yOffset = floor((geoOffset + 3.) * DATA_TEX_INV_SIZE);
-
+                    float xOffset = mod(geoOffset + 9., DATA_TEX_SIZE);
+                    float yOffset = floor((geoOffset + 9.) * DATA_TEX_INV_SIZE);
                     vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
                     float geoType = meta.z;
+
+                    xOffset = mod(geoOffset + 10., DATA_TEX_SIZE);
+                    yOffset = floor((geoOffset + 10.) * DATA_TEX_INV_SIZE);
+                    meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                    bool doubleSided = bool(meta.y);
+                    // record.hasHit = false;
 
                     if(geoType == BVH_TRIANGLE_GEOMETRY) {
                         xOffset = mod(geoOffset, DATA_TEX_SIZE);
@@ -914,7 +780,7 @@ const getSource = ({options, Scene}) =>
                         yOffset = floor((geoOffset + 2.) * DATA_TEX_INV_SIZE);
                         vec3 v2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                        hitBvhTriangle(ray, v0, v1, v2, tMax, /* out => */ record);
+                        hitBvhTriangle(ray, doubleSided, v0, v1, v2, tMax, /* out => */ record);
                         if(record.hasHit) {
                             triangleLookup = true;
                             sphereLookup = false;
@@ -934,15 +800,64 @@ const getSource = ({options, Scene}) =>
                         yOffset = floor((geoOffset + 1.) * DATA_TEX_INV_SIZE);
                         float radius = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).x;
 
-                        hitBvhSphere(ray, center, radius, tMax, /* out => */ record);
+                        // hitSphere(ray, center, radius, T_MIN, tMax, /* out => */ record);
+                        // if(record.hasHit) {
+                        //     triangleLookup = false;
+                        //     sphereLookup = true;
+                        //     lookupOffset = geoOffset;
+                        //     tMax = record.hitT; // handle depth! ("z-index" :))
+                        //     record.hasHit = false;
+                        // }
+
+                        xOffset = mod(geoOffset + 9., DATA_TEX_SIZE);
+                        yOffset = floor((geoOffset + 9.) * DATA_TEX_INV_SIZE);
+                        vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        int materialId = int(meta.x);
+
+                        Material sphereMaterial = getPackedMaterial(materialId);
+
+                        // hitSphere(ray, center, radius, T_MIN, T_MAX, /* out => */ record);
+                        hitSphere(ray, center, radius, T_MIN, tMax, /* out => */ record);
                         if(record.hasHit) {
-                            triangleLookup = false;
-                            sphereLookup = true;
-                            lookupOffset = geoOffset;
-                            tMax = record.hitT; // handle depth! ("z-index" :))
+                            if(sphereMaterial.type == ISOTROPIC_VOLUME_MATERIAL_TYPE) {
+                                HitRecord record2;
+                                hitSphere(ray, center, radius, record.hitT + 0.0001, T_MAX, /* out => */ record2);
+                                if(record2.hasHit) {
+                                    if(record.hitT < T_MIN)
+                                        record.hitT = T_MIN;
+                                    if(record2.hitT > T_MAX)
+                                        record.hitT = T_MAX;
+
+                                    if(record.hitT < record2.hitT) {
+                                        if(record.hitT < 0.)
+                                            record.hitT = 0.;
+
+                                        float distInsideBound = (record2.hitT - record.hitT) * length(ray.dir);
+                                        // float hitDist = -(1./sphereMaterial.density) * log(rand());
+                                        float hitDist = sampleVolumeDistance(ray);
+
+                                        if(hitDist < distInsideBound) {
+                                            tMax = record.hitT + (hitDist / length(ray.dir));
+                                            // record.hitPoint = pointOnRay(ray, record.hitT);
+                                            // record.normal = vec3(1., 0., 0.);
+                                            // record.material = sphereMaterial;
+
+                                            triangleLookup = false;
+                                            sphereLookup = true;
+                                            lookupOffset = geoOffset;
+                                            // tMax = record.hitT;
+                                        }
+                                    }
+                                }
+                            } else {
+                                triangleLookup = false;
+                                sphereLookup = true;
+                                lookupOffset = geoOffset;
+                                tMax = record.hitT;
+                            }
+
                             record.hasHit = false;
                         }
-
                     }
                 } else { // branch
                     levelCounter++;
@@ -1008,6 +923,8 @@ const getSource = ({options, Scene}) =>
 
     		skip = false; // reset skip
 
+            // safeguard against bugs causing
+            // infinite loops while developing (they often crash the browser/os)
             if(loopCounter > 300) {
                 discard;
             }
@@ -1016,6 +933,7 @@ const getSource = ({options, Scene}) =>
         }
 
         if(triangleLookup) {
+            // vertices
             float xOffset = mod(lookupOffset, DATA_TEX_SIZE);
             float yOffset = floor(lookupOffset * DATA_TEX_INV_SIZE);
             vec3 v0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
@@ -1028,44 +946,73 @@ const getSource = ({options, Scene}) =>
             yOffset = floor((lookupOffset + 2.) * DATA_TEX_INV_SIZE);
             vec3 v2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
+            // normals
+
             xOffset = mod(lookupOffset + 3., DATA_TEX_SIZE);
             yOffset = floor((lookupOffset + 3.) * DATA_TEX_INV_SIZE);
-            vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+            vec3 n0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
             xOffset = mod(lookupOffset + 4., DATA_TEX_SIZE);
             yOffset = floor((lookupOffset + 4.) * DATA_TEX_INV_SIZE);
-            vec3 n0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+            vec3 n1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
             xOffset = mod(lookupOffset + 5., DATA_TEX_SIZE);
             yOffset = floor((lookupOffset + 5.) * DATA_TEX_INV_SIZE);
-            vec3 n1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+            vec3 n2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+            // texture cooords
 
             xOffset = mod(lookupOffset + 6., DATA_TEX_SIZE);
             yOffset = floor((lookupOffset + 6.) * DATA_TEX_INV_SIZE);
-            vec3 n2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+            vec3 t0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+            xOffset = mod(lookupOffset + 7., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 7.) * DATA_TEX_INV_SIZE);
+            vec3 t1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+            xOffset = mod(lookupOffset + 8., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 8.) * DATA_TEX_INV_SIZE);
+            vec3 t2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+            // meta data
+
+            xOffset = mod(lookupOffset + 9., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 9.) * DATA_TEX_INV_SIZE);
+            vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
             int materialId = int(meta.x);
             bool smoothShading = bool(meta.y);
 
+            xOffset = mod(lookupOffset + 10., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 10.) * DATA_TEX_INV_SIZE);
+            meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+            int textureId = int(meta.x);
+
+            float triangleW = 1.0 - triangleUv.x - triangleUv.y;
+            vec2 interpUv = triangleW * t0.xy
+                + triangleUv.x * t1.xy
+                + triangleUv.y * t2.xy;
+
             record.hasHit = true;
             record.hitT = tMax;
             record.material = getPackedMaterial(materialId);
-            record.color = record.material.color; //color;
+            record.color = textureId == -1
+                ? record.material.color
+                : getSceneTexture(textureId, interpUv).rgb;
             record.hitPoint = pointOnRay(ray, tMax);
 
-            hitRecord = record;
-            hitRecord.color = hitRecord.material.color;
-
             if(smoothShading == true) {
-                float triangleW = 1.0 - triangleUv.x - triangleUv.y;
-        		hitRecord.normal = normalize(
+        		record.normal = normalize(
                     triangleW * n0
                         + triangleUv.x * n1
                         + triangleUv.y * n2
                 );
             } else {
-                hitRecord.normal = normalize(cross(v1 - v0, v2 - v0));
+                record.normal = normalize(cross(v1 - v0, v2 - v0));
             }
+
+            hitRecord = record;
         }
 
         if(sphereLookup) {
@@ -1077,128 +1024,41 @@ const getSource = ({options, Scene}) =>
             yOffset = floor((lookupOffset + 1.) * DATA_TEX_INV_SIZE);
             vec3 data = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
             float radius = data.x;
-            int textureId = int(data.y);
 
-            xOffset = mod(lookupOffset + 3., DATA_TEX_SIZE);
-            yOffset = floor((lookupOffset + 3.) * DATA_TEX_INV_SIZE);
+            xOffset = mod(lookupOffset + 9., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 9.) * DATA_TEX_INV_SIZE);
             vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
             int materialId = int(meta.x);
 
+            xOffset = mod(lookupOffset + 10., DATA_TEX_SIZE);
+            yOffset = floor((lookupOffset + 10.) * DATA_TEX_INV_SIZE);
+            meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+            int textureId = int(meta.x);
+
             record.hasHit = true;
             record.hitT = tMax;
+            record.hitPoint = pointOnRay(ray, record.hitT);
             record.material = getPackedMaterial(materialId);
-            record.hitPoint = pointOnRay(ray, tMax);
 
-            if(textureId != -1) {
-                vec3 p = (record.hitPoint - center) / radius;
-                vec2 uv = getSphereUv(p);
-                record.color = getSceneTexture(textureId, uv).rgb;
-            } else {
+            if(record.material.type == ISOTROPIC_VOLUME_MATERIAL_TYPE) {
+                record.normal = vec3(1., 0., 0.);
                 record.color = record.material.color;
-            }
+            } else {
+                if(textureId != -1) {
+                    vec3 p = (record.hitPoint - center) / radius;
+                    vec2 uv = getSphereUv(p);
+                    record.color = getSceneTexture(textureId, uv).rgb;
+                } else {
+                    record.color = record.material.color;
+                }
 
-            record.normal = normalize(
-                (record.hitPoint - center) / radius
-            );
+                record.normal = normalize(
+                    (record.hitPoint - center) / radius
+                );
+            }
 
             hitRecord = record;
         }
-
-        for(int i = 0; i < ${Scene.length()}; i++) {
-            if(hitables[i].geometry == SPHERE_GEOMETRY) {
-                hitSphere(ray, hitables[i], tMax, /* out => */ record);
-            }
-
-            // if(hitables[i].geometry == XY_RECT_GEOMETRY) {
-            //     hitXyRect(ray, hitables[i], T_MIN, tMax, /* out => */ record);
-            // }
-
-            // if(hitables[i].geometry == TRIANGLE_GEOMETRY) {
-            //     hitTriangle(ray, hitables[i], tMax, /* out => */ record);
-            // }
-
-            if(record.hasHit) {
-                // inefficient hack to do dynamic hitable colors, textures & proc. textures
-                // ${Scene.updateTextureColors('uv', 'record.hitPoint')}
-                record.color = hitables[i].color;
-
-                hitRecord = record;
-                tMax = record.hitT; // handle depth! ("z-index" :))
-                record.hasHit = false;
-            }
-        }
-
-
-        // regular triangle intersection (no bvh)
-
-        // ivec2 DATA_TEX_SIZE = textureSize(uGeometryDataTexture, 0);
-        // float DATA_TEX_SIZE = float(DATA_TEX_SIZE.x);
-        // float DATA_TEX_INV_SIZE = 1. / DATA_TEX_SIZE;
-        //
-        // for(int iX = 0; iX < DATA_TEX_SIZE.x * DATA_TEX_SIZE.y; iX++) {
-        //
-		// 	float geoOffset = float(iX)*3.;
-        //
-        //     float xOffset = mod(geoOffset, DATA_TEX_SIZE);
-        //     float yOffset = floor(geoOffset * DATA_TEX_INV_SIZE);
-        //
-        //     vec3 v0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-        //
-        //     xOffset = mod(geoOffset + 1., DATA_TEX_SIZE);
-        //     yOffset = floor((geoOffset + 1.) * DATA_TEX_INV_SIZE);
-        //
-        //     vec3 v1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-        //
-        //     xOffset = mod(geoOffset + 2., DATA_TEX_SIZE);
-        //     yOffset = floor((geoOffset + 2.) * DATA_TEX_INV_SIZE);
-        //
-        //     vec3 v2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-        //
-        //     // have we reached a padded section of the texture?
-        //     if(v0.x == v1.x &&
-        //         v1.x == v2.x &&
-        //         v0.y == v1.y &&
-        //         v1.y == v2.y)
-        //     {
-        //         break;
-        //     }
-        //
-        //     Hitable tri = Hitable(
-        //         TRIANGLE_GEOMETRY,
-        //         //LambertMaterial, // material
-        //         LambertMaterial,
-        //         vec3(1., 1., 1.), // color
-        //
-        //         // bounding box
-        //         vec3(-1.), vec3(-1.),
-        //
-        //         // irrelevant props for triangle (sphere)
-        //         vec3(-1.),
-        //         -1.,
-        //
-        //         // irrelevant props for triangle (xy rect)
-        //         -1., -1., -1., -1.,
-        //         -1.,
-        //
-        //         // triangle props
-        //         v0, v1, v2,
-        //         // face normal
-        //         vec3(-1.)
-        //     );
-        //
-        //     hitTriangle(ray, tri, tMax, /* out => */ record);
-        //
-        //     if(record.hasHit) {
-        //         // inefficient hack to do dynamic hitable colors, textures & proc. textures
-        //         // ${Scene.updateTextureColors('uv', 'record.hitPoint')}
-        //         record.color = vec3(1.0, 0.0, 1.0);
-        //
-        //         hitRecord = record;
-        //         tMax = record.hitT; // handle depth! ("z-index" :))
-        //         record.hasHit = false;
-        //     }
-        // }
-
     }
 
     /*
@@ -1214,13 +1074,13 @@ const getSource = ({options, Scene}) =>
     }
 
     // colorize
-    vec3 paint(Ray ray, Hitable hitables[${Scene.length()}]) {
+    vec3 paint(Ray ray) {
         vec3 color = vec3(1.0);
         float tMax = T_MAX;
 
         HitRecord hitRecord;
         for(int hitCounts = 0; hitCounts < MAX_HIT_DEPTH; hitCounts++) {
-            hitWorld(ray, hitables, tMax, /* out => */ hitRecord);
+            hitWorld(ray, tMax, /* out => */ hitRecord);
             if(hitRecord.hasHit) {
                 vec3 emittedColor;
 
@@ -1240,7 +1100,7 @@ const getSource = ({options, Scene}) =>
         return color;
     }
 
-    vec3 trace(Camera camera, Hitable hitables[${Scene.length()}]) {
+    vec3 trace(Camera camera) {
         vec3 color = vec3(0.);
 
         // trace
@@ -1266,8 +1126,7 @@ const getSource = ({options, Scene}) =>
             // );
 
             Ray ray = getRay(camera, rUv);
-            color += paint(ray, hitables);
-            // color += deNan(paint(ray, hitables));
+            color += paint(ray);
         }
 
         color /= float(NUM_SAMPLES);
@@ -1306,9 +1165,7 @@ const getSource = ({options, Scene}) =>
             );
         #endif
 
-        ${Scene.getDefinition()}
-
-        vec3 color = trace(camera, hitables);
+        vec3 color = trace(camera);
         color = sqrt(color); // correct gamma
 
         #ifndef REALTIME

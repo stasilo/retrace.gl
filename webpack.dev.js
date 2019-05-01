@@ -83,13 +83,17 @@ module.exports = {
     plugins: [
         new WriteFilePlugin(),
         new CopyWebpackPlugin([{
-            from: './src/assets/models/',
-            to: 'assets/models/',
+            from: './src/assets/',
+            to: './',
         }]),
-        new CopyWebpackPlugin([{
-            from: './src/assets/images/',
-            to: 'assets/images/',
-        }]),
+        // new CopyWebpackPlugin([{
+        //     from: './src/assets/models/',
+        //     to: 'assets/models/',
+        // }]),
+        // new CopyWebpackPlugin([{
+        //     from: './src/assets/images/',
+        //     to: 'assets/images/',
+        // }]),
         new HtmlWebpackPlugin({
             template: './index.html',
             inject: true

@@ -8,11 +8,11 @@ const geometryTypes = {
     sphere: 2
 };
 
-// 3 * vec3() vertices + 3 * vec3() nromal + 1 * vec3() meta data
-const geoBlockDataSize = 21;
+// 3 * vec3() vertices + 3 * vec3() normal + 3 * vec3() texture data + 2 * vec3() meta data
+const geoBlockDataSize = 33;
 
 function buildSceneBvh(scene) {
-    let geometries = scene.bvhHitables
+    let geometries = scene.geometries
         .reduce((geos, geometry) =>
             geos.concat(geometry.geometryData)
         , []);
@@ -42,7 +42,7 @@ function buildBvh(geometryData) {
             geoBoundBoxMin = vec3.fromValues(Infinity, Infinity, Infinity);
             geoBoundBoxMax = vec3.fromValues(-Infinity, -Infinity, -Infinity);
 
-            const geoType = geometryData[geoBlockDataSize * i + 11];
+            const geoType = geometryData[geoBlockDataSize * i + 29];
 
             switch(geoType) {
                 case geometryTypes.triangle:

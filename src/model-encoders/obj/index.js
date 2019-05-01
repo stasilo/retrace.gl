@@ -4,6 +4,7 @@ import {vec3} from 'gl-matrix';
 import {
     range,
     reverse,
+    isObj,
     defined,
     definedNotNull,
     normedColor,
@@ -18,8 +19,10 @@ function encodeObjModelTriangleVertexData({
     scale,
     position,
     rotation,
+    textureId,
     materialId,
-    smoothShading
+    smoothShading,
+    doubleSided
 }) {
     let vertices = mesh.vertices
         .map(va => va.slice(0,3));
@@ -33,42 +36,59 @@ function encodeObjModelTriangleVertexData({
             ? normalUtils.vertexNormals(faceIndices, vertices)
             : [];
 
+    let textureCoords = mesh.textureCoords.length
+        ? mesh.textureCoords
+        : [];
+
     // get face vertices
     let faces = mesh.faces
         .map(face => {
-            let idxs = face.indices
-                .map(i => parseInt(i) - 1);
+            const origo = vec3.fromValues(0, 0, 0);
+            const translation = vec3.fromValues(
+                position.x,
+                position.y,
+                position.z
+            );
 
             // convert quad polygons to triangles
             // https://stackoverflow.com/questions/23723993/converting-quadriladerals-in-an-obj-file-into-triangles
             // 0 (i) (i + 1)  [for i in 1..(n - 2)]
 
-            let faces = range(0, idxs.length - 2).map(i => {
-                const origo = vec3.fromValues(0, 0, 0);
-                const translation = vec3.fromValues(
-                    position.x,
-                    position.y,
-                    position.z
-                );
+            const faceIdxs = face.indices
+                .map(i => parseInt(i) - 1);
 
+            const normIdxs = face.normal.length
+                ? face.normal
+                    .map(i => parseInt(i) - 1)
+                : faceIdxs;
+
+            const texIdxs = face.texture
+                .map(i => parseInt(i) - 1);
+
+            let faces = range(0, faceIdxs.length - 2).map(i => {
                 // vertices
 
                 let v0 = vec3.fromValues(
-                    ...vertices[idxs[0]]
+                    ...vertices[faceIdxs[0]]
                 );
 
                 let v1 = vec3.fromValues(
-                    ...vertices[idxs[i + 1]]
+                    ...vertices[faceIdxs[i + 1]]
                 );
 
                 let v2 = vec3.fromValues(
-                    ...vertices[idxs[i + 2]]
+                    ...vertices[faceIdxs[i + 2]]
                 );
 
                 let faceData = [
                     v0, v1, v2
                 ].map(v => {
-                    vec3.scale(v, v, scale);
+
+                    if(isObj(scale)) {
+                        vec3.mul(v, v, vec3.fromValues(scale.x, scale.y, scale.z));
+                    } else {
+                        vec3.scale(v, v, scale);
+                    }
 
                     vec3.rotateX(v, v, origo, rotation.x);
                     vec3.rotateY(v, v, origo, rotation.y);
@@ -82,23 +102,40 @@ function encodeObjModelTriangleVertexData({
                 // normals
 
                 let n0 = normals.length > 0
-                    ? vec3.fromValues(...normals[idxs[0]])
+                    ? vec3.fromValues(...normals[normIdxs[0]])
                     : origo
 
                 let n1 = normals.length > 0
-                    ? vec3.fromValues(...normals[idxs[i + 1]])
+                    ? vec3.fromValues(...normals[normIdxs[i + 1]])
                     : origo;
 
                 let n2 = normals.length > 0
-                    ? vec3.fromValues(...(normals[idxs[i + 2]]))
+                    ? vec3.fromValues(...normals[normIdxs[i + 2]])
                     : origo;
 
                 let normalData = [
                     n0, n1, n2
                 ].map(n => vec3.normalize(n, n));
 
+                // textures
+
+                let t0 = textureCoords.length > 0
+                    ? vec3.fromValues(...textureCoords[texIdxs[0]])
+                    : origo
+
+                let t1 = textureCoords.length > 0
+                    ? vec3.fromValues(...textureCoords[texIdxs[i + 1]])
+                    : origo;
+
+                let t2 = textureCoords.length > 0
+                    ? vec3.fromValues(...(textureCoords[texIdxs[i + 2]]))
+                    : origo;
+
+                let textureData = [t0, t1, t2];
+
                 return faceData
-                    .concat(normalData);
+                    .concat(normalData)
+                    .concat(textureData);
             });
 
             return faces;
@@ -112,6 +149,8 @@ function encodeObjModelTriangleVertexData({
     let triangles = faces
         .reduce((tris, face, id) => {
             return tris.concat([
+                // vertices
+
                 // vec3 v0
                 face[0][0],
                 face[0][1],
@@ -127,10 +166,7 @@ function encodeObjModelTriangleVertexData({
                 face[2][1],
                 face[2][2],
 
-                // vec3 meta
-                materialId,
-                smoothShading ? 1 : 0,
-                geometryTypes.triangle,
+                // normals
 
                 // vec3 n0
                 face[3][0],
@@ -145,7 +181,40 @@ function encodeObjModelTriangleVertexData({
                 // vec3 n2
                 face[5][0],
                 face[5][1],
-                face[5][2]
+                face[5][2],
+
+                // texture coords
+
+                // vec3 t0
+                face[6][0],
+                face[6][1],
+                face[6][2],
+
+                // vec3 t1
+                face[7][0],
+                face[7][1],
+                face[7][2],
+
+                // vec3 t2
+                face[8][0],
+                face[8][1],
+                face[8][2],
+
+                // meta data
+
+                // vec3 meta
+                materialId,
+                smoothShading ? 1 : 0,
+                geometryTypes.triangle,
+
+                // vec3 meta2
+                defined(textureId)
+                    ? textureId
+                    : -1,
+                defined(doubleSided)
+                    ? doubleSided | 0 // bool to int conv.
+                    : 0,
+                -1
             ]);
         }, []);
 

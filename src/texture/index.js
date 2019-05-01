@@ -18,15 +18,16 @@ class Texture {
         this.image = null;
         this.texture = null;
 
-        this.fboColorTarget = null;
-        this.fbo = null;
-
         // image texture
 
         if(defined(url)) {
             return (async () => {
                 this.image = await loadImage(url);
-                this.texture = glApp.createTexture2D(this.image, {flipY: true});
+                this.texture = glApp.createTexture2D(this.image, {
+                    flipY: true,
+                    ...options
+                });
+
                 return this;
             })();
         }
@@ -34,20 +35,29 @@ class Texture {
         // dynamic texture
 
         if(defined(src)) {
-            this.renderDynamicTexture(src);
+            this.renderDynamicTexture(src, options);
         }
     }
 
-    renderDynamicTexture(src) {
-        this.fboColorTarget = glApp.createTexture2D(glApp.width, glApp.height, {
-            // type: gl.FLOAT,
-            // internalFormat: gl.RGBA32F,
-            format: gl.RGBA,
-            flipY: true
-        });
+    renderDynamicTexture(src, options) {
+        const {width, height, ...opts} = defined(options)
+            && defined(options.width)
+            && defined(options.height)
+                ? options
+                : {
+                    width: glApp.width,
+                    height: glApp.height,
+                    ...options
+                };
 
-        this.fbo = glApp.createFramebuffer()
-            .colorTarget(0, this.fboColorTarget);
+        let fboColorTarget = glApp.createTexture2D(width, height, {
+                format: gl.RGBA,
+                flipY: true,
+                ...opts,
+            });
+
+        let fbo = glApp.createFramebuffer()
+            .colorTarget(0, fboColorTarget);
 
         // full screen quad
         const positions = glApp.createVertexBuffer(PicoGL.FLOAT, 2,
@@ -58,21 +68,18 @@ class Texture {
             ])
         );
 
-
-        let fullScreenQuadVertArray = glApp
+        const fullScreenQuadVertArray = glApp
             .createVertexArray()
             .vertexAttributeBuffer(0, positions);
 
-        console.dir(createTexRenderShader);
         const textureShaderSrc = createTexRenderShader({src});
-        console.log(textureShaderSrc);
-        let textureProgram = glApp.createProgram(vertShader, textureShaderSrc);
+        const textureProgram = glApp.createProgram(vertShader, textureShaderSrc);
 
-        let textureDrawCall = glApp
+        const textureDrawCall = glApp
             .createDrawCall(textureProgram, fullScreenQuadVertArray)
             // .uniform('uResolution', vec2.fromValues(glApp.width, glApp.height));
 
-        glApp.drawFramebuffer(this.fbo)
+        glApp.drawFramebuffer(fbo)
             .clear();
 
         textureDrawCall
@@ -81,7 +88,7 @@ class Texture {
         glApp.defaultDrawFramebuffer()
             .clear();
 
-        this.texture = this.fbo.colorAttachments[0];
+        this.texture = fbo.colorAttachments[0];
     }
 }
 

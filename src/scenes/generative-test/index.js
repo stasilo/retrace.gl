@@ -1,9 +1,7 @@
-import Sphere from '../../models/sphere';
-import XyRect from '../../models/xy-rect';
-import Triangle from '../../models/triangle';
-
 import ObjModel from '../../models/obj-model';
-import BvhSphere from '../../models/bvh-sphere';
+import Sphere from '../../models/sphere';
+import Plane from '../../models/plane';
+import Cube from '../../models/Cube';
 
 import Scene from '../../dtos/scene';
 
@@ -13,40 +11,189 @@ import MetalMaterial from '../../materials/metal';
 import LambertMaterial from '../../materials/lambert';
 import EmissiveMaterial from '../../materials/emissive';
 import DialectricMaterial from '../../materials/dialectric';
+import IsotropicMaterial from '../../materials/isotropic';
 
 import {
     random,
     randomIdx,
+    randomBool,
+    maybe,
     pluckRandom,
     range,
+    range2d,
+    glslFloat,
     flatten,
     normedColor,
     normedColorStr,
     degToRad
 } from '../../utils';
 
+class GlassLightCube {
+    constructor({scale, material, texture, glassDistance, ...props}) {
+        delete this;
+
+        return [
+            new Cube({
+                scale,
+                material,
+                texture,
+                ...props
+            }),
+            new Cube({
+                scale: {
+                    x: scale.x + glassDistance,
+                    y: scale.y + glassDistance,
+                    z: scale.z + glassDistance
+                },
+                material: 'glass',
+                ...props
+            })
+        ];
+    }
+}
+
 export default async () => {
     return new Scene({
-        textures: [
-            await new Texture({
-                name: 'earth',
-                url: '/assets/images/earthmap.jpg'
+        geometries: [
+            new Plane({
+                material: 'metal-white', //'fuzzy-metal',
+                texture: 'check',
+                scale: 30,//50.0,
+                position: {
+                    x: 0.3,
+                    y: 0.0,
+                    z: -0.4
+                },
+                rotation: {
+                    y: degToRad(60)
+                }
             }),
-            await new Texture({
+            new Sphere({
+                // material: 'volume',
+                // // material: 'white-light',
+                // // -0.8 till 1.2
+                // position: {
+                //     x: 0.5,
+                //     y: 1,
+                //     z: -0.5
+                // },
+                // radius: 3
+                material: 'volume',
+                // material: 'white-light',
+                // -0.8 till 1.2
+                position: {
+                    x: 0.5,
+                    y: 1.5,
+                    z: -0.5
+                },
+                radius: 3
+            }),
+            // new Sphere({
+            //     material: 'metal-white',
+            //     // texture: 'check',
+            //     position: {
+            //         x: -4.5,
+            //         y: 2.5,
+            //         z: -7.5
+            //     },
+            //     radius: 2
+            // }),
+
+            new Sphere({
+                material: 'ceil-light',
+                // texture: 'check',
+                position: {
+                    x: -4.5,
+                    y: 33,
+                    z: -7.5
+                },
+                radius: 30
+            }),
+            range2d(0, 5, 0, 5).map(([x, z]) => {
+                const material = pluckRandom([
+                    `lambert-white`,
+                    `emissive-${randomIdx(50)}`,
+                    `emissive-${randomIdx(50)}`
+                ]);
+
+                const scale = 0.5;
+
+                const props = {
+                    material,
+                    scale: {
+                        x: scale,
+                        y: scale
+                            + random(0.2)
+                            + maybe(() => random(0.7))
+                            + maybe(() => random(1.4))
+                            + maybe(() => maybe(() => random(1))),
+                        z: scale,
+                    },
+                    position: {
+                        x: 1.2 - x*(scale),
+                        y: 0.1,
+                        z: 0.1 - z*(scale)
+                    },
+                    // rotation: {
+                    //     y: degToRad(-40),
+                    // }
+                    // rotation: {
+                    //     z: degToRad(-10)
+                    // }
+                };
+
+                let cubes = material === 'lambert-white'
+                    ? new GlassLightCube({
+                        ...props,
+                        glassDistance: 0.01,
+                    })
+                    : new GlassLightCube({
+                        ...props,
+                        texture: `pattern-${randomIdx(6)}`,
+                        glassDistance: 0.01,
+                    });
+
+                return material === 'lambert-white'
+                    ? [
+                        ...cubes,
+                        new Sphere({
+                            position: {
+                                x: props.position.x,
+                                y: props.position.y + props.scale.y/2,
+                                z: props.position.z,
+                            },
+                            material: 'white-light',
+                            radius: 0.1
+                        })
+                    ]
+                    : cubes;
+            })
+        ],
+        textures: [
+            // new Texture({
+            //     name: 'earth',
+            //     url: '/assets/images/earthmap.jpg'
+            // }),
+            new Texture({
                 name: 'check',
                 src: `
                     // uv -= .5;
-                    float s = sin(100.*uv.x)*sin(100.*uv.y);
+                    float s = sin(500.*uv.x)*sin(500.*uv.y);
 
                     if(s < 0.) {
-                        tColor = vec4(${random()}, ${random()}, ${random()}, 1.0);
+                        //tColor = vec4(${random()}, ${random()}, ${random()}, 1.0);
+                        tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
                     } else {
-                        tColor = vec4(${normedColorStr('#ffffff')}, 1.0);
+                        tColor = vec4(0.05, 0.05, 0.05, 1.);
                     }
-                `
+                `,
+                // options: { 
+                //     width: 600,
+                //     height: 600
+                // }
             }),
-            await new Texture({
-                name: 'dynamic',
+            ...range(0, 6).map(i => new Texture({
+                name: `pattern-${i}`,
                 src: `
                     vec2 rotate2D (vec2 _st, float _angle) {
                         _st -= 0.5;
@@ -64,7 +211,7 @@ export default async () => {
                     vec2 rotateTilePattern(vec2 _st) {
 
                         //  Scale the coordinate system by 2x2
-                        _st *= 10.0;
+                        _st *= 0.5 + ${glslFloat(random(2))};
 
                         //  Give each cell an index number
                         //  according to its position
@@ -101,32 +248,59 @@ export default async () => {
                     void renderTexture(vec2 uv, out vec4 tColor) {
                         vec2 st = uv;
 
-                        st = tile(st,3.0);
+                        st = tile(st, 3.0);
                         st = rotateTilePattern(st);
 
                         // Make more interesting combinations
-                        // st = tile(st,2.0);
-                        // st = rotate2D(st,-PI*u_time*0.25);
+
+                        ${randomBool()
+                            ? 'st = tile(st,2.0);'
+                            : ''
+                        }
+
+                        ${randomBool()
+                            ? `st = rotate2D(st,-PI * ${glslFloat(random(3))} * 0.25);`
+                            : ''
+                        }
+
                         // st = rotateTilePattern(st*2.);
                         // st = rotate2D(st,PI*u_time*0.25);
 
                         // step(st.x,st.y) just makes a b&w triangles
                         // but you can use whatever design you want.
-                        tColor = vec4(vec3(step(st.x,st.y)),1.0);
+                        tColor = vec4(vec3(step(st.x,st.y))*0.5, 1.0);
                     }
                 `
-            })
+            }))
         ],
         materials: [
-            new MetalMaterial({
-                name: 'fuzzy-metal',
-                color: '#775b2b',
-                fuzz: 0.0,
-                albedo: [1, 1, 1]
+            new IsotropicMaterial({
+                name: `volume`,
+                color: '#ff0000',
+                density: 0.6, //0.4,
+                albedo: [1.0, 1.0, 1.0]
             }),
             new LambertMaterial({
-                name: 'lambert-ground',
+                name: `lambert-white`,
+                color: '#050505',
+                // fuzz: 0.15,
+                albedo: [0.8, 0.8, 0.8]
+            }),
+            new MetalMaterial({
+                name: `metal-white`,
                 color: '#ffffff',
+                fuzz: 0.15,
+                albedo: [1, 1, 1]
+            }),
+            new EmissiveMaterial({
+                name: `white-light`,
+                color: '#ffffff',
+                intensity: 100
+            }),
+            new EmissiveMaterial({
+                name: `ceil-light`,
+                color: '#ffffff',
+                intensity: 1 //0.05
             }),
             new DialectricMaterial({
                 name: 'glass'
@@ -135,123 +309,17 @@ export default async () => {
                 new EmissiveMaterial({
                     name: `emissive-${i}`,
                     color: [random()*0.1, random()*0.1, random()*0.1],
-                    intensity: random(10, 18)
+                    intensity: random(250, 500) //random(30, 50)
                 })
             ),
             ...range(0, 50).map(i =>
-                new MetalMaterial({
+                new LambertMaterial({
                     name: `lambert-${i}`,
                     color: [random(), random(), random()],
-                    fuzz: 0.15,
-                    albedo: [1, 1, 1]
+                    // fuzz: 0.15,
+                    // albedo: [1, 1, 1]
                 })
             )
-        ],
-        geometries: [
-            new BvhSphere({
-                material: 'lambert-ground',
-                texture: 'check',
-                position: {
-                    x: 0,
-                    y: -301,
-                    z: -5
-                },
-                radius: 300.5
-            }),
-            new BvhSphere({
-                material: 'lambert-ground',
-                texture: 'check',
-                position: {
-                    x: 0.3,
-                    y: 0.4,
-                    z: -1.6
-                },
-                radius: 0.5
-            }),
-
-            // ...flatten(range(0, 30).map(i => {
-            //     const position = {
-            //         x: 1.9 + random(0, 0.5),
-            //         y: random(0, 0.8),
-            //         z: 0.2 + random(0, 0.5)
-            //     };
-            //
-            //     const radius = random(0.03, 0.18);
-            //
-            //     return [
-            //         new BvhSphere({
-            //             material: `emissive-${randomIdx(0, 50)}`,
-            //             position,
-            //             radius,
-            //         }),
-            //         new BvhSphere({
-            //             material: 'glass',
-            //             position,
-            //             radius: radius + 0.005
-            //         })
-            //     ];
-            //
-            // })),
-            // ...flatten(range(0, 300).map(i => {
-            //     const position = {
-            //         x: -10 + random(0, 10),
-            //         y: random(1.1, 2.3),
-            //         z: -10 + random(0, 10)
-            //     };
-            //
-            //     const radius = random(0.1, 0.25);
-            //
-            //     return [
-            //         new BvhSphere({
-            //             material: `emissive-${randomIdx(0, 50)}`,
-            //             position,
-            //             radius,
-            //         }),
-            //         new BvhSphere({
-            //             material: 'glass',
-            //             position,
-            //             radius: radius + 0.005
-            //         })
-            //     ];
-            //
-            // })),
-            // await new ObjModel({
-            //     url: 'assets/models/hand.obj',
-            //     material: 'fuzzy-metal',
-            //     smoothShading: true,
-            //     scale: 0.05,
-            //     position: {
-            //         x: 0.7,
-            //         y: 0, //.35,
-            //         z: -0.9
-            //     },
-            //     rotation: {
-            //         x: degToRad(-10),
-            //         // y: degToRad(70),
-            //         // z: degToRad(-10)
-            //     }
-            // }),
-            await new ObjModel({
-                url: 'assets/models/cat.obj',
-                material: 'fuzzy-metal',
-                smoothShading: true,
-                scale: 0.005,
-                position: {
-                    x: -0.3,
-                    y: -0.6,
-                    z: -0.5
-                },
-                rotation: {
-                    y: degToRad(-20)
-                }
-            }),
-            new Sphere({
-                // center: [4.8, 9.4, 3.],
-                center: [-1.8, 10.4, 1.],
-                radius: 0,
-                material: 'LightMaterial',
-                color: '#151515'
-            })
         ]
     });
 }

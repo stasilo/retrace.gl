@@ -1,5 +1,9 @@
 import {vec3} from 'gl-matrix';
-import {degToRad} from '../utils';
+import {
+    degToRad,
+    defined,
+    definedNotNull
+} from '../utils';
 
 // lookFrom - eye origin point
 // lookAt - point camera here
@@ -7,7 +11,15 @@ import {degToRad} from '../utils';
 // vfov - vertical field of view
 // aspect ratio
 
-function Camera({lookFrom, lookAt, vUp, vfov, aspect, aperture}) {
+function Camera({
+    lookFrom,
+    lookAt,
+    vUp,
+    vfov,
+    aspect,
+    aperture,
+    focusDistance
+}) {
     this.cameraUniformName = 'camera';
 
     this.lookFrom = lookFrom;
@@ -17,12 +29,14 @@ function Camera({lookFrom, lookAt, vUp, vfov, aspect, aperture}) {
     this.aspect = aspect;
     this.aperture = aperture;
     this.lensRadius = aperture/2;
+    this.focusDist = !defined(focusDistance)
+        ? vec3.length(vec3.sub(vec3.create(), this.lookFrom, this.lookAt))
+        : focusDistance;
 
     this.createCamera = () => {
         let theta = degToRad(this.vfov); // vfov is top to bottom in degs
         let halfHeight = Math.tan(theta/2.);
         let halfWidth = this.aspect * halfHeight;
-        let focusDist = vec3.length(vec3.sub(vec3.create(), this.lookFrom, this.lookAt));
 
         /*
          * calc camera basis
@@ -43,17 +57,17 @@ function Camera({lookFrom, lookAt, vUp, vfov, aspect, aperture}) {
          * adjust basis to aspect, focus distance and get starting pos (lowerLeft)
          */
 
-        // vec3 lowerLeft = lookFrom - halfWidth*focusDist*u - halfHeight*focusDist*v - w*focusDist;
+        // vec3 lowerLeft = lookFrom - halfWidth*this.focusDist*u - halfHeight*this.focusDist*v - w*this.focusDist;
         this.lowerLeft = vec3.create();
-        vec3.sub(this.lowerLeft, this.lookFrom, vec3.scale(vec3.create(), this.u, halfWidth*focusDist));
-        vec3.sub(this.lowerLeft, this.lowerLeft, vec3.scale(vec3.create(), this.v, halfHeight*focusDist));
-        vec3.sub(this.lowerLeft, this.lowerLeft, vec3.scale(vec3.create(), this.w, focusDist));
+        vec3.sub(this.lowerLeft, this.lookFrom, vec3.scale(vec3.create(), this.u, halfWidth*this.focusDist));
+        vec3.sub(this.lowerLeft, this.lowerLeft, vec3.scale(vec3.create(), this.v, halfHeight*this.focusDist));
+        vec3.sub(this.lowerLeft, this.lowerLeft, vec3.scale(vec3.create(), this.w, this.focusDist));
 
-        // vec3 horizontal = 2.*focusDist*halfWidth*u;
-        this.horizontal = vec3.scale(vec3.create(), this.u, 2*focusDist*halfWidth);
+        // vec3 horizontal = 2.*this.focusDist*halfWidth*u;
+        this.horizontal = vec3.scale(vec3.create(), this.u, 2*this.focusDist*halfWidth);
 
-        // vec3 vertical = 2.*focusDist*halfHeight*v;
-        this.vertical = vec3.scale(vec3.create(), this.v, 2*focusDist*halfHeight);
+        // vec3 vertical = 2.*this.focusDist*halfHeight*v;
+        this.vertical = vec3.scale(vec3.create(), this.v, 2*this.focusDist*halfHeight);
     }
 
     this.getDefinition = () => `

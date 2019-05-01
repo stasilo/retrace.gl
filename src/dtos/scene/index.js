@@ -4,6 +4,7 @@ import TextureList from '../../dtos/texture-list';
 import {
     defined,
     definedNotNull,
+    flatten,
     normedColor,
     isHexColor,
     isFn
@@ -12,17 +13,30 @@ import {
 class Scene {
     constructor({materials, textures, geometries}) {
         if(!geometries.length) {
-            return;
+            return null;
         }
 
-        this.objIdCounter = 0;
         this.materials = new MaterialList(materials);
-        this.textures = new TextureList(textures);
 
-        this.bvhHitables = geometries
+        return (async () => {
+            this.textures = await new TextureList(textures);
+            this.geometries = await this.finalizeGeometries(geometries);
+
+            return this;
+        })();
+    }
+
+    async finalizeGeometries(geometries) {
+        // wait for promises in dim 0 of array
+        geometries = await Promise.all(geometries);
+        // flatten array & wait for promises that were nested
+        geometries = await Promise.all(flatten(geometries));
+
+        return geometries
             .filter(hitable =>
                 hitable && hitable.includeInBvh
-            ).map(hitable => { // replace material name with name + id
+            ).map(hitable => {
+                // replace material name with name + id
                 if(defined(hitable.material)) {
                     const material = this.materials.elements
                         .find(material => 
@@ -37,9 +51,8 @@ class Scene {
                     }
                 }
 
+                // replace texture name with name + id
                 if(defined(hitable.texture)) {
-                    console.log('looking up: ' + hitable.texture);
-
                     const texture = this.textures.elements
                         .find(texture => 
                             texture.name === hitable.texture
@@ -55,52 +68,7 @@ class Scene {
 
                 return hitable;
             });
-
-        console.log('this.bvhHitables: ');
-        console.dir(this.bvhHitables);
-
-        this.hitables = geometries
-            .filter(hitable =>
-                hitable && isFn(hitable.getDefinition)
-            );
-
-        this.hitables
-            .forEach(hitable =>
-                hitable.id = this.objIdCounter++
-            );
     }
-
-    length = () =>
-        this.hitables.length;
-
-    get = (i) =>
-        this.hitables[i];
-
-    add = (hitable) => {
-        hitable.id = this.objIdCounter++;
-        this.hitables.push(hitable);
-    }
-
-    updateTextureColors = (__uv, __p) =>
-        this.hitables
-            .map(hitable =>
-                hitable.updateTextureColor(__uv, __p)
-            ).join('');
-
-    getTextureDefinitions = () =>
-        this.hitables
-            .map(hitable =>
-                hitable.getTextureDefinition()
-            ).join('');
-
-    getDefinition = () => `
-        Hitable hitables[${this.hitables.length}];
-        {
-            ${this.hitables.map((hitable, i) => `
-                hitables[${i}] = ${hitable.getDefinition()}
-            `).join('')}
-        }
-    `;
 };
 
 export default Scene;

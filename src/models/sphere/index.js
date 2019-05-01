@@ -1,55 +1,95 @@
+import ObjLoader from 'obj-mtl-loader';
 import {vec3} from 'gl-matrix';
-import Hitable from '../hitable';
+
+import {geometryTypes} from '../../bvh';
 
 import {
+    range,
+    defined,
     definedNotNull,
     normedColor,
     isHexColor,
     glslFloat
 } from '../../utils';
 
-function Sphere({center, radius, material, color}) {
-    // super
-    Hitable.call(this, {
-        material,
-        color
-    });
+class Sphere {
+    includeInBvh = true;
 
-    this.center = center;
-    this.radius = radius;
+    constructor({material, texture, radius, position}) {
+        this.material = material;
+        this.texture = texture;
+        this.radius = radius;
 
-    this.getBoundingBox = () => {
-        let vRadius = vec3.fromValues(radius, radius, radius);
-        let vCenter = vec3.fromValues(...center);
-
-        let min = vec3.create();
-        vec3.sub(min, vCenter, vRadius);
-        let max = vec3.create();
-        vec3.add(max, vCenter, vRadius);
-
-        return `vec3(${min.map(n => glslFloat(n)).join(', ')}), vec3(${max.map(n => glslFloat(n)).join(', ')}),`;
+        this.position = {
+            x: 0,
+            y: 0,
+            z: 0,
+            ...(defined(position)
+                ? position
+                : [])
+        };
     }
 
-    this.getDefinition = () =>
-        `Hitable(
-            SPHERE_GEOMETRY,
-            ${material}, // material
-            vec3(1.), // color
+    get geometryData() {
+        return [
+            // vec3 v0
+            this.position.x,
+            this.position.y,
+            this.position.z,
 
-            // bounding box
-            ${this.getBoundingBox()}
+            // vec3 v1
+            this.radius,
+            -1,
+            -1,
 
-            vec3(${center.map(c => glslFloat(c)).join(', ')}), // center
-            ${glslFloat(radius)}, // radius
+            // vec3 v2
+            -1,
+            -1,
+            -1,
 
-            // irrelevant props for sphere
-            -1., -1., -1., -1., // x0, x1, y0, y1
-            -1., // k
+            // vec3 n0
+            -1,
+            -1,
+            -1,
 
-            // irrelevant props for sphere
-            vec3(-1.), vec3(-1.), vec3(-1.),
-            vec3(-1.)
-        );`;
+            // vec3 n1
+            -1,
+            -1,
+            -1,
+
+            // vec3 n2
+            -1,
+            -1,
+            -1,
+
+            // vec3 t0
+            -1,
+            -1,
+            -1,
+
+            // vec3 t1
+            -1,
+            -1,
+            -1,
+
+            // vec3 t2
+            -1,
+            -1,
+            -1,
+
+            // vec3 meta1
+            this.material.materialId,
+            0, // smooth shading
+            geometryTypes.sphere,
+
+            // vec3 meta2
+            defined(this.texture)
+                ? this.texture.textureId
+                : -1,
+            -1,
+            -1
+        ]
+    }
 }
 
 export default Sphere;

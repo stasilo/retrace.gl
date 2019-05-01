@@ -8,7 +8,6 @@ import queryString from 'query-string';
 import {getGlInstances} from './gl';
 import {createCamera} from './camera';
 
-// import createScene from './scenes/model-test';
 import createScene from './scenes/generative-test';
 
 import vertShader from './shaders/vert.glsl';
@@ -53,19 +52,16 @@ async function raytraceApp() {
     const sceneTextures = scene.textures.getTextures();
     const {bvhData, geometryData} = buildSceneBvh(scene);
 
-    console.log('sceneTextures: ');
-    console.dir(sceneTextures);
-
     // https://webglfundamentals.org/webgl/lessons/webgl-data-textures.html
     // const alignment = 1;
     // gl.pixelStorei(gl.UNPACK_ALIGNMENT, alignment);
 
     // for triangle scene
     const camera = createCamera({
-        lookFrom: [3.1, 0.8, 1.9],
-        lookAt: [-0.25, 0.1, -1.5],
+        lookFrom: [3.1, 1.8, 1.9],
+        lookAt: [-0.25, -0.1, -1.5],
         vUp: [0, 1, 0],
-        vfov: 25,
+        vfov: 40, //35, //25,
         aperture: 0.015,
         aspect: glCanvas.width/glCanvas.height
     });
@@ -198,18 +194,18 @@ async function raytraceApp() {
         .texture('uBvhDataTexture', bvhDataTexture)
         .texture('uMaterialDataTexture', materialDataTexture)
         .uniform('uBgGradientColors[0]', new Float32Array([
-            ...normedColor('#eeeeee'),
-            ...normedColor('#ffffff')
+            // ...normedColor('#eeeeee'),
+            // ...normedColor('#ffffff')
+
             // ...normedColor('#000000'),
             // ...normedColor('#010101')
+
+            ...normedColor('#030303'),
+            ...normedColor('#010101')
         ]))
         .uniform('uResolution', vec2.fromValues(glApp.width, glApp.height))
         .uniform('uSeed', vec2.fromValues(random(), random()))
         .uniform('uTime', 0)
-
-
-    console.log('sceneTextures: ');
-    console.dir(sceneTextures);
 
     if(sceneTextures.length > 0) {
         sceneTextures.forEach(texture =>

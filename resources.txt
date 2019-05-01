@@ -1,0 +1,5 @@
+http://psgraphics.blogspot.com/2019/02/adding-point-and-directional-lights-to.html
+
+A neat trick for ray collisions in nonuniform media (cheap volumes): 
+http://psgraphics.blogspot.com/2009/05/neat-trick-for-ray-collisions-in.html
+

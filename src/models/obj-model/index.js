@@ -7,6 +7,7 @@ import {
     range,
     defined,
     definedNotNull,
+    isObj,
     normedColor,
     isHexColor,
     glslFloat
@@ -15,18 +16,41 @@ import {
 class ObjModel {
     includeInBvh = true;
 
-    constructor({url, material, smoothShading, scale, position, rotation}) {
+    constructor({
+        url,
+        material,
+        texture,
+        smoothShading,
+        doubleSided,
+        scale,
+        position,
+        rotation
+    }) {
         this.url = url;
         this.material = material;
+        this.texture = texture;
         this._geometryData = null;
 
         this.smoothShading = defined(smoothShading)
             ? smoothShading
             : false;
 
-        this.scale = defined(scale)
-            ? scale
-            : 1;
+        this.doubleSided = defined(doubleSided)
+            ? doubleSided
+            : false;
+
+        this.scale = isObj(scale)
+            ? {
+                x: 0,
+                y: 0,
+                z: 0,
+                ...(defined(scale)
+                    ? scale
+                    : [])
+            }
+            : defined(scale)
+                ? scale
+                : 1;
 
         this.position = {
             x: 0,
@@ -58,10 +82,14 @@ class ObjModel {
             this._geometryData = encodeObjModelTriangleVertexData({
                 mesh: this.mesh,
                 smoothShading: this.smoothShading,
+                doubleSided: this.doubleSided,
                 scale: this.scale,
                 position: this.position,
                 rotation: this.rotation,
-                materialId: this.material.materialId
+                materialId: this.material.materialId,
+                textureId: defined(this.texture)
+                    ? this.texture.textureId
+                    : -1
             });
         }
 

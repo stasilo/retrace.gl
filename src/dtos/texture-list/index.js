@@ -1,16 +1,29 @@
-import {defined, definedNotNull} from '../../utils';
+import {
+    defined,
+    definedNotNull,
+    flatten
+} from '../../utils';
 
 class TextureList {
     elements = [];
 
     constructor(textures) {
-        this.elements = definedNotNull(textures)
-            ? textures
-                .map((texture, i) => {
-                    texture.id = i;
-                    return texture;
-                })
-            : [];
+        return (async () => {
+            // wait for promises in dim 0 of array
+            let elements = await Promise.all(textures);
+            // flatten array & wait for promises that were nested
+            elements = await Promise.all(flatten(elements));
+
+            this.elements = definedNotNull(elements)
+                ? elements
+                    .map((texture, i) => {
+                        texture.id = i;
+                        return texture;
+                    })
+                : [];
+
+            return this;
+        })();
     }
 
     addTexture(texture) {
@@ -20,20 +33,12 @@ class TextureList {
     }
 
     getTextures() {
-        return this.elements; //.map(el => el.texture);
+        return this.elements;
     }
 
     get length() {
         return this.elements.length;
     }
-
-    // getTextureData() {
-    //     return this.elements
-    //         .reduce((flatTextures, texture) => [
-    //             ...flatTextures,
-    //             ...texture.toArray()
-    //         ], []);
-    // }
 }
 
 export default TextureList;
