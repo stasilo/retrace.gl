@@ -139,7 +139,7 @@ const loadImage = async (url) =>
     });
 
 
-module.exports = {
+export {
     defined,
     definedNotNull,
     isFn,
@@ -165,3 +165,31 @@ module.exports = {
     animationFrame,
     loadImage
 };
+
+
+// module.exports = {
+//     defined,
+//     definedNotNull,
+//     isFn,
+//     isArray,
+//     isObj,
+//     range,
+//     range2d,
+//     reverse,
+//     zip,
+//     flatten,
+//     random,
+//     randomIdx,
+//     randomSign,
+//     randomBool,
+//     maybe,
+//     pluckRandom,
+//     degToRad,
+//     radToDeg,
+//     isHexColor,
+//     normedColor,
+//     normedColorStr,
+//     glslFloat,
+//     animationFrame,
+//     loadImage
+// };

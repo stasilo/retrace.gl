@@ -6,12 +6,14 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const OptimizeCssAssetsPlugin = require('optimize-css-assets-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const WriteFilePlugin = require('write-file-webpack-plugin');
 
 const buildPath = path.resolve(__dirname, 'dist');
 
 module.exports = {
     devtool: 'source-map',
-    entry: ['babel-polyfill', './src/index.js'],
+    // entry: ['babel-polyfill', './src/index.js'],
+    entry: ['@babel/polyfill', './src/index.js'],
     output: {
         filename: '[name].[hash:20].js',
         path: buildPath
@@ -24,14 +26,23 @@ module.exports = {
             {
                 test: /\.js$/,
                 exclude: /node_modules/,
+                // loader: 'babel-loader',
+                //
+                // options: {
+                //     presets: ['env'],
+                //     plugins: [
+                //         'transform-decorators-legacy',
+                //         'transform-class-properties',
+                //         'babel-plugin-transform-object-rest-spread'
+                //     ]
+                // }
                 loader: 'babel-loader',
-
                 options: {
-                    presets: ['env'],
+                    presets: ['@babel/env'],
                     plugins: [
-                        'transform-decorators-legacy',
-                        'transform-class-properties',
-                        'babel-plugin-transform-object-rest-spread'
+                        ['@babel/plugin-proposal-decorators', {legacy: true}],
+                        '@babel/plugin-proposal-class-properties',
+                        '@babel/plugin-proposal-object-rest-spread'
                     ]
                 }
             }, {
@@ -137,9 +148,14 @@ module.exports = {
             },
             canPrint: true
         }),
+        new WriteFilePlugin(),
         new CopyWebpackPlugin([{
-            from: './src/assets/models/',
-            to: 'assets/models/',
+            from: './src/assets/',
+            to: './',
         }]),
+        // new CopyWebpackPlugin([{
+        //     from: './src/assets/models/',
+        //     to: 'assets/models/',
+        // }]),
     ]
 };

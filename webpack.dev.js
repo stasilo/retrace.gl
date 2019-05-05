@@ -6,7 +6,8 @@ const WriteFilePlugin = require('write-file-webpack-plugin');
 
 module.exports = {
     devtool: 'eval-cheap-module-source-map',
-    entry: ['babel-polyfill', './src/index.js'],
+    // entry: ['babel-polyfill', './src/index.js'],
+    entry: ['@babel/polyfill', './src/index.js'],
     devServer: {
         port: 8080,
         contentBase: path.join(__dirname, "dist")
@@ -22,13 +23,22 @@ module.exports = {
             {
                 test: /\.js$/,
                 exclude: /node_modules/,
+                // loader: 'babel-loader',
+                // options: {
+                //     presets: ['env'],
+                //     plugins: [
+                //         'transform-decorators-legacy',
+                //         'transform-class-properties',
+                //         'babel-plugin-transform-object-rest-spread'
+                //     ]
+                //}
                 loader: 'babel-loader',
                 options: {
-                    presets: ['env'],
+                    presets: ['@babel/env'],
                     plugins: [
-                        'transform-decorators-legacy',
-                        'transform-class-properties',
-                        'babel-plugin-transform-object-rest-spread'
+                        ['@babel/plugin-proposal-decorators', {legacy: true}],
+                        '@babel/plugin-proposal-class-properties',
+                        '@babel/plugin-proposal-object-rest-spread'
                     ]
                 }
             }, {
