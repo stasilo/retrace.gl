@@ -3,3 +3,8 @@ http://psgraphics.blogspot.com/2019/02/adding-point-and-directional-lights-to.ht
 A neat trick for ray collisions in nonuniform media (cheap volumes): 
 http://psgraphics.blogspot.com/2009/05/neat-trick-for-ray-collisions-in.html
 
+
+Volumetrics: 
+https://www.shadertoy.com/view/XlBSRz (cooooool)
+enklare: https://www.shadertoy.com/view/4tc3Wf
+

@@ -115,7 +115,25 @@ function encodeObjModelTriangleVertexData({
 
                 let normalData = [
                     n0, n1, n2
-                ].map(n => vec3.normalize(n, n));
+                ].map(n => {
+                    // necessary?
+
+                    // if(isObj(scale)) {
+                    //     vec3.mul(n, n, vec3.fromValues(scale.x, scale.y, scale.z));
+                    // } else {
+                    //     vec3.scale(n, n, scale);
+                    // }
+                    //
+                    // vec3.rotateX(n, n, origo, rotation.x);
+                    // vec3.rotateY(n, n, origo, rotation.y);
+                    // vec3.rotateZ(n, n, origo, rotation.z);
+                    //
+                    // vec3.add(n, n, translation);
+
+                    vec3.normalize(n, n)
+
+                    return n;
+                });
 
                 // textures
 

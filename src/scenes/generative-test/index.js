@@ -41,15 +41,15 @@ class GlassLightCube {
                 texture,
                 ...props
             }),
-            new Cube({
-                scale: {
-                    x: scale.x + glassDistance,
-                    y: scale.y + glassDistance,
-                    z: scale.z + glassDistance
-                },
-                material: 'glass',
-                ...props
-            })
+            // new Cube({
+            //     scale: {
+            //         x: scale.x + glassDistance,
+            //         y: scale.y + glassDistance,
+            //         z: scale.z + glassDistance
+            //     },
+            //     material: 'glass',
+            //     ...props
+            // })
         ];
     }
 }
@@ -72,26 +72,15 @@ export default async () => {
             }),
             new Sphere({
                 material: 'volume',
-                // material: 'white-light',
+                // material: 'lambert-1',
                 // -0.8 till 1.2
                 position: {
-                    x: 0.5,
-                    y: 0,
-                    z: -0.5
+                    x: -1,
+                    y: 0, //0,
+                    z: -2
                 },
-                radius: 3.5
+                radius: 4.2
             }),
-            // new Sphere({
-            //     material: 'metal-white',
-            //     // texture: 'check',
-            //     position: {
-            //         x: -4.5,
-            //         y: 2.5,
-            //         z: -7.5
-            //     },
-            //     radius: 2
-            // }),
-
             new Sphere({
                 material: 'ceil-light',
                 // texture: 'check',
@@ -111,21 +100,24 @@ export default async () => {
 
                 const scale = 0.5;
 
+                // fixa via matriser :( )
+                // http://www.scratchapixel.com/lessons/3d-basic-rendering/transforming-objects-using-matrices
+
                 const props = {
                     material,
                     scale: {
                         x: scale,
                         y: scale
                             + random(0.2)
-                            + maybe(() => random(0.7))
-                            + maybe(() => random(1.4))
-                            + maybe(() => maybe(() => random(1))),
+                            + maybe(() => random(0.7)),
+                            // + maybe(() => random(1.4))
+                            // + maybe(() => maybe(() => random(1))),
                         z: scale,
                     },
                     position: {
-                        x: 1.2 - x*(scale),
+                        x: 1.2 - x*(scale+0.01),
                         y: 0.1,
-                        z: 0.1 - z*(scale)
+                        z: 0.1 - z*(scale+0.01)
                     },
                     // rotation: {
                     //     y: degToRad(-40),
@@ -138,12 +130,12 @@ export default async () => {
                 let cubes = material === 'lambert-white'
                     ? new GlassLightCube({
                         ...props,
-                        glassDistance: 0.01,
+                        glassDistance: 0.05,
                     })
                     : new GlassLightCube({
                         ...props,
-                        texture: `pattern-${randomIdx(6)}`,
-                        glassDistance: 0.01,
+                        texture: `pattern-${randomIdx(3)}`,
+                        glassDistance: 0.05,
                     });
 
                 return material === 'lambert-white'
@@ -170,19 +162,13 @@ export default async () => {
             new Texture({
                 name: 'check',
                 src: `
-                    // uv -= .5;
                     float s = sin(500.*uv.x)*sin(500.*uv.y);
-
                     if(s < 0.) {
                         tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
                     } else {
                         tColor = vec4(0.05, 0.05, 0.05, 1.);
                     }
-                `,
-                // options: { 
-                //     width: 600,
-                //     height: 600
-                // }
+                `
             }),
             ...range(0, 6).map(i => new Texture({
                 name: `pattern-${i}`,
@@ -266,19 +252,19 @@ export default async () => {
             }))
         ],
         materials: [
-            // new IsotropicVolumeMaterial({
-            //     name: `volume`,
-            //     color: '#ff0000',
-            //     density: 0.7, //0.6, //0.4,
-            //     albedo: [1.0, 1.0, 1.0]
-            // }),
-            new AnisotropicVolumeMaterial({
+            new IsotropicVolumeMaterial({
                 name: `volume`,
                 color: '#ff0000',
-                albedo: [1.0, 1.0, 1.0],
-                density: 1, //0.7, //0.6, //0.4,
-                volumeScale: 5
+                density: 1, //0.6, //0.4,
+                albedo: [0.5, 0.5, 0.5]
             }),
+            // new AnisotropicVolumeMaterial({
+            //     name: `volume`,
+            //     color: '#ff0000',
+            //     albedo: [1.0, 1.0, 1.0],
+            //     density: 1, //0.7, //0.6, //0.4,
+            //     // volumeScale: 1
+            // }),
             new LambertMaterial({
                 name: `lambert-white`,
                 color: '#050505',
@@ -304,21 +290,21 @@ export default async () => {
             new DialectricMaterial({
                 name: 'glass'
             }),
-            ...range(0, 50).map(i =>
-                new EmissiveMaterial({
-                    name: `emissive-${i}`,
-                    color: '#ffffff',
-                    intensity: random(10, 20) // random(25, 50) //random(30, 50)
-                })
-            ),
-            ...range(0, 50).map(i =>
-                new LambertMaterial({
-                    name: `lambert-${i}`,
-                    color: [random(), random(), random()],
-                    // fuzz: 0.15,
-                    // albedo: [1, 1, 1]
-                })
-            )
+            // ...range(0, 50).map(i =>
+            //     new EmissiveMaterial({
+            //         name: `emissive-${i}`,
+            //         color: '#ffffff',
+            //         intensity: random(10, 20) // random(25, 50) //random(30, 50)
+            //     })
+            // ),
+            // ...range(0, 50).map(i =>
+            //     new LambertMaterial({
+            //         name: `lambert-${i}`,
+            //         color: [random(), random(), random()],
+            //         // fuzz: 0.15,
+            //         // albedo: [1, 1, 1]
+            //     })
+            // )
         ]
     });
 }

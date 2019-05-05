@@ -33,9 +33,7 @@ const dataTextureSize = 2048;
 
 const {glCanvas, gl, glApp} = getGlInstances();
 
-async function raytraceApp(scene) {
-    const params = queryString.parse(location.search);
-
+async function raytraceApp({scene, params}) {
     const maxSampleCount = definedNotNull(params.sampleCount)
         ? params.sampleCount
         : defaultMaxSampleCount;
@@ -194,14 +192,15 @@ async function raytraceApp(scene) {
         .texture('uBvhDataTexture', bvhDataTexture)
         .texture('uMaterialDataTexture', materialDataTexture)
         .uniform('uBgGradientColors[0]', new Float32Array([
-            // ...normedColor('#eeeeee'),
-            // ...normedColor('#ffffff')
+            ...normedColor('#eeeeee'),
+            ...normedColor('#ffffff')
 
             // ...normedColor('#000000'),
             // ...normedColor('#010101')
 
-            ...normedColor('#030303'),
-            ...normedColor('#010101')
+            //
+            // ...normedColor('#030303'),
+            // ...normedColor('#010101')
         ]))
         .uniform('uResolution', vec2.fromValues(glApp.width, glApp.height))
         .uniform('uSeed', vec2.fromValues(random(), random()))
@@ -326,15 +325,25 @@ async function raytraceApp(scene) {
     }
 }
 
+let currSampleCount = 100;
+
 document.addEventListener('DOMContentLoaded', async () => {
+    const params = queryString.parse(location.search);
+
     const scene = await createScene();
-    raytraceApp(scene);
+    raytraceApp({scene, params});
 
     document.onkeypress = function (e) {
         e = e || window.event;
 
-        if(e.keyCode == 13) {
-            console.log('enter!');
+        // if(e.keyCode == 105) { // i
+        //     console.log('iiiiiiiii');
+        // }
+
+        if(e.keyCode == 13) { // enter
+            params.sampleCount = currSampleCount;
+            raytraceApp({scene, params});
+            currSampleCount += 100;
         }
     };
 });

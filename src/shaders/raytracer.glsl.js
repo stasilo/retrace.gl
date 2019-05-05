@@ -12,7 +12,7 @@ const getSource = ({options, Scene}) =>
     #define T_MIN 0.0001 //.001
     #define T_MAX 3.402823466e+38 //10000.0
 
-    #define MAX_HIT_DEPTH 5//4 //15 //50
+    #define MAX_HIT_DEPTH 4 //15 //50
     #define NUM_SAMPLES ${options.numSamples}
 
     #define DATA_TEX_SIZE ${glslFloat(options.dataTexSize)}
@@ -207,14 +207,13 @@ const getSource = ({options, Scene}) =>
     struct BvhStackData {
         int id;
         float rayT;
-    } stackLevels[24*4];
+    } stackLevels[24];
 
     BvhStackData slData0, slData1, tmp;
 
     BvhNode getBvhNode(int index) {
         float offset = float(index) * 3.;
         float xOffset = mod(offset, DATA_TEX_SIZE);
-        // float yOffset = ceil(offset * DATA_TEX_INV_SIZE) - 1.;
         float yOffset = floor(offset * DATA_TEX_INV_SIZE);
 
         vec3 meta = texelFetch(uBvhDataTexture, ivec2(xOffset, yOffset), 0).xyz;
@@ -274,7 +273,15 @@ const getSource = ({options, Scene}) =>
             );
         }
 
-        Camera getCameraWithAperture(vec3 lookFrom, vec3 lookAt, vec3 vUp, float vfov, float aspect, float aperture, float focusDist) {
+        Camera getCameraWithAperture(
+            vec3 lookFrom,
+            vec3 lookAt,
+            vec3 vUp,
+            float vfov,
+            float aspect,
+            float aperture,
+            float focusDist
+        ) {
             float lensRadius = aperture/2.;
             float theta = DEG_TO_RAD(vfov); // vfov is top to bottom in degs
             float halfHeight = tan(theta/2.); // pythagorean theorem
@@ -398,7 +405,8 @@ const getSource = ({options, Scene}) =>
         vec3 offset = camera.u * rd.x + camera.v * rd.y;
 
         if(camera.lensRadius > 0.) { // camera with aperture
-            vec3 dir = camera.lowerLeft + uv.x * camera.horizontal + uv.y * camera.vertical - camera.origin - offset;
+            vec3 dir = camera.lowerLeft + uv.x * camera.horizontal
+                + uv.y * camera.vertical - camera.origin - offset;
             return Ray(
                 camera.origin + offset,
                 dir,
@@ -514,8 +522,6 @@ const getSource = ({options, Scene}) =>
 
     // amass emissive color
     bool emit(HitRecord hitRecord, out vec3 emittedColor) {
-        // vec3 emittedColor = vec3(0.);
-
         if(hitRecord.material.type == DIFFUSE_EMISSIVE_MATERIAL_TYPE) {
             emittedColor = hitRecord.material.emissiveIntensity * hitRecord.color;
             return true;
@@ -577,7 +583,15 @@ const getSource = ({options, Scene}) =>
         return t0;
     }
 
-    bool hitBvhTriangle(in Ray r, bool doubleSided, vec3 v0, vec3 v1, vec3 v2, in float tMax, inout HitRecord hitRecord) {
+    bool hitBvhTriangle(
+        in Ray r,
+        bool doubleSided,
+        vec3 v0,
+        vec3 v1,
+        vec3 v2,
+        in float tMax,
+        inout HitRecord hitRecord
+    ) {
     	vec3 edge1 = v1 - v0;
     	vec3 edge2 = v2 - v0;
     	vec3 pvec = cross(r.dir, edge2);
@@ -594,14 +608,16 @@ const getSource = ({options, Scene}) =>
 
     	vec3 tvec = r.origin - v0;
     	float u = dot(tvec, pvec) * det;
-    	if (u < 0.0 || u > 1.0)
+    	if (u < 0.0 || u > 1.0) {
     		return false;
+        }
 
     	vec3 qvec = cross(tvec, edge1);
     	float v = dot(r.dir, qvec) * det;
 
-        if (v < 0.0 || u + v > 1.0)
+        if (v < 0.0 || u + v > 1.0) {
     		return false;
+        }
 
         float t = dot(edge2, qvec) * det;
 
@@ -616,7 +632,14 @@ const getSource = ({options, Scene}) =>
         return false;
     }
 
-    void hitSphere(Ray ray, vec3 center, float radius, float tMin, float tMax, out HitRecord hitRecord) {
+    void hitSphere(
+        Ray ray,
+        vec3 center,
+        float radius,
+        float tMin,
+        float tMax,
+        out HitRecord hitRecord
+    ) {
         vec3 oc = ray.origin - center;
 
         float a = dot(ray.dir, ray.dir);
@@ -719,6 +742,7 @@ const getSource = ({options, Scene}) =>
         int lookupGeometryType = -1;
 
         float lookupOffset = 0.;
+        float volumeHitT = 0.;
         vec2 triangleUv;
 
         int stackPtr = 0;
@@ -780,6 +804,80 @@ const getSource = ({options, Scene}) =>
                     bool doubleSided = bool(meta.y);
 
                     switch(geoType) {
+                        case BVH_SPHERE_GEOMETRY: {
+                            xOffset = mod(geoOffset, DATA_TEX_SIZE);
+                            yOffset = floor(geoOffset * DATA_TEX_INV_SIZE);
+                            vec3 center = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                            xOffset = mod(geoOffset + 1., DATA_TEX_SIZE);
+                            yOffset = floor((geoOffset + 1.) * DATA_TEX_INV_SIZE);
+                            float radius = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).x;
+
+                            xOffset = mod(geoOffset + 9., DATA_TEX_SIZE);
+                            yOffset = floor((geoOffset + 9.) * DATA_TEX_INV_SIZE);
+                            vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                            int materialId = int(meta.x);
+
+                            Material sphereMaterial = getPackedMaterial(materialId);
+
+                            // regular sphere
+                            if(sphereMaterial.type != ISOTROPIC_VOLUME_MATERIAL_TYPE
+                                && sphereMaterial.type != ANISOTROPIC_VOLUME_MATERIAL_TYPE)
+                            {
+                                hitSphere(ray, center, radius, T_MIN, tMax, /* out => */ record);
+                                if(record.hasHit) {
+                                    lookupGeometryType = BVH_SPHERE_GEOMETRY;
+                                    lookupOffset = geoOffset;
+                                    tMax = record.hitT;
+                                }
+                            } else { // volume spere
+                                hitSphere(ray, center, radius, T_MIN, T_MAX, /* out => */ record);
+                                if(record.hasHit) {
+                                    HitRecord record2;
+                                    hitSphere(ray, center, radius, record.hitT + 0.0001, T_MAX, /* out => */ record2);
+                                    if(record2.hasHit) {
+
+                                        if(record.hitT < T_MIN) {
+                                            record.hitT = T_MIN;
+                                        }
+
+                                        if(record2.hitT > tMax) {
+                                            record2.hitT = tMax;
+                                        }
+
+                                        if(record.hitT < record2.hitT) {
+                                            if(record.hitT < 0.) {
+                                                record.hitT = 0.;
+                                            }
+
+                                            float distInsideBound = (record2.hitT - record.hitT)
+                                                * length(ray.dir);
+
+                                            float hitDist;
+                                            if(sphereMaterial.type == ISOTROPIC_VOLUME_MATERIAL_TYPE) {
+                                                hitDist = -(1./sphereMaterial.density) * log(1. - rand());
+                                            } else { // anisotropic
+                                                hitDist = sampleVolumeDistance(
+                                                    ray,
+                                                    sphereMaterial.density,
+                                                    sphereMaterial.volumeScale
+                                                );
+                                            }
+
+                                            if(hitDist < distInsideBound) {
+                                                tMax = record.hitT + hitDist / length(ray.dir);
+                                                lookupGeometryType = BVH_SPHERE_GEOMETRY;
+                                                lookupOffset = geoOffset;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            record.hasHit = false;
+                            break;
+                        }
+
                         case BVH_TRIANGLE_GEOMETRY: {
                             xOffset = mod(geoOffset, DATA_TEX_SIZE);
                             yOffset = floor(geoOffset * DATA_TEX_INV_SIZE);
@@ -799,72 +897,6 @@ const getSource = ({options, Scene}) =>
                                 lookupOffset = geoOffset;
                                 triangleUv = record.uv;
                                 tMax = record.hitT;
-                                record.hasHit = false;
-                            }
-
-                            break;
-                        }
-
-                        case BVH_SPHERE_GEOMETRY: {
-                            xOffset = mod(geoOffset, DATA_TEX_SIZE);
-                            yOffset = floor(geoOffset * DATA_TEX_INV_SIZE);
-                            vec3 center = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-
-                            xOffset = mod(geoOffset + 1., DATA_TEX_SIZE);
-                            yOffset = floor((geoOffset + 1.) * DATA_TEX_INV_SIZE);
-                            float radius = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).x;
-
-                            xOffset = mod(geoOffset + 9., DATA_TEX_SIZE);
-                            yOffset = floor((geoOffset + 9.) * DATA_TEX_INV_SIZE);
-                            vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-                            int materialId = int(meta.x);
-
-                            Material sphereMaterial = getPackedMaterial(materialId);
-
-                            hitSphere(ray, center, radius, T_MIN, tMax, /* out => */ record);
-                            if(record.hasHit) {
-                                // volume sphere
-                                if(sphereMaterial.type == ISOTROPIC_VOLUME_MATERIAL_TYPE
-                                    || sphereMaterial.type == ANISOTROPIC_VOLUME_MATERIAL_TYPE)
-                                {
-                                    HitRecord record2;
-                                    hitSphere(ray, center, radius, record.hitT + 0.0001, T_MAX, /* out => */ record2);
-
-                                    if(record2.hasHit) {
-                                        if(record.hitT < T_MIN) {
-                                            record.hitT = T_MIN;
-                                        }
-                                        if(record2.hitT > T_MAX) {
-                                            record.hitT = T_MAX;
-                                        }
-
-                                        if(record.hitT < record2.hitT) {
-                                            if(record.hitT < 0.) {
-                                                record.hitT = 0.;
-                                            }
-
-                                            float distInsideBound = (record2.hitT - record.hitT) * length(ray.dir);
-
-                                            float hitDist;
-                                            if(sphereMaterial.type == ISOTROPIC_VOLUME_MATERIAL_TYPE) {
-                                                hitDist = -(1./sphereMaterial.density) * log(1. - rand());
-                                            } else {
-                                                hitDist = sampleVolumeDistance(ray, sphereMaterial.density, sphereMaterial.volumeScale);
-                                            }
-
-                                            if(hitDist < distInsideBound) {
-                                                tMax = record.hitT + (hitDist / length(ray.dir));
-                                                lookupGeometryType = BVH_SPHERE_GEOMETRY;
-                                                lookupOffset = geoOffset;
-                                            }
-                                        }
-                                    }
-                                } else { // regular sphere
-                                    lookupGeometryType = BVH_SPHERE_GEOMETRY;
-                                    lookupOffset = geoOffset;
-                                    tMax = record.hitT;
-                                }
-
                                 record.hasHit = false;
                             }
 
@@ -947,6 +979,8 @@ const getSource = ({options, Scene}) =>
             loopCounter++;
         }
 
+        // lookup geo details?
+
         switch(lookupGeometryType) {
             case BVH_TRIANGLE_GEOMETRY: {
                 // vertices
@@ -1020,7 +1054,7 @@ const getSource = ({options, Scene}) =>
                 record.hitPoint = pointOnRay(ray, tMax);
 
                 if(smoothShading == true) {
-            		record.normal = normalize(
+                    record.normal = normalize(
                         triangleW * n0
                             + triangleUv.x * n1
                             + triangleUv.y * n2
@@ -1029,7 +1063,6 @@ const getSource = ({options, Scene}) =>
                     record.normal = normalize(cross(v1 - v0, v2 - v0));
                 }
 
-                hitRecord = record;
                 break;
             }
 
@@ -1080,14 +1113,13 @@ const getSource = ({options, Scene}) =>
                         (record.hitPoint - center) / radius
                     );
                 }
-
-                hitRecord = record;
-                break;
             }
 
             default:
                 break;
         }
+
+        hitRecord = record;
     }
 
     /*
@@ -1114,6 +1146,7 @@ const getSource = ({options, Scene}) =>
                 vec3 emittedColor;
 
                 if(emit(hitRecord, /* out => */ emittedColor)) {
+                    // color *= emittedColor;
                     color *= emittedColor;
                     break;
                 }
