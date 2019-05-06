@@ -8,7 +8,7 @@
         "start": "webpack-dev-server --config webpack.dev.js --mode development",
         "build": "webpack --config webpack.prod.js --mode production",
         "preview": "npm run build && http-server dist",
-        "deploy": "scp -i ~/stasilo.pem dist/* ec2-user@labb.stasilo.se:/var/www/lighttpd/raytracer/"
+        "deploy": "scp -i ~/stasilo.pem -r dist/* ec2-user@labb.stasilo.se:/var/www/lighttpd/raytracer/"
     },
     "repository": {
         "type": "git",
@@ -22,6 +22,8 @@
     },
     "homepage": "",
     "dependencies": {
+        "mobx": "^5.9.4",
+        "mobx-react": "^5.4.3",
         "normalize.css": "^8.0.1"
     },
     "devDependencies": {
@@ -31,9 +33,12 @@
         "@babel/plugin-proposal-object-rest-spread": "^7.0.0",
         "@babel/polyfill": "^7.0.0",
         "@babel/preset-env": "^7.0.0",
+        "@babel/preset-react": "^7.0.0",
+        "@babel/standalone": "^7.4.4",
         "ajv": "^6.10.0",
         "autoprefixer": "^9.5.0",
         "babel-loader": "^8.0.0",
+        "class-names": "^1.0.0",
         "clean-webpack-plugin": "^0.1.19",
         "copy-webpack-plugin": "^4.6.0",
         "css-loader": "^0.28.11",
@@ -51,6 +56,7 @@
         "http-server": "^0.11.1",
         "loaders.gl": "^0.3.5",
         "lodash.chunk": "^4.2.0",
+        "mobx-react-lite": "^1.3.1",
         "node-sass": "^4.11.0",
         "normals": "^1.1.0",
         "obj-mtl-loader": "0.0.5",
@@ -59,7 +65,10 @@
         "postcss-loader": "^2.1.6",
         "query-string": "^6.4.2",
         "raw-loader": "^1.0.0",
+        "react": "^16.8.6",
+        "react-dom": "^16.8.6",
         "sass-loader": "^6.0.7",
+        "save-canvas-to-image": "^0.1.1",
         "source-map-loader": "^0.2.4",
         "spectorjs": "^0.9.5",
         "stats.js": "^0.17.0",

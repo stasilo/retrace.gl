@@ -128,6 +128,12 @@ const getSource = ({options, Scene}) =>
                     : vec3(0.0);
     }
 
+    float deNan(float v) {
+        return (v < 0.0 || 0.0 < v || v == 0.0)
+            ? v
+            : 0.;
+    }
+
      // deterministic rand
      // http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
 
@@ -505,15 +511,9 @@ const getSource = ({options, Scene}) =>
         if(hitRecord.material.type == ISOTROPIC_VOLUME_MATERIAL_TYPE
             || hitRecord.material.type == ANISOTROPIC_VOLUME_MATERIAL_TYPE)
         {
-            ray.dir = vec3(rand(), rand(), rand());
+            ray.dir = vec3(rand() + 0.001, rand() + 0.001, rand() + 0.001);
             ray.invDir = 1./ray.dir;
             color *= hitRecord.material.albedo * hitRecord.color;
-            // color = hitRecord.material.albedo * hitRecord.color;
-
-            // scattered = Ray(rec.p, hash33(rec.p));
-            // attenuation = rec.material.albedo;
-            // return true;
-
             return true;
         }
 
@@ -561,7 +561,7 @@ const getSource = ({options, Scene}) =>
             t -= ((1./volumeDensity) * log(1. - rand())) / maxExtinction;
         } while (snoise((ray.origin + ray.dir*t) * volumeScale) < rand()*maxExtinction);
 
-        return t;
+        return deNan(t);
     }
 
     /*

@@ -255,7 +255,7 @@ export default async () => {
             new IsotropicVolumeMaterial({
                 name: `volume`,
                 color: '#ff0000',
-                density: 1, //0.6, //0.4,
+                density: 0.8, //0.6, //0.4,
                 albedo: [0.5, 0.5, 0.5]
             }),
             // new AnisotropicVolumeMaterial({

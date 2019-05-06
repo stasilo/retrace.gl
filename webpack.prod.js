@@ -38,10 +38,10 @@ module.exports = {
                 // }
                 loader: 'babel-loader',
                 options: {
-                    presets: ['@babel/env'],
+                    presets: ['@babel/env', '@babel/preset-react'],
                     plugins: [
                         ['@babel/plugin-proposal-decorators', {legacy: true}],
-                        '@babel/plugin-proposal-class-properties',
+                        ['@babel/plugin-proposal-class-properties', {loose: true}],
                         '@babel/plugin-proposal-object-rest-spread'
                     ]
                 }
@@ -151,11 +151,7 @@ module.exports = {
         new WriteFilePlugin(),
         new CopyWebpackPlugin([{
             from: './src/assets/',
-            to: './',
-        }]),
-        // new CopyWebpackPlugin([{
-        //     from: './src/assets/models/',
-        //     to: 'assets/models/',
-        // }]),
+            to: 'assets'
+        }])
     ]
 };

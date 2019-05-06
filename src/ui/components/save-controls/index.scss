@@ -1,0 +1,15 @@
+.save-controls {
+    button {
+        background: transparent;
+        margin-left: 5px;
+        color: white;
+        text-decoration: underline;
+        border: none;
+        cursor: pointer;
+
+        &:disabled {
+            opacity: 0.5; 
+            cursor: not-allowed;
+        }
+    }
+}

@@ -1,0 +1,55 @@
+import React, {useState} from "react";
+import ReactDOM from 'react-dom';
+
+import {reaction} from 'mobx';
+import {observer, useObservable} from 'mobx-react-lite';
+
+import getStore from '../../../store';
+
+import './index.scss';
+
+const RenderControls = observer(() => {
+    let store = getStore();
+
+    let state = useObservable({
+        maxSampleCount: store.currentMaxSampleCount,
+        setMaxSampleCount(val) {
+            state.maxSampleCount = val;
+        }
+    });
+
+    reaction(
+        () => store.currentMaxSampleCount,
+        c => state.setMaxSampleCount(c)
+    );
+
+    return (
+        <div className="header-item render-controls">
+            <form
+                onSubmit={e => {
+                    e.preventDefault();
+                    store.currentMaxSampleCount = state.maxSampleCount;
+                    store.trace();
+                }}
+            >
+                <label htmlFor="maxSampleCount">
+                    samples:
+                </label>
+                <input
+                    value={state.maxSampleCount}
+                    onChange={e => state.setMaxSampleCount(e.target.value)}
+                    type="text"
+                    name="maxSampleCount"
+                    required
+                />
+                <button
+                    disabled={store.renderInProgress}
+                >
+                    render
+                </button>
+            </form>
+        </div>
+    )
+});
+
+export default RenderControls;

@@ -8,13 +8,12 @@ const isFn = fn => typeof fn === 'function';
 const isArray = a => Array.isArray(a);
 const isObj = obj => typeof obj === 'object';
 
+// ranges
+
 const range = (start, end) =>
     Array.from({length: (end - start)},
         (v, k) => k + start
     );
-
-// const range2d = (xStart, xEnd, yStart, yEnd) =>
-//     zip(range(xStart, xEnd), range(yStart, yEnd))
 
 const range2d = (xStart, xEnd, yStart, yEnd) => {
     var combos = [];
@@ -28,6 +27,18 @@ const range2d = (xStart, xEnd, yStart, yEnd) => {
     return combos;
 }
 
+// subtract one range from another
+// (this is dimension agnostic)
+const subRange = (rangeA, rangeB) =>
+    rangeA.filter(ra =>
+        rangeB.filter(rb =>
+            JSON.stringify(ra) == JSON.stringify(rb)
+        ).length == 0
+    );
+
+// console.dir(range2d(0, 4, 0, 4));
+// console.dir(subRange2d(range2d(0, 4, 0, 4), range2d(2, 4, 2, 4)));
+// console.dir(subRange2d(range(5, 10), range(5, 8)));
 
 // array manipulation
 
@@ -147,6 +158,7 @@ export {
     isObj,
     range,
     range2d,
+    subRange,
     reverse,
     zip,
     flatten,
@@ -165,31 +177,3 @@ export {
     animationFrame,
     loadImage
 };
-
-
-// module.exports = {
-//     defined,
-//     definedNotNull,
-//     isFn,
-//     isArray,
-//     isObj,
-//     range,
-//     range2d,
-//     reverse,
-//     zip,
-//     flatten,
-//     random,
-//     randomIdx,
-//     randomSign,
-//     randomBool,
-//     maybe,
-//     pluckRandom,
-//     degToRad,
-//     radToDeg,
-//     isHexColor,
-//     normedColor,
-//     normedColorStr,
-//     glslFloat,
-//     animationFrame,
-//     loadImage
-// };
