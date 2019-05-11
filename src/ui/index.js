@@ -1,13 +1,18 @@
 import React, {Fragment} from 'react';
 import ReactDOM from 'react-dom';
+import Hotkeys from 'react-hot-keys';
+
 import {observer} from 'mobx-react-lite';
 
 import {Header} from './layout';
 
-import RenderStatus from './components/render-status';
-import RenderControls from './components/render-controls';
-import SceneControls from './components/scene-controls';
-import SaveControls from './components/save-controls';
+import RenderStatus from './components/controls/render-status';
+import RenderControls from './components/controls/render-controls';
+import SceneControls from './components/controls/scene-controls';
+import SaveControls from './components/controls/save-controls';
+import EditorControls from './components/controls/editor-controls';
+
+import Editor from './components/editor';
 
 import ProgressBar from './components/progress-bar';
 
@@ -18,15 +23,22 @@ const UI = observer(() => {
 
     return (
         <Fragment>
-            <Header>
-                <RenderStatus/>
-                <RenderControls/>
-                <SceneControls/>
-                <SaveControls/>
-            </Header>
-            <ProgressBar
-                progress={store.renderProgress}
-            />
+            <Hotkeys
+                keyName="alt+r,alt+g,alt+h"
+                onKeyDown={store.handleUiKeyShortcut}
+            >
+                <Header>
+                    <RenderStatus/>
+                    <RenderControls/>
+                    <SceneControls/>
+                    <SaveControls/>
+                    <EditorControls/>
+                </Header>
+                <Editor/>
+                <ProgressBar
+                    progress={store.renderProgress}
+                />
+            </Hotkeys>
         </Fragment>
     );
 });

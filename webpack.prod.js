@@ -76,6 +76,9 @@ module.exports = {
                     fallback: 'style-loader'
                 }),
             }, {
+                test: /\.(txt|rtr|retrace)$/i,
+                use: 'raw-loader',
+            }, {
                 test: /\.(glsl|vs|fs|vert|frag)$/,
                 exclude: /node_modules/,
                 use: [

@@ -4,7 +4,7 @@ import ReactDOM from 'react-dom';
 import {reaction} from 'mobx';
 import {observer, useObservable} from 'mobx-react-lite';
 
-import getStore from '../../../store';
+import getStore from '../../../../store';
 
 import './index.scss';
 
@@ -28,8 +28,12 @@ const RenderControls = observer(() => {
             <form
                 onSubmit={e => {
                     e.preventDefault();
-                    store.currentMaxSampleCount = state.maxSampleCount;
-                    store.trace();
+                    if(store.renderInProgress) {
+                        store.cancelTrace();
+                    } else {
+                        store.currentMaxSampleCount = state.maxSampleCount;
+                        store.trace();
+                    }
                 }}
             >
                 <label htmlFor="maxSampleCount">
@@ -42,10 +46,11 @@ const RenderControls = observer(() => {
                     name="maxSampleCount"
                     required
                 />
-                <button
-                    disabled={store.renderInProgress}
-                >
-                    render
+                <button>
+                    {!store.renderInProgress
+                        ? '(r)ender'
+                        : 'stop'
+                    }
                 </button>
             </form>
         </div>

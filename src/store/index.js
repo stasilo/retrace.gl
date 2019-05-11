@@ -3,48 +3,119 @@
 import {
     observable,
     computed,
-    action
+    action,
 } from 'mobx';
 
 import raytraceApp from '../raytracer';
 
-import createIsoFogScene from '../scenes/generative-iso-fog-test';
-import createAnisoFogScene from '../scenes/generative-aniso-fog-test';
-import createDynEvalScene from '../scenes/dyn-eval-test-scene';
+// import createIsoFogScene from '../scenes/generative-iso-fog-test';
+// import createAnisoFogScene from '../scenes/generative-aniso-fog-test';
+// import createDynEvalScene from '../scenes/dyn-eval-test-scene';
+
+import dynamicScene from '../dtos/dynamic-scene';
+
+import introSceneSrc from '../scenes/example-scene/index.js.rtr';
+import basicSceneSrc from '../scenes/basic-scene/index.js.rtr';
 
 const shaderSampleCount = 1;
 const defaultMaxSampleCount = 10;
 
 let instance = null;
 class Store {
+    @observable _loadingApp = true;
+    @observable _renderInProgress = false;
+    @observable _editorVisible = false;
+
+    @observable _sceneSrc = introSceneSrc;
+    @observable _scene = null;
+
     @observable _currentFrameCount = 0;
     @observable _currentMaxSampleCount = defaultMaxSampleCount;
     @observable _currentRenderTime = 0;
-    @observable _renderInProgress = false;
 
-    @observable _scene = null;
+    _activeRenderInstance = null;
 
     constructor() {
-        // let params = queryString.parse(location.search);;
-        // this.params = params;
+        //
     }
 
-    @action async loadScene() {
-        // this._scene = await createAnisoFogScene();
-        this._scene = await createDynEvalScene(); 
+    // actions
+
+    @action
+    async loadScene() {
+        this._scene = await dynamicScene(this._sceneSrc);
     }
 
-    trace() {
-        raytraceApp({
+    @action async regenerateScene() {
+        await this.loadScene();
+        this.currentMaxSampleCount = defaultMaxSampleCount;
+        this.trace();
+    }
+
+    @action
+    async trace() {
+        // this._activeRenderInstance = await raytraceApp({
+        //     scene: this._scene,
+        //     shaderSampleCount,
+        //     maxSampleCount: this._currentMaxSampleCount,
+        //     realTime: false,
+        //     debug: false
+        // });
+
+        this._activeRenderInstance = await raytraceApp({
             scene: this._scene,
-            shaderSampleCount,
+            shaderSampleCount: 1, //shaderSampleCount,
             maxSampleCount: this._currentMaxSampleCount,
-            realTime: false,
+            realTime: true,
             debug: false
         });
+
     }
 
-    // renderer state
+    @action
+    cancelTrace() {
+        if(this._activeRenderInstance) {
+            this._activeRenderInstance.cancel();
+            delete this._activeRenderInstance;
+            this.renderInProgress = false;
+        }
+    }
+
+    @action
+    handleUiKeyShortcut = (keyName, e, handle) => {
+        switch(keyName) {
+            case 'alt+r':
+                this.trace();
+                break;
+
+            case 'alt+g':
+                this.regenerateScene();
+                break;
+
+            case 'alt+h':
+                this.editorVisible = !this.editorVisible;
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    // main state
+
+    @computed
+    get loadingApp() {
+        return this._loadingApp;
+    }
+
+    finishLoad() {
+        let loader = document.querySelector('.loader');
+        loader.remove();
+
+        // loader.style.display = 'none';
+
+        this._loadingApp = false;
+    }
 
     @computed
     get renderInProgress() {
@@ -54,6 +125,26 @@ class Store {
     set renderInProgress(val) {
         this._renderInProgress = val;
     }
+
+    @computed
+    get editorVisible() {
+        return this._editorVisible;
+    }
+
+    set editorVisible(val) {
+        this._editorVisible = val;
+    }
+
+    @computed
+    get sceneSrc() {
+        return this._sceneSrc;
+    }
+
+    set sceneSrc(val) {
+        this._sceneSrc = val;
+    }
+
+    // stats
 
     @computed
     get currentFrameCount() {
@@ -84,22 +175,14 @@ class Store {
 
     @computed
     get renderTimeRemaining() {
-        const remainMs = (this.currentMaxSampleCount / this._currentFrameCount)
+        const remainSecs = (this.currentMaxSampleCount / this._currentFrameCount)
             * this.currentRenderTime;
-        return (remainMs).toFixed(0);
+        return (remainSecs).toFixed(0);
     }
 
     @computed
     get renderProgress() {
         return this._currentFrameCount / this._currentMaxSampleCount;
-    }
-
-    // actions
-
-    @action async regenerateScene() {
-        await this.loadScene();
-        this.currentMaxSampleCount = defaultMaxSampleCount;
-        this.trace();
     }
 }
 

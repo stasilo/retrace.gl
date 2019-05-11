@@ -1,4 +1,9 @@
 import {vec3} from 'gl-matrix';
+import rotateVectorAboutAxis from 'rotate-vector-about-axis';
+
+import mousePosition from 'mouse-position';
+import keycode from 'keycode';
+
 import {
     degToRad,
     defined,
@@ -11,29 +16,139 @@ import {
 // vfov - vertical field of view
 // aspect ratio
 
-function Camera({
-    lookFrom,
-    lookAt,
-    vUp,
-    vfov,
-    aspect,
-    aperture,
-    focusDistance
-}) {
-    this.cameraUniformName = 'camera';
+class Camera {
+    cameraUniformName = 'camera';
 
-    this.lookFrom = lookFrom;
-    this.lookAt = lookAt;
-    this.vUp = vUp;
-    this.vfov = vfov;
-    this.aspect = aspect;
-    this.aperture = aperture;
-    this.lensRadius = aperture/2;
-    this.focusDist = !defined(focusDistance)
-        ? vec3.length(vec3.sub(vec3.create(), this.lookFrom, this.lookAt))
-        : focusDistance;
+    mouseDeltaX = 0;
+    mouseDeltaY = 0;
+    mouseDown = false;
 
-    this.createCamera = () => {
+    moveVelocity = 0.5;
+    turningVelocity = 0.0125; // 0.025
+
+    constructor({
+        lookFrom,
+        lookAt,
+        vUp,
+        vfov,
+        aspect,
+        aperture,
+        focusDistance
+    }) {
+        this.lookFrom = lookFrom;
+        this.lookAt = lookAt;
+        this.vUp = vUp;
+        this.vfov = vfov;
+        this.aspect = aspect;
+        this.aperture = aperture;
+        this.lensRadius = aperture/2;
+        this.focusDist = focusDistance;
+
+        this.updateCamera();
+        this.listen();
+    }
+
+    // https://github.com/Erkaman/gl-movable-camera/blob/master/index.js
+
+    listen = () => {
+        this.mouse = mousePosition(document.body);
+
+        document.addEventListener('mousedown', (e) => {
+            this.mouseDown = true;
+        });
+
+        document.addEventListener('mouseup', (e) => {
+            this.mouseDown = false;
+        });
+
+        document.addEventListener('keydown', (e) => {
+            let moveDir = vec3.create();
+
+            switch(keycode(e)) {
+                // forward
+                case 'w':
+                    vec3.scale(moveDir, this.w, -this.moveVelocity);
+
+                    vec3.add(this.lookFrom, this.lookFrom, moveDir);
+                    vec3.add(this.lookAt, this.lookAt, moveDir);
+
+                    break;
+
+                // back
+                case 's':
+                    vec3.scale(moveDir, this.w, this.moveVelocity);
+
+                    vec3.add(this.lookFrom, this.lookFrom, moveDir);
+                    vec3.add(this.lookAt, this.lookAt, moveDir);
+
+                    break;
+
+                // left
+                case 'a':
+                    vec3.scale(moveDir, this.u, -this.moveVelocity);
+
+                    vec3.add(this.lookFrom, this.lookFrom, moveDir);
+                    vec3.add(this.lookAt, this.lookAt, moveDir);
+
+                    break;
+
+                // right
+                case 'd':
+                    vec3.scale(moveDir, this.u, this.moveVelocity);
+
+                    vec3.add(this.lookFrom, this.lookFrom, moveDir);
+                    vec3.add(this.lookAt, this.lookAt, moveDir);
+
+                    break;
+
+                case 'up':
+                    vec3.scale(moveDir, this.v, this.moveVelocity);
+
+                    vec3.add(this.lookFrom, this.lookFrom, moveDir);
+                    vec3.add(this.lookAt, this.lookAt, moveDir);
+
+                    break;
+
+                case 'down':
+                    vec3.scale(moveDir, this.v, -this.moveVelocity);
+
+                    vec3.add(this.lookFrom, this.lookFrom, moveDir);
+                    vec3.add(this.lookAt, this.lookAt, moveDir);
+
+                    break;
+
+                default:
+                    break;
+            }
+        });
+    }
+
+    update = () => {
+        this.mouseDeltaX = -(this.mouse[0] - this.mouse.prev[0]);
+        this.mouseDeltaY =  -(this.mouse[1] - this.mouse.prev[1]);
+        this.mouse.flush();
+
+        if(this.mouseDown) {
+            const turningVelocity = 0.025;
+            let [head, pitch] = [this.mouseDeltaX, this.mouseDeltaY];
+
+            // rotate about up vector.
+            this.lookFrom = rotateVectorAboutAxis(this.lookFrom, this.u, pitch * turningVelocity);
+            this.lookAt = rotateVectorAboutAxis(this.lookAt, this.u, pitch * turningVelocity);
+
+            // rotate about right vector.
+            this.lookFrom = rotateVectorAboutAxis(this.lookFrom, this.v, head * turningVelocity);
+            this.lookAt = rotateVectorAboutAxis(this.lookAt, this.v, head * turningVelocity);
+        }
+
+        this.updateCamera();
+    }
+
+    updateCamera = () => {
+        this.focusDist = !defined(this.focusDist)
+            ? vec3.length(vec3.sub(vec3.create(), this.lookFrom, this.lookAt))
+            : this.focusDist;
+
         let theta = degToRad(this.vfov); // vfov is top to bottom in degs
         let halfHeight = Math.tan(theta/2.);
         let halfWidth = this.aspect * halfHeight;
@@ -42,47 +157,37 @@ function Camera({
          * calc camera basis
          */
 
-        // vec3 w = normalize(lookFrom - lookAt);
+        // vec3 w = normalize(this.lookFrom - this.lookAt);
         this.w = vec3.create();
-        this.w = vec3.normalize(this.w, vec3.sub(vec3.create(), lookFrom, lookAt));
+        vec3.sub(this.w, this.lookFrom, this.lookAt);
+        this.w = vec3.normalize(this.w, this.w);
 
         // vec3 u = normalize(cross(vUp, w));
         this.u = vec3.create();
-        vec3.normalize(this.u, vec3.cross(vec3.create(), this.vUp, this.w));
+        vec3.cross(this.u, this.vUp, this.w);
+        vec3.normalize(this.u, this.u);
 
         // vec3 v = cross(w, u);
-        this.v = vec3.cross(vec3.create(), this.w, this.u);
+        this.v = vec3.create();
+        vec3.cross(this.v, this.w, this.u);
 
         /*
          * adjust basis to aspect, focus distance and get starting pos (lowerLeft)
          */
 
-        // vec3 lowerLeft = lookFrom - halfWidth*this.focusDist*u - halfHeight*this.focusDist*v - w*this.focusDist;
         this.lowerLeft = vec3.create();
         vec3.sub(this.lowerLeft, this.lookFrom, vec3.scale(vec3.create(), this.u, halfWidth*this.focusDist));
         vec3.sub(this.lowerLeft, this.lowerLeft, vec3.scale(vec3.create(), this.v, halfHeight*this.focusDist));
         vec3.sub(this.lowerLeft, this.lowerLeft, vec3.scale(vec3.create(), this.w, this.focusDist));
 
-        // vec3 horizontal = 2.*this.focusDist*halfWidth*u;
-        this.horizontal = vec3.scale(vec3.create(), this.u, 2*this.focusDist*halfWidth);
+        this.horizontal = vec3.create();
+        vec3.scale(this.horizontal, this.u, 2*this.focusDist*halfWidth);
 
-        // vec3 vertical = 2.*this.focusDist*halfHeight*v;
-        this.vertical = vec3.scale(vec3.create(), this.v, 2*this.focusDist*halfHeight);
+        this.vertical = vec3.create();
+        vec3.scale(this.vertical, this.v, 2*this.focusDist*halfHeight);
     }
 
-    this.getDefinition = () => `
-        Camera(
-            vec3(${this.lookFrom}),
-            vec3(${this.horizontal}),
-            vec3(${this.vertical}),
-            vec3(${this.lowerLeft}),
-            ${this.lensRadius},
-            // camera basis
-            vec3(${this.w}), vec3(${this.u}), vec3(${this.v})
-        );
-    `;
-
-    this.getUniform = () => ({
+    getUniform = () => ({
         [`${this.cameraUniformName}.origin`]: this.lookFrom,
         [`${this.cameraUniformName}.horizontal`]: this.horizontal,
         [`${this.cameraUniformName}.vertical`]: this.vertical,
@@ -93,8 +198,8 @@ function Camera({
         [`${this.cameraUniformName}.v`]: this.v
     });
 
-    this.createCamera();
 }
+
 
 function createCamera({lookFrom, lookAt, vUp, vfov, aperture, aspect}) {
     let lookFromVec = vec3.create();

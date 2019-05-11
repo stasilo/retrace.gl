@@ -36,6 +36,9 @@ const subRange = (rangeA, rangeB) =>
         ).length == 0
     );
 
+const takeRandom = (arr) =>
+    arr.filter(randomBool);
+
 // console.dir(range2d(0, 4, 0, 4));
 // console.dir(subRange2d(range2d(0, 4, 0, 4), range2d(2, 4, 2, 4)));
 // console.dir(subRange2d(range(5, 10), range(5, 8)));
@@ -168,6 +171,7 @@ export {
     randomBool,
     maybe,
     pluckRandom,
+    takeRandom,
     degToRad,
     radToDeg,
     isHexColor,

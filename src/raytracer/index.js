@@ -8,7 +8,7 @@ import queryString from 'query-string';
 import {getGlInstances} from '../gl';
 import {createCamera} from '../camera';
 
-import createScene from '../scenes/generative-iso-fog-test';
+// import createScene from '../scenes/generative-iso-fog-test';
 
 import vertShader from '../shaders/vert.glsl';
 import rayTraceShader from '../shaders/raytracer.glsl.js';
@@ -55,12 +55,13 @@ async function raytraceApp({
     // gl.pixelStorei(gl.UNPACK_ALIGNMENT, alignment);
 
     // for triangle scene
-    const camera = createCamera({
-        lookFrom: [3.1, 1.2, 1.9],
-        lookAt: [-0.25, 0.1, -1.5],
+    let camera = createCamera({
+        lookFrom: [3.1, 1.4, 1.9],
+        // lookAt: [-0.25, 0.1, -1.5],
+        lookAt: [-0.25, 0.75, -1.5],
         vUp: [0, 1, 0],
-        vfov: 40, //35, //25,
-        aperture: 0.015,
+        vfov: 45, //40, //35, //25,
+        aperture: 0.001, //0.015,
         aspect: glCanvas.width/glCanvas.height,
     });
 
@@ -219,7 +220,7 @@ async function raytraceApp({
     // camera uniform
     // TODO: make this a uniform buffer
 
-    const cameraUniform = camera.getUniform();
+    let cameraUniform = camera.getUniform();
     Object.keys(cameraUniform)
         .forEach(uniformName =>
             rayTraceDrawCall.uniform(uniformName, cameraUniform[uniformName])
@@ -300,6 +301,8 @@ async function raytraceApp({
 
             ///////////////////////////////////////////////////////////
         });
+
+        return frame;
     }
 
     const realTimeRender = () => {
@@ -312,6 +315,13 @@ async function raytraceApp({
             stats.begin();
             glApp.clear();
 
+            camera.update();
+            let cameraUniform = camera.getUniform();
+            Object.keys(cameraUniform)
+                .forEach(uniformName =>
+                    rayTraceDrawCall.uniform(uniformName, cameraUniform[uniformName])
+                );
+
             rayTraceDrawCall
                 .uniform('uTime', time * 0.01)
                 .uniform('uSeed', vec2.fromValues(random(), random()))
@@ -319,12 +329,14 @@ async function raytraceApp({
 
             stats.end();
         });
+
+        return frame;
     }
 
     if(!realTime) {
-        staticRender();
+        return staticRender();
     } else {
-        realTimeRender();
+        return realTimeRender();
     }
 }
 

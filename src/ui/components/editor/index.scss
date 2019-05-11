@@ -1,0 +1,28 @@
+.retrace-editor__wrapper {
+    position: absolute;
+    bottom: 3px;
+    right: 0;
+
+    z-index: 3;
+
+    background-color: transparent;
+    width: 50vw;
+    height: 80vh;
+
+    transition: opacity 0.3s ease-out;
+    opacity: 0.5;
+    &:hover {
+        opacity: 0.9;
+    }
+
+    &--hidden {
+        display: none;
+    }
+
+    #retrace-editor {
+        width: 50vw;
+        height: 80vh;
+
+        filter: grayscale(100%);
+    }
+}

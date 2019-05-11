@@ -3,13 +3,13 @@ import ReactDOM from 'react-dom';
 import {observer} from 'mobx-react-lite';
 import saveCanvas from "save-canvas-to-image";
 
-import getStore from '../../../store';
+import getStore from '../../../../store';
 
 import './index.scss';
 
 const canvasId = 'gl-img-canvas';
 
-const RenderStatus = observer(() => {
+const SaveEditControls = observer(() => {
     const store = getStore();
 
     return (
@@ -24,4 +24,4 @@ const RenderStatus = observer(() => {
     )
 });
 
-export default RenderStatus;
+export default SaveEditControls;

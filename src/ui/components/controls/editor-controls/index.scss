@@ -1,4 +1,4 @@
-.save-controls {
+.edit-controls {
     button {
         background: transparent;
         margin-left: 5px;
@@ -8,7 +8,7 @@
         cursor: pointer;
 
         &:disabled {
-            opacity: 0.5; 
+            opacity: 0.5;
             cursor: not-allowed;
         }
     }

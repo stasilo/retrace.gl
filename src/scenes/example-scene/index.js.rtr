@@ -1,0 +1,287 @@
+scene({
+    geometries: [
+        plane({
+            material: 'floor-white',
+            texture: 'check',
+            scale: 30,
+            position: {
+                x: 0.3,
+                y: 0.0,
+                z: -0.4
+            },
+            rotation: {
+                y: degToRad(60)
+            }
+        }),
+        sphere({
+            material: 'volume-red',
+            position: {
+                x: -1.5,
+                y: 0,
+                z: -2
+            },
+            radius: 4.4
+        }),
+        sphere({
+            material: 'ceil-light',
+            position: {
+                x: -4.5,
+                y: 36,
+                z: -7.5
+            },
+            radius: 30
+        }),
+        diamond({
+            material: 'box-light',
+            scale: 0.4,//0.8,
+            position: {
+                x: -0.3,
+                y: 1.0,
+                z: -1.6
+            },
+            rotation: {
+                y: degToRad(220),
+                // x: degToRad(-45),
+            }
+        }),
+        diamond({
+            material: 'box-glass',
+            scale: 0.81,//0.8,
+            position: {
+                x: -0.3,
+                y: 1.0,
+                z: -1.6
+            },
+            rotation: {
+                y: degToRad(220),
+                // x: degToRad(-45),
+            }
+        }),
+        // objModel({
+        //     url: 'assets/models/hand.obj',
+        //     material: 'hand-fuzzy-metal',
+        //     smoothShading: true,
+        //     scale: 0.05,
+        //     position: {
+        //         x: 0.8,
+        //         y: 0.8,
+        //         z: -1.4
+        //     },
+        //     rotation: {
+        //         y: degToRad(-10),
+        //         x: degToRad(-45),
+        //     }
+        // }),
+        range2d(0, 15, 0, 15)
+            |> subRange(#, range2d(2, 6, 2, 6))
+            |> takeRandom
+            |> #.map(([x, z]) => {
+                const glassCube = ({
+                    scale,
+                    material,
+                    texture,
+                    glassDistance,
+                    ...props
+                }) => [
+                    cube({
+                        scale,
+                        material,
+                        texture,
+                        ...props
+                    }),
+                    cube({
+                        scale: {
+                            x: scale.x + glassDistance,
+                            y: scale.y + glassDistance,
+                            z: scale.z + glassDistance
+                        },
+                        material: 'box-glass',
+                        ...props
+                    })
+                ];
+
+                const material = pluckRandom([
+                    'box-black',
+                    'box-white',
+                    'box-light',
+                    'box-glass'
+                ]);
+
+                const scale = 0.5;
+
+                const props = {
+                    material,
+                    scale: {
+                        x: scale,
+                        y: scale
+                            + (x + 1) * (z + 1) * 0.1,
+                        z: scale,
+                    },
+                    position: {
+                        x: 1.2 - x*(scale+0.15),
+                        y: 0.1,
+                        z: 0.1 - z*(scale+0.15)
+                    },
+                };
+
+                return material !== 'box-black'
+                    && material !== 'box-white'
+                        ? new glassCube({
+                            ...props,
+                            texture: `pattern-${randomIdx(6)}`,
+                            glassDistance: 0.05,
+                        })
+                        : material === 'box-black'
+                            ? [
+                                cube(props),
+                                sphere({
+                                    position: {
+                                        x: props.position.x,
+                                        y: props.position.y + props.scale.y/2,
+                                        z: props.position.z,
+                                    },
+                                    material: 'halfsphere-light',
+                                    radius: 0.1
+                                })
+                            ]
+                            : [cube(props)];
+            }),
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(500.*uv.x)*sin(500.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.05, 0.05, 0.05, 1.);
+                }
+            `
+        }),
+        ...range(0, 6).map(i =>
+            texture({
+                name: `pattern-${i}`,
+                src: `
+                    vec2 rotate2D (vec2 _st, float _angle) {
+                        _st -= 0.5;
+                        _st =  mat2(cos(_angle),-sin(_angle),
+                                    sin(_angle),cos(_angle)) * _st;
+                        _st += 0.5;
+                        return _st;
+                    }
+
+                    vec2 tile (vec2 _st, float _zoom) {
+                        _st *= _zoom;
+                        return fract(_st);
+                    }
+
+                    vec2 rotateTilePattern(vec2 _st) {
+                        //  Scale the coordinate system by 2x2
+                        _st *= 0.5 + ${glslFloat(random(2))};
+
+                        //  Give each cell an index number
+                        //  according to its position
+                        float index = 0.0;
+                        index += step(1., mod(_st.x,2.0));
+                        index += step(1., mod(_st.y,2.0))*2.0;
+
+                        // Make each cell between 0.0 - 1.0
+                        _st = fract(_st);
+
+                        // Rotate each cell according to the index
+                        if(index == 1.0){
+                            //  Rotate cell 1 by 90 degrees
+                            _st = rotate2D(_st,PI*0.5);
+                        } else if(index == 2.0){
+                            //  Rotate cell 2 by -90 degrees
+                            _st = rotate2D(_st,PI*-0.5);
+                        } else if(index == 3.0){
+                            //  Rotate cell 3 by 180 degrees
+                            _st = rotate2D(_st,PI);
+                        }
+
+                        return _st;
+                    }
+
+                    void renderTexture(vec2 uv, out vec4 tColor) {
+                        vec2 st = uv;
+
+                        st = tile(st, 3.0);
+                        st = rotateTilePattern(st);
+
+                        // Make more interesting combinations
+
+                        ${randomBool()
+                            ? 'st = tile(st,2.0);'
+                            : ''
+                        }
+
+                        ${randomBool()
+                            ? `st = rotate2D(st,-PI * ${glslFloat(random(3))} * 0.25);`
+                            : ''
+                        }
+
+                        // st = rotateTilePattern(st*2.);
+                        // st = rotate2D(st,PI*u_time*0.25);
+
+                        // step(st.x,st.y) just makes a b&w triangles
+                        // but you can use whatever design you want.
+                        tColor = vec4(vec3(step(st.x,st.y))*0.5, 1.0);
+                    }
+                `
+            })
+        )
+    ],
+    materials: [
+        anisotropicVolumeMaterial({
+            name: 'volume-red',
+            color: '#ff0000',
+            albedo: [1.0, 1.0, 1.0],
+            density: 1.15,
+            volumeScale: 7
+        }),
+        dialectricMaterial({
+            name: 'box-glass'
+        }),
+        metalMaterial({
+            name: `box-black`,
+            color: '#030303',
+            fuzz: 0.2,
+            albedo: [0.9, 0.9, 0.9]
+        }),
+        metalMaterial({
+            name: `box-white`,
+            color: '#ffffff',
+            fuzz: 0.2,
+            albedo: [0.9, 0.9, 0.9]
+        }),
+        metalMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            fuzz: 0.15,
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        metalMaterial({
+            name: 'hand-fuzzy-metal',
+            color: '#ffffff',
+            fuzz: 0.05,
+            albedo: [0.9, 0.9, 0.9]
+        }),
+        emissiveMaterial({
+            name: `halfsphere-light`,
+            color: '#ffffff',
+            intensity: 30
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 0.05
+        }),
+        emissiveMaterial({
+            name: `box-light`,
+            color: '#ffffff',
+            intensity: 10
+        })
+    ]
+});

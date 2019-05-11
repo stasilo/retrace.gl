@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {observer} from 'mobx-react-lite';
 
-import getStore from '../../../store';
+import getStore from '../../../../store';
 
 import './index.scss';
 
@@ -14,7 +14,7 @@ const RenderStatus = observer(() => {
             <button
                 onClick={async () => store.regenerateScene()}
             >
-                regenerate scene
+                re(g)enerate scene
             </button>
         </div>
     )

@@ -1,0 +1,56 @@
+scene({
+    geometries: [
+        plane({
+            material: 'lambert-white',
+            texture: 'check',
+            scale: 30,
+            position: {
+                x: 0.3,
+                y: 0.0,
+                z: -0.4
+            },
+            rotation: {
+                y: degToRad(60)
+            }
+        }),
+        sphere({
+            material: 'ceil-light',
+            position: {
+                x: -4.5,
+                y: 15,
+                z: -7.5
+            },
+            radius: 10
+        })
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(500.*uv.x)*sin(500.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#ff0000')}, 1.0);
+                } else {
+                    tColor = vec4(1., 1., 1., 1.);
+                }
+            `
+        }),
+    ],
+    materials: [
+        lambertMaterial({
+            name: 'lambert-white',
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        emissiveMaterial({
+            name: 'white-light',
+            color: '#ffffff',
+            intensity: 30
+        }),
+        emissiveMaterial({
+            name: 'ceil-light',
+            color: '#ffffff',
+            intensity: 0.1
+        })
+    ]
+});
