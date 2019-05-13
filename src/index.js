@@ -10,9 +10,14 @@ import getStore from './store';
 document.addEventListener('DOMContentLoaded', async () => {
     const store = getStore();
 
+    store.setupCamera();
     await store.loadScene();
-    store.finishLoad();
-    store.trace();
+
+    store.loadingApp = false;
+    let loader = document.querySelector('.loader');
+    loader.remove();
+
+    store.trace({realTime: true});
 
     ReactDOM.render(
         <UI/>,

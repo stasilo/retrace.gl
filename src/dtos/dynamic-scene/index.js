@@ -12,6 +12,7 @@ import Plane from '../../models/plane';
 import Cube from '../../models/cube';
 import Sphere from '../../models/sphere';
 import Diamond from '../../models/diamond';
+import Volume from '../../models/volume';
 
 import Texture from '../../texture';
 
@@ -69,6 +70,8 @@ const sphere = (o) =>
     new Sphere(o);
 const diamond = (o) =>
     new Diamond(o);
+const volume = (o) =>
+    new Volume(o);
 
 const texture = (o) =>
     new Texture(o);

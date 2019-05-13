@@ -10,9 +10,10 @@ class MaterialList {
     constructor(materials) {
         this.elements = definedNotNull(materials)
             ? flatten(materials)
-                .map((texture, i) => {
-                    texture.id = i;
-                    return texture;
+                .map((material, i) => {
+                    material.id = i;
+                    console.log(`setting mat ${material.name} to id ${material.id}`);
+                    return material;
                 })
             : [];
     }

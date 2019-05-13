@@ -9,7 +9,7 @@ const getSource = ({options, Scene}) =>
     precision highp int;
     precision highp sampler2D;
 
-    #define T_MIN 0.0001 //.001
+    #define T_MIN 0.000001 //001 //.001
     #define T_MAX 3.402823466e+38 //10000.0
 
     #define MAX_HIT_DEPTH 4 //15 //50
@@ -202,6 +202,7 @@ const getSource = ({options, Scene}) =>
 
     #define BVH_TRIANGLE_GEOMETRY ${geometryTypes.triangle}
     #define BVH_SPHERE_GEOMETRY ${geometryTypes.sphere}
+    #define BVH_VOLUME_GEOMETRY ${geometryTypes.volumeAabb}
 
     struct BvhNode {
         // [id, node0 offset, node1 offset]
@@ -511,9 +512,15 @@ const getSource = ({options, Scene}) =>
         if(hitRecord.material.type == ISOTROPIC_VOLUME_MATERIAL_TYPE
             || hitRecord.material.type == ANISOTROPIC_VOLUME_MATERIAL_TYPE)
         {
-            ray.dir = vec3(rand() + 0.001, rand() + 0.001, rand() + 0.001);
+            // ray.dir = vec3(rand() + 0.001, rand() + 0.001, rand() + 0.001);
+            // fungerar nästan:
+            // ray.dir = randomPointInUnitSphere() + randomPointInUnitSphere();
+
+            ray.dir = vec3(0.1, 0.1, 0.1) + randomPointInUnitSphere();
+
             ray.invDir = 1./ray.dir;
             color *= hitRecord.material.albedo * hitRecord.color;
+
             return true;
         }
 
@@ -581,6 +588,45 @@ const getSource = ({options, Scene}) =>
         if (t0 > t1 || t1 < 0.0) return T_MAX;
 
         return t0;
+    }
+
+    // fungerar
+    void hitBvhVolumeBBox(Ray r, vec3 minCorner, vec3 maxCorner, float tMin, float tMax, inout HitRecord record) {
+    	vec3 invDir = r.invDir;
+    	vec3 near = (minCorner - r.origin) * invDir;
+    	vec3 far  = (maxCorner - r.origin) * invDir;
+
+    	vec3 tmin = min(near, far);
+    	vec3 tmax = max(near, far);
+
+    	float t0 = max( max(tmin.x, tmin.y), tmin.z);
+    	float t1 = min( min(tmax.x, tmax.y), tmax.z);
+
+    	if (t0 > t1) {
+            // return INFINITY;
+            record.hasHit = false;
+            return;
+        }
+
+        if (t0 > tMin) { // if we are outside the box
+    		// normal = -sign(r.direction) * step(tmin.yzx, tmin) * step(tmin.zxy, tmin);
+            record.hitT = t0;
+            record.hasHit = true;
+
+            return;
+    	}
+
+        if (t1 > tMin) { // if we are inside the box
+    		// normal = -sign(r.direction) * step(tmax, tmax.yzx) * step(tmax, tmax.zxy);
+            record.hitT = t1;
+            record.hasHit = true;
+
+            return;
+    		// return t1;
+    	}
+
+        record.hasHit = false;
+        // return INFINITY;
     }
 
     bool hitBvhTriangle(
@@ -804,6 +850,81 @@ const getSource = ({options, Scene}) =>
                     bool doubleSided = bool(meta.y);
 
                     switch(geoType) {
+                        case BVH_VOLUME_GEOMETRY: {
+                            xOffset = mod(geoOffset, DATA_TEX_SIZE);
+                            yOffset = floor(geoOffset * DATA_TEX_INV_SIZE);
+                            vec3 minCoords = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                            xOffset = mod(geoOffset + 1., DATA_TEX_SIZE);
+                            yOffset = floor((geoOffset + 1.) * DATA_TEX_INV_SIZE);
+                            vec3 maxCoords = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                            xOffset = mod(geoOffset + 9., DATA_TEX_SIZE);
+                            yOffset = floor((geoOffset + 9.) * DATA_TEX_INV_SIZE);
+                            vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                            int materialId = int(meta.x);
+
+                            Material volumeMaterial = getPackedMaterial(materialId);
+
+                            if(volumeMaterial.type == ISOTROPIC_VOLUME_MATERIAL_TYPE
+                                || volumeMaterial.type == ANISOTROPIC_VOLUME_MATERIAL_TYPE)
+                            {
+                                hitBvhVolumeBBox(ray, minCoords, maxCoords, -T_MIN, T_MAX, /* out => */ record);
+                                if(record.hasHit) {
+                                    // tMax = record.hitT;// + hitDist / length(ray.dir);
+                                    // lookupGeometryType = BVH_VOLUME_GEOMETRY;
+                                    // lookupOffset = geoOffset;
+
+                                    HitRecord record2;
+                                    hitBvhVolumeBBox(ray, minCoords, maxCoords, record.hitT + 0.0001, T_MAX, /* out => */ record2);
+
+                                    if(record2.hasHit) {
+                                        // tMax = record.hitT;// + hitDist / length(ray.dir);
+                                        // lookupGeometryType = BVH_VOLUME_GEOMETRY;
+                                        // lookupOffset = geoOffset;
+
+
+                                        if(record.hitT < T_MIN) {
+                                            record.hitT = T_MIN;
+                                        }
+
+                                        if(record2.hitT > tMax) {
+                                            record2.hitT = tMax;
+                                        }
+
+                                        if(record.hitT < record2.hitT) {
+                                            if(record.hitT < 0.) {
+                                                record.hitT = 0.;
+                                            }
+
+                                            float distInsideBound = (record2.hitT - record.hitT)
+                                                * length(ray.dir);
+
+                                            float hitDist;
+                                            if(volumeMaterial.type == ISOTROPIC_VOLUME_MATERIAL_TYPE) {
+                                                hitDist = -(1./volumeMaterial.density) * log(1. - rand());
+                                            } else { // anisotropic
+                                                hitDist = sampleVolumeDistance(
+                                                    ray,
+                                                    volumeMaterial.density,
+                                                    volumeMaterial.volumeScale
+                                                );
+                                            }
+
+                                            if(hitDist < distInsideBound) {
+                                                tMax = record.hitT + hitDist / length(ray.dir);
+                                                lookupGeometryType = BVH_SPHERE_GEOMETRY;
+                                                lookupOffset = geoOffset;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            record.hasHit = false;
+                            break;
+                        }
+
                         case BVH_SPHERE_GEOMETRY: {
                             xOffset = mod(geoOffset, DATA_TEX_SIZE);
                             yOffset = floor(geoOffset * DATA_TEX_INV_SIZE);
@@ -1113,6 +1234,51 @@ const getSource = ({options, Scene}) =>
                         (record.hitPoint - center) / radius
                     );
                 }
+
+                break;
+            }
+
+            case BVH_VOLUME_GEOMETRY: {
+                // discard;
+                // geo data
+
+                // float xOffset = mod(lookupOffset, DATA_TEX_SIZE);
+                // float yOffset = floor(lookupOffset * DATA_TEX_INV_SIZE);
+                // vec3 center = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                //
+                // xOffset = mod(lookupOffset + 1., DATA_TEX_SIZE);
+                // yOffset = floor((lookupOffset + 1.) * DATA_TEX_INV_SIZE);
+                // vec3 data = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                // float radius = data.x;
+
+                // meta data
+
+                float xOffset = mod(lookupOffset + 9., DATA_TEX_SIZE);
+                float yOffset = floor((lookupOffset + 9.) * DATA_TEX_INV_SIZE);
+                vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                int materialId = int(meta.x);
+
+                // xOffset = mod(lookupOffset + 10., DATA_TEX_SIZE);
+                // yOffset = floor((lookupOffset + 10.) * DATA_TEX_INV_SIZE);
+                // meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                // int textureId = int(meta.x);
+
+                record.hasHit = true;
+                record.hitT = tMax;
+                record.hitPoint = pointOnRay(ray, record.hitT);
+                record.material = getPackedMaterial(materialId);
+
+                record.normal = vec3(1., 1., 1.);
+                record.color = record.material.color;
+
+                // if(record.material.type == ISOTROPIC_VOLUME_MATERIAL_TYPE
+                //     || record.material.type == ANISOTROPIC_VOLUME_MATERIAL_TYPE)
+                // {
+                //     record.normal = vec3(1., 0., 0.);
+                //     record.color = record.material.color;
+                // }
+
+                break;
             }
 
             default:

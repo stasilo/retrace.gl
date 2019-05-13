@@ -34,6 +34,7 @@ const {glCanvas, glImgCanvas, gl, glApp} = getGlInstances();
 
 async function raytraceApp({
     scene,
+    camera,
     shaderSampleCount,
     maxSampleCount,
     realTime,
@@ -55,15 +56,17 @@ async function raytraceApp({
     // gl.pixelStorei(gl.UNPACK_ALIGNMENT, alignment);
 
     // for triangle scene
-    let camera = createCamera({
-        lookFrom: [3.1, 1.4, 1.9],
-        // lookAt: [-0.25, 0.1, -1.5],
-        lookAt: [-0.25, 0.75, -1.5],
-        vUp: [0, 1, 0],
-        vfov: 45, //40, //35, //25,
-        aperture: 0.001, //0.015,
-        aspect: glCanvas.width/glCanvas.height,
-    });
+    camera = definedNotNull(camera)
+        ? camera
+        : createCamera({
+            lookFrom: [3.1, 1.4, 1.9],
+            // lookAt: [-0.25, 0.1, -1.5],
+            lookAt: [-0.25, 0.75, -1.5],
+            vUp: [0, 1, 0],
+            vfov: 45, //40, //35, //25,
+            aperture: 0.001, //0.015,
+            aspect: glCanvas.width/glCanvas.height,
+        });
 
     // const camera = createCamera({
     //     lookFrom: [3.1, 0.8, 1.9],
@@ -107,6 +110,8 @@ async function raytraceApp({
         },
         Scene: scene
     });
+
+    console.log('shader: ' + shader);
 
     const rayTraceGlProgram = glApp.createProgram(vertShader, shader);
 
@@ -316,6 +321,7 @@ async function raytraceApp({
             glApp.clear();
 
             camera.update();
+
             let cameraUniform = camera.getUniform();
             Object.keys(cameraUniform)
                 .forEach(uniformName =>

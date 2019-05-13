@@ -1,12 +1,20 @@
 // import queryString from 'query-string';
-
 import {
     observable,
     computed,
     action,
+    reaction
 } from 'mobx';
 
+import mousePosition from 'mouse-position';
+import keycode from 'keycode';
+
 import raytraceApp from '../raytracer';
+
+import {createCamera} from '../camera';
+import {getGlInstances} from '../gl';
+
+import {defined} from '../utils';
 
 // import createIsoFogScene from '../scenes/generative-iso-fog-test';
 // import createAnisoFogScene from '../scenes/generative-aniso-fog-test';
@@ -20,8 +28,10 @@ import basicSceneSrc from '../scenes/basic-scene/index.js.rtr';
 const shaderSampleCount = 1;
 const defaultMaxSampleCount = 10;
 
+
 let instance = null;
 class Store {
+    @observable _realTimeMode = true;
     @observable _loadingApp = true;
     @observable _renderInProgress = false;
     @observable _editorVisible = false;
@@ -34,11 +44,22 @@ class Store {
     @observable _currentRenderTime = 0;
 
     _activeRenderInstance = null;
+    _camera = null;
 
-    constructor() {
-        //
+
+    setupCamera() {
+        const {glCanvas} = getGlInstances();
+
+        this._camera = createCamera({
+            lookFrom: [3.1, 1.4, 1.9],
+            // lookAt: [-0.25, 0.1, -1.5],
+            lookAt: [-0.25, 0.75, -1.5],
+            vUp: [0, 1, 0],
+            vfov: 45, //40, //35, //25,
+            aperture: 0.001, //0.015,
+            aspect: glCanvas.width/glCanvas.height,
+        });
     }
-
     // actions
 
     @action
@@ -49,24 +70,27 @@ class Store {
     @action async regenerateScene() {
         await this.loadScene();
         this.currentMaxSampleCount = defaultMaxSampleCount;
-        this.trace();
+        this.trace({realTime: true});
     }
 
     @action
-    async trace() {
-        // this._activeRenderInstance = await raytraceApp({
-        //     scene: this._scene,
-        //     shaderSampleCount,
-        //     maxSampleCount: this._currentMaxSampleCount,
-        //     realTime: false,
-        //     debug: false
-        // });
+    async trace(opts) {
+        const realTime = defined(opts)
+            ? opts.realTime
+            : false;
+
+        if(this._activeRenderInstance) {
+            this.cancelTrace();
+        }
 
         this._activeRenderInstance = await raytraceApp({
             scene: this._scene,
-            shaderSampleCount: 1, //shaderSampleCount,
+            camera: this._camera,
+            shaderSampleCount: realTime
+                ? 1
+                : shaderSampleCount,
             maxSampleCount: this._currentMaxSampleCount,
-            realTime: true,
+            realTime: realTime,
             debug: false
         });
 
@@ -108,13 +132,17 @@ class Store {
         return this._loadingApp;
     }
 
-    finishLoad() {
-        let loader = document.querySelector('.loader');
-        loader.remove();
+    set loadingApp(val) {
+        this._loadingApp = val;
+    }
 
-        // loader.style.display = 'none';
+    @computed
+    get realTimeMode() {
+        return this._realTimeMode;
+    }
 
-        this._loadingApp = false;
+    set realTimeMode(val) {
+        this._realTimeMode = val;
     }
 
     @computed
