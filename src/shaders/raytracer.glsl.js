@@ -451,6 +451,8 @@ const getSource = ({options, Scene}) =>
             // get lambertian random reflection direction
             ray.dir = hitRecord.normal + randomPointInUnitSphere();
             ray.invDir = 1./ray.dir;
+            ray.origin = hitRecord.hitPoint;
+
             color *= hitRecord.material.albedo * hitRecord.color;
             return true;
         }
@@ -465,6 +467,8 @@ const getSource = ({options, Scene}) =>
             if(dot(dir, hitRecord.normal) > 0.) {
                 ray.dir = dir;
                 ray.invDir = 1./ray.dir;
+                ray.origin = hitRecord.hitPoint;
+
                 color *= hitRecord.material.albedo * hitRecord.color;
                 return true;
             }
@@ -505,6 +509,8 @@ const getSource = ({options, Scene}) =>
                 ray.invDir = 1./ray.dir;
             }
 
+            ray.origin = hitRecord.hitPoint;
+
             color *= hitRecord.material.albedo * hitRecord.color;
             return true;
         }
@@ -514,13 +520,10 @@ const getSource = ({options, Scene}) =>
         if(hitRecord.material.type == ISOTROPIC_VOLUME_MATERIAL_TYPE
             || hitRecord.material.type == ANISOTROPIC_VOLUME_MATERIAL_TYPE)
         {
-            // ray.dir = vec3(rand() + 0.001, rand() + 0.001, rand() + 0.001);
-            // fungerar nästan:
-            // ray.dir = randomPointInUnitSphere() + randomPointInUnitSphere();
-
-            ray.dir = vec3(0.1, 0.1, 0.1) + randomPointInUnitSphere();
-
+            ray.dir = vec3(0.00000001) + randomPointInUnitSphere();
             ray.invDir = 1./ray.dir;
+            ray.origin = hitRecord.hitPoint;
+
             color *= hitRecord.material.albedo * hitRecord.color;
 
             return true;
@@ -925,7 +928,6 @@ const getSource = ({options, Scene}) =>
                                             float hitDist;
                                             if(volumeMaterial.type == ISOTROPIC_VOLUME_MATERIAL_TYPE) {
                                                 hitDist = -(1./volumeMaterial.density) * log(1. - rand());
-                                                // hitDist = -(1./volumeMaterial.density) * log(rand());
                                             } else { // anisotropic
                                                 hitDist = sampleVolumeDistance(
                                                     ray,
@@ -1314,18 +1316,19 @@ const getSource = ({options, Scene}) =>
                 vec3 emittedColor;
 
                 if(emit(hitRecord, /* out => */ emittedColor)) {
-                    // color *= emittedColor;
                     color *= emittedColor;
                     break;
                 }
 
-                // ray.origin = hitRecord.hitPoint;
-                // shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray);
-                if(shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray)) {
-                    ray.origin = hitRecord.hitPoint;
-                } else {
+                if(!shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray)) {
                     break;
                 }
+
+                // if(shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray)) {
+                //     ray.origin = hitRecord.hitPoint;
+                // } else {
+                //     break;
+                // }
             } else {
                 color *= background(ray.dir);
                 break;

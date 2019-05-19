@@ -27,7 +27,7 @@ const RenderControls = observer(() => {
         <div className="header-item render-controls">
             <form
                 onSubmit={e => {
-                    e.preventDefault();
+                    e.preventDefault();                    
                     if(store.renderInProgress) {
                         store.cancelTrace();
                     } else {

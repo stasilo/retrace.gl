@@ -28,8 +28,8 @@ class Camera {
     mouseDeltaY = 0;
     mouseDown = false;
 
-    moveVelocity = 0.5// * 0.5;
-    turningVelocity = 0.0125// * 0.5; // 0.025
+    moveVelocity = 1 * 0.25;// * 0.5;
+    turningVelocity = 0.0125 * 0.5; // * 0.5; // 0.025
 
     constructor({
         lookFrom,
@@ -56,7 +56,8 @@ class Camera {
     listen = () => {
         const {glCanvas} = getGlInstances();
 
-        // move event handling to store
+        // TODO:
+        // move event handling to store (or sep. controller class)
         // make renderMode be set to realTime
         // on mouse down or key press
         // and to static on generate or render
@@ -74,18 +75,16 @@ class Camera {
         document.addEventListener('keydown', (e) => {
             let store = getStore();
 
+            if(!store.realTimeMode) {
+                return;
+            }
+
             let moveDir = vec3.create();
             const move = (direction, dirSign) => {
                 vec3.scale(moveDir, direction, dirSign * this.moveVelocity);
 
                 vec3.add(this.lookFrom, this.lookFrom, moveDir);
                 vec3.add(this.lookAt, this.lookAt, moveDir);
-
-                if(!store.realTimeMode) {
-                    store.cancelTrace();
-                    store.realTimeMode = true;
-                    store.trace();
-                }
             }
 
             switch(keycode(e)) {
@@ -141,7 +140,6 @@ class Camera {
             this.lookAt = rotateVectorAboutAxis(this.lookAt, this.v, head * this.turningVelocity);
         }
 
-        // console.log(this.getCurrentSceneSrcDefinition());
         this.updateCamera();
     }
 

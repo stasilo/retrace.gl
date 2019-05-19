@@ -23,7 +23,8 @@ import dynamicScene from '../dtos/dynamic-scene';
 
 import introSceneSrc from '../scenes/example-scene/index.js.rtr';
 import basicSceneSrc from '../scenes/basic-scene/index.js.rtr';
-import volumeSceneSrc from '../scenes/volume-test-scene/index.js.rtr';
+import volumeTestSceneSrc from '../scenes/volume-test-scene/index.js.rtr';
+import anisoVolumeTestSceneSrc from '../scenes/aniso-volume-test-scene/index.js.rtr';
 
 const shaderSampleCount = 1;
 const defaultMaxSampleCount = 10;
@@ -38,8 +39,9 @@ class Store {
     @observable _editorVisible = false;
     @observable _editorFocused = false;
 
-    @observable _sceneSrc = volumeSceneSrc;
-    // @observable _sceneSrc = introSceneSrc;
+    // @observable _sceneSrc = anisoVolumeTestSceneSrc;
+    // @observable _sceneSrc = volumeTestSceneSrc;
+    @observable _sceneSrc = introSceneSrc;
 
     @observable _scene = null;
 
@@ -79,7 +81,6 @@ class Store {
         if(this._scene.camera) {
             this._camera = this._scene.camera;
         } else {
-            alert('no camera in scene')
             this.setupDefaultCamera();
         }
     }

@@ -43,7 +43,7 @@ import {
 
 // bring everything into local scope - this is
 // needed as webpack imported module names are transpiled
-// into things like '_xxxxx_js__WEBPACK_IMPORTED_MODULE_5__'
+// into names like '_xxxxx_js__WEBPACK_IMPORTED_MODULE_5__'
 // ...also and add some syntactic sugar :)
 
 const random = _random;

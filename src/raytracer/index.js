@@ -2,7 +2,6 @@ import PicoGL from 'picogl';
 import {vec3, vec2} from 'gl-matrix';
 
 import spector from 'spectorjs';
-import Stats from 'stats.js';
 import queryString from 'query-string';
 
 import {getGlInstances} from '../gl';
@@ -270,10 +269,6 @@ async function raytraceApp({
     }
 
     const realTimeRender = () => {
-        // let stats = new Stats();
-        // stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-        // document.body.appendChild(stats.dom);
-
         let then = 0;
         const frame = animationFrame(({time}) => {
             glApp.clear();

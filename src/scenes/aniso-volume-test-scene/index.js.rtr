@@ -1,0 +1,103 @@
+scene({
+    background: [
+        '#ffffff',
+        '#aaaaaa'
+    ],
+    camera: camera({
+        lookFrom: [51.568, 28.157, -46.006],
+        lookAt: [48.193, 27.731, -43.025],
+        vfov: 45,
+        aperture: 0.001,
+    }),
+    geometries: [
+        plane({
+            material: 'floor-white',
+            texture: 'check',
+            scale: 70,
+            position: {
+                x: 0.3,
+                y: -0.0,
+                z: -0.4
+            },
+            rotation: {
+                y: degToRad(45)
+            }
+        }),
+        cube({
+            material: 'wall-color',
+            scale: 140,
+            position: {
+                x: 0.3,
+                y: 20.0,
+                z: -0.4
+            },
+            rotation: {
+                y: degToRad(45)
+            },
+            flipNormals: true
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,//0.8,
+            position: {
+                x: -0.3,
+                y: 79.9,
+                z: -1.6
+            },
+        }),
+        range(0, 3).map(i =>
+            volume({
+                material: `aniso-volume-${i}`,
+                minCoords: {
+                    x: 0 - 25 * i,
+                    y: 0,
+                    z: 30 - 25 * i
+                },
+                maxCoords: {
+                    x: 20 - 25 * i,
+                    y: 40,
+                    z: 50 - 25 * i
+                },
+            })
+        ),
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(30.*uv.x)*sin(30.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.05, 0.05, 0.05, 1.);
+                }
+            `
+        }),
+    ],
+    materials: [
+        range(0, 3).map(i =>
+            anisotropicVolumeMaterial({
+                name: `aniso-volume-${i}`,
+                color: [random(), random(), random()],
+                albedo: [0.8, 0.8, 0.8],
+                density: 0.3 + i * 0.3,
+                volumeScale: 1 + i * 3
+            }),
+        ),
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        lambertMaterial({
+            name: `wall-color`,
+            color: '#aaaaaa',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 30
+        }),
+    ]
+});

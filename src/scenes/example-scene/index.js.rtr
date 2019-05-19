@@ -1,4 +1,14 @@
 scene({
+    background: [
+        '#000000',
+        '#050505'
+    ],
+    camera: camera({
+        lookFrom: [6.080, 0.674, 0.260],
+        lookAt: [2.239, 1.344, -2.023],
+        vfov: 45,
+        aperture: 0.001,
+    }),
     geometries: [
         plane({
             material: 'floor-white',
@@ -13,26 +23,17 @@ scene({
                 y: degToRad(60)
             }
         }),
-        // sphere({
-        //     material: 'volume-red',
-        //     position: {
-        //         x: -1.5,
-        //         y: 0,
-        //         z: -2
-        //     },
-        //     radius: 4.4
-        // }),
         volume({
             material: 'volume-red',
             minCoords: {
-                x: -15,
+                x: -20,
                 y: 0,
-                z: -15
+                z: -20
             },
             maxCoords: {
-                x: 2,
-                y: 6,
-                z: 2
+                x: 10,
+                y: 15,
+                z: 10
             },
 
         }),
@@ -252,8 +253,8 @@ scene({
             name: 'volume-red',
             color: '#ff0000',
             albedo: [1.0, 1.0, 1.0],
-            density: 0.1,
-            volumeScale: 7
+            density: 0.25,
+            volumeScale: 20
         }),
         dialectricMaterial({
             name: 'box-glass'
@@ -264,10 +265,10 @@ scene({
             fuzz: 0.2,
             albedo: [0.9, 0.9, 0.9]
         }),
-        metalMaterial({
+        lambertMaterial({
             name: `box-white`,
             color: '#ffffff',
-            fuzz: 0.2,
+            // fuzz: 0.2,
             albedo: [0.9, 0.9, 0.9]
         }),
         metalMaterial({
