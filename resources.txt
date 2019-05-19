@@ -1,3 +1,7 @@
+GLSL raytracing in one weekend volume implementation:
+https://www.shadertoy.com/view/XtyyDD
+
+
 http://psgraphics.blogspot.com/2019/02/adding-point-and-directional-lights-to.html
 
 A neat trick for ray collisions in nonuniform media (cheap volumes):

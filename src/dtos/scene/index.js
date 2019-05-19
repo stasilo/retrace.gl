@@ -11,11 +11,13 @@ import {
 } from '../../utils';
 
 class Scene {
-    constructor({materials, textures, geometries}) {
+    constructor({camera, background, geometries, materials, textures}) {
         if(!geometries.length) {
             return null;
         }
 
+        this.camera = camera;
+        this.background = background;
         this.materials = new MaterialList(materials);
 
         return (async () => {

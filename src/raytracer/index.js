@@ -8,8 +8,6 @@ import queryString from 'query-string';
 import {getGlInstances} from '../gl';
 import {createCamera} from '../camera';
 
-// import createScene from '../scenes/generative-iso-fog-test';
-
 import vertShader from '../shaders/vert.glsl';
 import rayTraceShader from '../shaders/raytracer.glsl.js';
 import renderShader from '../shaders/render.glsl';
@@ -55,28 +53,6 @@ async function raytraceApp({
     // const alignment = 1;
     // gl.pixelStorei(gl.UNPACK_ALIGNMENT, alignment);
 
-    // for triangle scene
-    camera = definedNotNull(camera)
-        ? camera
-        : createCamera({
-            lookFrom: [3.1, 1.4, 1.9],
-            // lookAt: [-0.25, 0.1, -1.5],
-            lookAt: [-0.25, 0.75, -1.5],
-            vUp: [0, 1, 0],
-            vfov: 45, //40, //35, //25,
-            aperture: 0.001, //0.015,
-            aspect: glCanvas.width/glCanvas.height,
-        });
-
-    // const camera = createCamera({
-    //     lookFrom: [3.1, 0.8, 1.9],
-    //     lookAt: [-0.25, 0.1, -1.5],
-    //     vUp: [0, 1, 0],
-    //     vfov: 32,
-    //     aperture: 0.1,
-    //     aspect: glCanvas.width/glCanvas.height
-    // });
-
     // raytrace framebuffer
     let traceFboColorTarget = glApp.createTexture2D(glApp.width, glApp.height, {
         type: gl.FLOAT,
@@ -110,8 +86,6 @@ async function raytraceApp({
         },
         Scene: scene
     });
-
-    console.log('shader: ' + shader);
 
     const rayTraceGlProgram = glApp.createProgram(vertShader, shader);
 
@@ -190,22 +164,23 @@ async function raytraceApp({
      * main raytrace draw call
      */
 
+    //TODO: fixa!
+    const bgColors = definedNotNull(scene.background)
+        ? [
+            ...normedColor(scene.background[0]),
+            ...normedColor(scene.background[1])
+        ]
+        : [
+            ...normedColor('#eeeeee'),
+            ...normedColor('#ffffff')
+        ];
+
     const rayTraceDrawCall = glApp
         .createDrawCall(rayTraceGlProgram, fullScreenQuadVertArray)
         .texture('uGeometryDataTexture', geoDataTexture)
         .texture('uBvhDataTexture', bvhDataTexture)
         .texture('uMaterialDataTexture', materialDataTexture)
-        .uniform('uBgGradientColors[0]', new Float32Array([
-            // ...normedColor('#eeeeee'),
-            // ...normedColor('#ffffff')
-
-            ...normedColor('#000000'),
-            ...normedColor('#010101')
-
-            //
-            // ...normedColor('#030303'),
-            // ...normedColor('#010101')
-        ]))
+        .uniform('uBgGradientColors[0]', new Float32Array(bgColors))
         .uniform('uResolution', vec2.fromValues(glApp.width, glApp.height))
         .uniform('uSeed', vec2.fromValues(random(), random()))
         .uniform('uTime', 0)
@@ -223,13 +198,17 @@ async function raytraceApp({
     }
 
     // camera uniform
-    // TODO: make this a uniform buffer
+    // TODO: make this a uniform buffer?
 
-    let cameraUniform = camera.getUniform();
-    Object.keys(cameraUniform)
-        .forEach(uniformName =>
-            rayTraceDrawCall.uniform(uniformName, cameraUniform[uniformName])
-        );
+    const setCameraUniforms = () => {
+        let cameraUniform = camera.getUniform();
+        Object.keys(cameraUniform)
+            .forEach(uniformName =>
+                rayTraceDrawCall.uniform(uniformName, cameraUniform[uniformName])
+            );
+    };
+
+    setCameraUniforms();
 
     /*
      * render draw call
@@ -258,24 +237,6 @@ async function raytraceApp({
                 .texture('uBvhDataTexture', bvhDataTexture)
                 .draw();
 
-            ////////////////
-            // glApp.drawFramebuffer(accumFbo);
-            //     // .clear();
-            //
-            // renderDrawCall
-            //     // .texture('traceTexture', traceFbo.colorAttachments[0])
-            //     .draw();
-            //
-            // // draw rendered result in traceFbo to screen
-            // glApp.defaultDrawFramebuffer();
-            //     // .clear();
-            //
-            // renderDrawCall
-            //     .draw();
-
-
-            ///////////////////////////////////////////////////////////
-
             // copy rendered result in traceFbo to accumFbo frambuffer
             // for blending in the next raytrace draw call
 
@@ -303,37 +264,30 @@ async function raytraceApp({
                 frame.cancel();
                 return;
             }
-
-            ///////////////////////////////////////////////////////////
         });
 
         return frame;
     }
 
     const realTimeRender = () => {
-        let stats = new Stats();
-        stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
-        document.body.appendChild(stats.dom);
+        // let stats = new Stats();
+        // stats.showPanel(0); // 0: fps, 1: ms, 2: mb, 3+: custom
+        // document.body.appendChild(stats.dom);
 
         let then = 0;
         const frame = animationFrame(({time}) => {
-            stats.begin();
             glApp.clear();
 
             camera.update();
+            setCameraUniforms();
 
-            let cameraUniform = camera.getUniform();
-            Object.keys(cameraUniform)
-                .forEach(uniformName =>
-                    rayTraceDrawCall.uniform(uniformName, cameraUniform[uniformName])
-                );
+            store.fpsTicker.tick();
+            store.updateSceneSrc();
 
             rayTraceDrawCall
                 .uniform('uTime', time * 0.01)
                 .uniform('uSeed', vec2.fromValues(random(), random()))
                 .draw();
-
-            stats.end();
         });
 
         return frame;

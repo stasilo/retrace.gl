@@ -22,7 +22,8 @@ function encodeObjModelTriangleVertexData({
     textureId,
     materialId,
     smoothShading,
-    doubleSided
+    doubleSided,
+    flipNormals
 }) {
     let vertices = mesh.vertices
         .map(va => va.slice(0,3));
@@ -130,7 +131,7 @@ function encodeObjModelTriangleVertexData({
                     //
                     // vec3.add(n, n, translation);
 
-                    vec3.normalize(n, n)
+                    vec3.normalize(n, n);
 
                     return n;
                 });
@@ -232,7 +233,9 @@ function encodeObjModelTriangleVertexData({
                 defined(doubleSided)
                     ? doubleSided | 0 // bool to int conv.
                     : 0,
-                -1
+                defined(flipNormals)
+                    ? flipNormals | 0
+                    : 0,
             ]);
         }, []);
 

@@ -13,11 +13,6 @@ import './index.scss';
 
 import getStore from '../../../store';
 
-const onChange = (contents) => {
-    let store = getStore();
-    store.sceneSrc = contents;
-}
-
 const Editor = observer((props) => {
     let store = getStore();
 
@@ -37,7 +32,11 @@ const Editor = observer((props) => {
                 style={editorWindowStyle}
                 mode="glsl"
                 theme="twilight"
-                onChange={onChange}
+
+                onChange={(contents) => store.sceneSrc = contents}
+                onFocus={() => store.editorFocused = true}
+                onBlur={() => store.editorFocused = false}
+
                 name="retrace-editor"
                 value={store.sceneSrc}
                 editorProps={{$blockScrolling: true}}
@@ -62,7 +61,5 @@ const Editor = observer((props) => {
         </div>
     );
 });
-// togglecomment : Cmd-/
-// toggleBlockComment : Cmd-Shift-/
 
 export default Editor;

@@ -117,12 +117,6 @@ function buildBvh(geometryData) {
                         geometryData[geoBlockDataSize * i + 5]
                     );
 
-                    // geoBoundBoxCentroid = vec3.fromValues(
-                    //     geometryData[geoBlockDataSize * i + 3] - geometryData[geoBlockDataSize * i + 0],
-                    //     geometryData[geoBlockDataSize * i + 4] - geometryData[geoBlockDataSize * i + 1],
-                    //     geometryData[geoBlockDataSize * i + 5] -geometryData[geoBlockDataSize * i + 2]
-                    // );
-
                     vec3.lerp(geoBoundBoxCentroid, geoBoundBoxMin, geoBoundBoxMax, 0.5);
 
                     break;

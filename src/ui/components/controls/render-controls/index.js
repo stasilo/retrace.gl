@@ -32,7 +32,7 @@ const RenderControls = observer(() => {
                         store.cancelTrace();
                     } else {
                         store.currentMaxSampleCount = state.maxSampleCount;
-                        store.trace();
+                        store.render();
                     }
                 }}
             >

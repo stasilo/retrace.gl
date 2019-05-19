@@ -6,6 +6,7 @@ import babelObjSpreadPlugin from '@babel/plugin-proposal-object-rest-spread';
 import babelPipesPlugin from '@babel/plugin-proposal-pipeline-operator';
 
 import Scene from '../../dtos/scene';
+import {createCamera} from '../../camera';
 
 import ObjModel from '../../models/obj-model';
 import Plane from '../../models/plane';
@@ -40,8 +41,10 @@ import {
     degToRad as _degToRad
 } from '../../utils';
 
-// bring everything into local scope
-// and add some syntactic sugar
+// bring everything into local scope - this is
+// needed as webpack imported module names are transpiled
+// into things like '_xxxxx_js__WEBPACK_IMPORTED_MODULE_5__'
+// ...also and add some syntactic sugar :)
 
 const random = _random;
 const randomIdx = _randomIdx;
@@ -57,8 +60,10 @@ const normedColor = _normedColor;
 const normedColorStr = _normedColorStr;
 const degToRad = _degToRad;
 
-const scene = (s) =>
-    new Scene(s);
+const scene = (o) =>
+    new Scene(o);
+const camera = (o) =>
+    createCamera(o);
 
 const objModel = (o) =>
     new ObjModel(o);

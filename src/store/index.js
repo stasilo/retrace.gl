@@ -6,8 +6,7 @@ import {
     reaction
 } from 'mobx';
 
-import mousePosition from 'mouse-position';
-import keycode from 'keycode';
+import fps from 'fps';
 
 import raytraceApp from '../raytracer';
 
@@ -24,6 +23,7 @@ import dynamicScene from '../dtos/dynamic-scene';
 
 import introSceneSrc from '../scenes/example-scene/index.js.rtr';
 import basicSceneSrc from '../scenes/basic-scene/index.js.rtr';
+import volumeSceneSrc from '../scenes/volume-test-scene/index.js.rtr';
 
 const shaderSampleCount = 1;
 const defaultMaxSampleCount = 10;
@@ -34,11 +34,16 @@ class Store {
     @observable _realTimeMode = true;
     @observable _loadingApp = true;
     @observable _renderInProgress = false;
-    @observable _editorVisible = false;
 
-    @observable _sceneSrc = introSceneSrc;
+    @observable _editorVisible = false;
+    @observable _editorFocused = false;
+
+    @observable _sceneSrc = volumeSceneSrc;
+    // @observable _sceneSrc = introSceneSrc;
+
     @observable _scene = null;
 
+    @observable _currentFps = 0;
     @observable _currentFrameCount = 0;
     @observable _currentMaxSampleCount = defaultMaxSampleCount;
     @observable _currentRenderTime = 0;
@@ -46,18 +51,23 @@ class Store {
     _activeRenderInstance = null;
     _camera = null;
 
+    fpsTicker = null;
 
-    setupCamera() {
-        const {glCanvas} = getGlInstances();
+    constructor() {
+        this.fpsTicker = fps({every: 10});
 
+        this.fpsTicker.on('data', (frameRate) => {
+            this._currentFps = frameRate.toFixed(3);
+        });
+    }
+
+    setupDefaultCamera() {
         this._camera = createCamera({
             lookFrom: [3.1, 1.4, 1.9],
-            // lookAt: [-0.25, 0.1, -1.5],
             lookAt: [-0.25, 0.75, -1.5],
             vUp: [0, 1, 0],
-            vfov: 45, //40, //35, //25,
-            aperture: 0.001, //0.015,
-            aspect: glCanvas.width/glCanvas.height,
+            vfov: 45,
+            aperture: 0.001,
         });
     }
     // actions
@@ -65,20 +75,23 @@ class Store {
     @action
     async loadScene() {
         this._scene = await dynamicScene(this._sceneSrc);
-    }
 
-    @action async regenerateScene() {
-        await this.loadScene();
-        this.currentMaxSampleCount = defaultMaxSampleCount;
-        this.trace({realTime: true});
+        if(this._scene.camera) {
+            this._camera = this._scene.camera;
+        } else {
+            alert('no camera in scene')
+            this.setupDefaultCamera();
+        }
     }
 
     @action
-    async trace(opts) {
-        const realTime = defined(opts)
-            ? opts.realTime
-            : false;
+    render() {
+        this.realTimeMode = false;
+        this.trace();
+    }
 
+    @action
+    async trace() {
         if(this._activeRenderInstance) {
             this.cancelTrace();
         }
@@ -86,14 +99,41 @@ class Store {
         this._activeRenderInstance = await raytraceApp({
             scene: this._scene,
             camera: this._camera,
-            shaderSampleCount: realTime
+            shaderSampleCount: this.realTimeMode
                 ? 1
                 : shaderSampleCount,
             maxSampleCount: this._currentMaxSampleCount,
-            realTime: realTime,
+            realTime: this.realTimeMode,
             debug: false
         });
 
+    }
+
+    @action
+    async regenerateScene() {
+        await this.loadScene();
+        this.currentMaxSampleCount = defaultMaxSampleCount;
+        this.realTimeMode = true;
+        this.trace();
+    }
+
+    @action
+    updateSceneSrc() {
+        if(this.editorFocused) {
+            return;
+        }
+
+        const indentMatches = /(.*)(camera:)/
+            .exec(this.sceneSrc);
+        const noOfSpacesBeforeCamera = indentMatches[1].length;
+
+        this.sceneSrc = this.sceneSrc
+            .replace(
+                /camera\({((\n|.)*?)}\)/,
+                this._camera.getCurrentSceneSrcDefinition({
+                    cameraIndent: noOfSpacesBeforeCamera
+                })
+            );
     }
 
     @action
@@ -109,7 +149,7 @@ class Store {
     handleUiKeyShortcut = (keyName, e, handle) => {
         switch(keyName) {
             case 'alt+r':
-                this.trace();
+                this.render();
                 break;
 
             case 'alt+g':
@@ -164,6 +204,15 @@ class Store {
     }
 
     @computed
+    get editorFocused() {
+        return this._editorFocused;
+    }
+
+    set editorFocused(val) {
+        this._editorFocused = val;
+    }
+
+    @computed
     get sceneSrc() {
         return this._sceneSrc;
     }
@@ -173,6 +222,11 @@ class Store {
     }
 
     // stats
+
+    @computed
+    get currentFps() {
+        return this._currentFps;
+    }
 
     @computed
     get currentFrameCount() {

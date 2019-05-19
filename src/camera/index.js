@@ -1,13 +1,16 @@
 import {vec3} from 'gl-matrix';
 import rotateVectorAboutAxis from 'rotate-vector-about-axis';
 
+import {getGlInstances} from '../gl';
+
 import mousePosition from 'mouse-position';
 import keycode from 'keycode';
 
 import {
     degToRad,
     defined,
-    definedNotNull
+    definedNotNull,
+    range
 } from '../utils';
 
 import getStore from '../store';
@@ -25,15 +28,14 @@ class Camera {
     mouseDeltaY = 0;
     mouseDown = false;
 
-    moveVelocity = 0.5 * 0.25;
-    turningVelocity = 0.0125 * 0.25; // 0.025
+    moveVelocity = 0.5// * 0.5;
+    turningVelocity = 0.0125// * 0.5; // 0.025
 
     constructor({
         lookFrom,
         lookAt,
         vUp,
         vfov,
-        aspect,
         aperture,
         focusDistance
     }) {
@@ -41,18 +43,19 @@ class Camera {
         this.lookAt = lookAt;
         this.vUp = vUp;
         this.vfov = vfov;
-        this.aspect = aspect;
         this.aperture = aperture;
-        this.lensRadius = aperture/2;
         this.focusDist = focusDistance;
 
         this.updateCamera();
         this.listen();
     }
 
+    // turntable camera:
     // https://github.com/Erkaman/gl-movable-camera/blob/master/index.js
 
     listen = () => {
+        const {glCanvas} = getGlInstances();
+
         // move event handling to store
         // make renderMode be set to realTime
         // on mouse down or key press
@@ -60,34 +63,18 @@ class Camera {
 
         this.mouse = mousePosition(document.body);
 
-        document.addEventListener('mousedown', (e) => {
-            // let store = getStore();
-
+        glCanvas.addEventListener('mousedown', (e) => {
             this.mouseDown = true;
-
-            // if(!store._renderInProgress) {
-            //     store.cancelTrace();
-            //
-            // }
         });
 
-        document.addEventListener('mouseup', (e) => {
-            // let store = getStore();
-
+        glCanvas.addEventListener('mouseup', (e) => {
             this.mouseDown = false;
-
-            // if(store.realTimeMode) {
-            //     store.cancelTrace();
-            //     store.realTimeMode = false;
-            //     store.trace();
-            // }
         });
 
         document.addEventListener('keydown', (e) => {
             let store = getStore();
 
             let moveDir = vec3.create();
-
             const move = (direction, dirSign) => {
                 vec3.scale(moveDir, direction, dirSign * this.moveVelocity);
 
@@ -112,15 +99,13 @@ class Camera {
                     move(this.w, 1);
                     break;
 
-                // left
-                case 'a':
                 case 'left':
+                case 'a':
                     move(this.u, -1);
                     break;
 
-                // right
-                case 'd':
                 case 'right':
+                case 'd':
                     move(this.u, 1);
                     break;
 
@@ -156,10 +141,16 @@ class Camera {
             this.lookAt = rotateVectorAboutAxis(this.lookAt, this.v, head * this.turningVelocity);
         }
 
+        // console.log(this.getCurrentSceneSrcDefinition());
         this.updateCamera();
     }
 
     updateCamera = () => {
+        const {glCanvas} = getGlInstances();
+
+        this.aspect = glCanvas.width/glCanvas.height;
+
+        this.lensRadius = this.aperture/2;
         this.focusDist = !defined(this.focusDist)
             ? vec3.length(vec3.sub(vec3.create(), this.lookFrom, this.lookAt))
             : this.focusDist;
@@ -227,6 +218,31 @@ class Camera {
         [`${this.cameraUniformName}.u`]: this.u,
         [`${this.cameraUniformName}.v`]: this.v
     });
+
+    getCurrentSceneSrcDefinition = ({cameraIndent}) => {
+        const indentation = range(0, cameraIndent)
+            .map(_ => " ")
+            .join('');
+
+        const innerIndentation = range(0, cameraIndent * 2)
+            .map(_ => " ")
+            .join('');
+
+        const lookFrom = Array.from(this.lookFrom)
+            .map(v => v.toFixed(3))
+            .join(', ');
+
+        const lookAt = Array.from(this.lookAt)
+            .map(v => v.toFixed(3))
+            .join(', ');
+
+        return 'camera({\n' +
+            `${innerIndentation}lookFrom: [${lookFrom}],\n` +
+            `${innerIndentation}lookAt: [${lookAt}],\n` +
+            `${innerIndentation}vfov: ${this.vfov},\n` +
+            `${innerIndentation}aperture: ${this.aperture},\n` +
+        `${indentation}})`;
+    }
 }
 
 function createCamera({lookFrom, lookAt, vUp, vfov, aperture, aspect}) {
@@ -237,7 +253,7 @@ function createCamera({lookFrom, lookAt, vUp, vfov, aperture, aspect}) {
     lookAtVec.set(lookAt);
 
     let vUpVec = vec3.create();
-    vUpVec.set(vUp);
+    vUpVec.set(vUp || [0, 1, 0]);
 
     return new Camera({
         lookFrom: lookFromVec,

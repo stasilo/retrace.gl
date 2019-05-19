@@ -17,17 +17,6 @@ class Volume {
 
     constructor({material, minCoords, maxCoords}) {
         this.material = material;
-        // this.texture = texture;
-        // this.radius = radius;
-
-        // this.position = {
-        //     x: 0,
-        //     y: 0,
-        //     z: 0,
-        //     ...(defined(position)
-        //         ? position
-        //         : [])
-        // };
 
         this.minCoords = {
             x: 0,
@@ -49,8 +38,7 @@ class Volume {
     }
 
     get geometryData() {
-        console.log('geo type: ' + geometryTypes.volumeAabb);
-        let geoData = [
+        return [
             // vec3 v0
             this.minCoords.x,
             this.minCoords.y,
@@ -105,10 +93,7 @@ class Volume {
             -1,
             -1,
             -1
-        ]
-
-        console.dir(geoData);
-        return geoData;
+        ];
     }
 }
 

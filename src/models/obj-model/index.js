@@ -20,11 +20,12 @@ class ObjModel {
         url,
         material,
         texture,
-        smoothShading,
-        doubleSided,
         scale,
         position,
-        rotation
+        rotation,
+        smoothShading,
+        doubleSided,
+        flipNormals
     }) {
         this.url = url;
         this.material = material;
@@ -37,6 +38,10 @@ class ObjModel {
 
         this.doubleSided = defined(doubleSided)
             ? doubleSided
+            : false;
+
+        this.flipNormals = defined(flipNormals)
+            ? flipNormals
             : false;
 
         this.scale = isObj(scale)
@@ -81,15 +86,16 @@ class ObjModel {
         if(!this._geometryData) {
             this._geometryData = encodeObjModelTriangleVertexData({
                 mesh: this.mesh,
-                smoothShading: this.smoothShading,
-                doubleSided: this.doubleSided,
                 scale: this.scale,
                 position: this.position,
                 rotation: this.rotation,
                 materialId: this.material.materialId,
                 textureId: defined(this.texture)
                     ? this.texture.textureId
-                    : -1
+                    : -1,
+                smoothShading: this.smoothShading,
+                doubleSided: this.doubleSided,
+                flipNormals: this.flipNormals
             });
         }
 
