@@ -1,0 +1,83 @@
+scene({
+    background: '#000000',
+    camera: camera({
+        lookFrom: {x: 60.697, y: 27.500, z: -0.116},
+        lookAt: {x: 56.422, y: 26.041, z: -0.127},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1,
+    }),
+    geometries: [
+        plane({
+            material: 'floor-white',
+            texture: {
+                name: 'check',
+            },
+            scale: 30,
+            position: {
+                x: 0,
+                y: 0.0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 20,
+            position: {
+                x: 0,
+                y: 50.0,
+                z: 0
+            },
+        }),
+        sphere({
+            material: 'sphere-material',
+            normalMap: {
+                name: 'normal-map',
+                uvScale: {
+                    x: 3,
+                    y: 3
+                }
+            },
+            position: {
+                x: 0,
+                y: 12,
+                z: 0
+            },
+            radius: 10
+        })
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.3, 0.0, 0.0, 1.);
+                }
+            `
+        }),
+        texture({
+            name: 'normal-map',
+            url: '/assets/images/testNormalMap.jpg'
+        }),
+    ],
+    materials: [
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        lambertMaterial({
+            name: `sphere-material`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        }),
+    ]
+});

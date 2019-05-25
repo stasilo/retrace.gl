@@ -1,5 +1,5 @@
 import {definedNotNull, glslFloat} from '../utils';
-import {geometryTypes} from '../bvh';
+import {geometryTypes, geoBlockDataSize} from '../bvh';
 
 import simplexNoise from './lib/noise/simplex.glsl';
 
@@ -11,14 +11,17 @@ const getSource = ({options, Scene}) =>
 
     // #define T_MIN 0.000001
     // #define T_MAX 3.402823466e+38
+
     #define T_MIN 0.0001
     #define T_MAX 10000.0
 
-    #define MAX_HIT_DEPTH 4 //15 //50
+    #define MAX_HIT_DEPTH 4
     #define NUM_SAMPLES ${options.numSamples}
 
     #define DATA_TEX_SIZE ${glslFloat(options.dataTexSize)}
     #define DATA_TEX_INV_SIZE ${glslFloat(1/options.dataTexSize)}
+
+    #define DATA_TEX_OFFSET_SIZE ${glslFloat(geoBlockDataSize/3)}
 
     #define PI 3.141592653589793
 
@@ -107,16 +110,6 @@ const getSource = ({options, Scene}) =>
     #ifndef GLSL_CAMERA
         uniform Camera camera;
     #endif
-
-    /*
-     * Lights
-     */
-
-    // struct Light {
-    //     vec3 color;
-    //     float intensity;
-    //     vec3 center;
-    // };
 
     /*
      * utils
@@ -441,6 +434,25 @@ const getSource = ({options, Scene}) =>
         Material material;
         vec3 color;
     };
+
+    // http://www.opengl-tutorial.org/intermediate-tutorials/tutorial-13-normal-mapping/
+
+    vec3 perturbNormal(vec3 n, vec2 normalScale, int normalTextureId, vec2 uv) {
+        vec3 axis = abs(n.y) < 0.9
+            ? vec3(0, 1, 0)
+            : vec3(0, 0, 1);
+
+        vec3 B = normalize(cross(axis, n));
+        vec3 T = cross(n, B);
+        vec3 N = normalize(n);
+
+        mat3 btn = mat3(B, T, N);
+
+        vec3 mapNormal = getSceneTexture(normalTextureId, uv).xyz * 2.0 - 1.0;
+        mapNormal.xy *= normalScale;
+
+        return normalize(btn * mapNormal);
+    }
 
     // amass color and scatter ray on material
     bool shadeAndScatter(HitRecord hitRecord, inout vec3 color, inout Ray ray) {
@@ -869,7 +881,7 @@ const getSource = ({options, Scene}) =>
                 float node1Offset = currentNode.meta.z;
 
                 if(node1Offset < 0.) { // this is a leaf node
-                    float geoOffset = 11. * (-node1Offset - 1.);
+                    float geoOffset = DATA_TEX_OFFSET_SIZE * (-node1Offset - 1.); //11. * (-node1Offset - 1.);
 
                     float xOffset = mod(geoOffset + 9., DATA_TEX_SIZE);
                     float yOffset = floor((geoOffset + 9.) * DATA_TEX_INV_SIZE);
@@ -1187,6 +1199,19 @@ const getSource = ({options, Scene}) =>
                 int textureId = int(meta.x);
                 bool flipNormals = bool(meta.z);
 
+                xOffset = mod(lookupOffset + 11., DATA_TEX_SIZE);
+                yOffset = floor((lookupOffset + 11.) * DATA_TEX_INV_SIZE);
+                meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                int normalMapTextureId = int(meta.x);
+                vec2 normalMapScale = meta.yz;
+
+                xOffset = mod(lookupOffset + 12., DATA_TEX_SIZE);
+                yOffset = floor((lookupOffset + 12.) * DATA_TEX_INV_SIZE);
+                meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                vec2 texUvScale = meta.xy;
+
                 float triangleW = 1.0 - triangleUv.x - triangleUv.y;
                 vec2 interpUv = triangleW * t0.xy
                     + triangleUv.x * t1.xy
@@ -1197,21 +1222,34 @@ const getSource = ({options, Scene}) =>
                 record.material = getPackedMaterial(materialId);
                 record.color = textureId == -1
                     ? record.material.color
-                    : getSceneTexture(textureId, interpUv).rgb;
+                    : getSceneTexture(textureId, interpUv * texUvScale).rgb;
                 record.hitPoint = pointOnRay(ray, tMax);
 
+                vec3 normal;
                 if(smoothShading == true) {
-                    record.normal = normalize(
+                    normal = normalize(
                         triangleW * n0
                             + triangleUv.x * n1
                             + triangleUv.y * n2
                     );
                 } else {
                     if(!flipNormals) {
-                        record.normal = normalize(cross(v1 - v0, v2 - v0));
+                        normal = normalize(cross(v1 - v0, v2 - v0));
                     } else {
-                        record.normal = normalize(cross(v2 - v0, v1 - v0));
+                        normal = normalize(cross(v2 - v0, v1 - v0));
                     }
+                }
+
+                if(normalMapTextureId > -1) {
+                    xOffset = mod(lookupOffset + 13., DATA_TEX_SIZE);
+                    yOffset = floor((lookupOffset + 13.) * DATA_TEX_INV_SIZE);
+                    meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                    vec2 normUvScale = meta.xy;
+
+                    record.normal = perturbNormal(normal, normalMapScale, normalMapTextureId, interpUv * normUvScale);
+                } else {
+                    record.normal = normal;
                 }
 
                 break;
@@ -1249,20 +1287,55 @@ const getSource = ({options, Scene}) =>
                 if(record.material.type == ISOTROPIC_VOLUME_MATERIAL_TYPE
                     || record.material.type == ANISOTROPIC_VOLUME_MATERIAL_TYPE)
                 {
-                    record.normal = vec3(1., 0., 0.);
+                    record.normal = vec3(1., 0., 0.); // random
                     record.color = record.material.color;
                 } else {
-                    if(textureId != -1) {
-                        vec3 p = (record.hitPoint - center) / radius;
-                        vec2 uv = getSphereUv(p);
-                        record.color = getSceneTexture(textureId, uv).rgb;
+                    xOffset = mod(lookupOffset + 10., DATA_TEX_SIZE);
+                    yOffset = floor((lookupOffset + 10.) * DATA_TEX_INV_SIZE);
+                    meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                    int textureId = int(meta.x);
+
+                    xOffset = mod(lookupOffset + 11., DATA_TEX_SIZE);
+                    yOffset = floor((lookupOffset + 11.) * DATA_TEX_INV_SIZE);
+                    meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                    int normalMapTextureId = int(meta.x);
+                    vec2 normalMapScale = meta.yz;
+
+                    vec3 p = (record.hitPoint - center) / radius;
+                    vec2 uv = getSphereUv(p);
+
+                    if(textureId > -1) {
+                        xOffset = mod(lookupOffset + 12., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 12.) * DATA_TEX_INV_SIZE);
+                        meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        vec2 texUvScale = meta.xy;
+
+                        record.color = getSceneTexture(textureId, uv * texUvScale).rgb;
                     } else {
                         record.color = record.material.color;
                     }
 
-                    record.normal = normalize(
+                    vec3 normal = normalize(
                         (record.hitPoint - center) / radius
                     );
+
+                    if(normalMapTextureId > -1) {
+                        xOffset = mod(lookupOffset + 13., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 13.) * DATA_TEX_INV_SIZE);
+                        meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        vec2 normUvScale = meta.xy;
+
+                        vec3 nl = dot(normal, ray.dir) < 0.0
+                            ? normalize(normal)
+                            : normalize(normal * -1.0);
+
+                        record.normal = perturbNormal(nl, normalMapScale, normalMapTextureId, uv * normUvScale);
+                    } else {
+                        record.normal = normal;
+                    }
                 }
 
                 break;

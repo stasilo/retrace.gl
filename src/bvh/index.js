@@ -9,8 +9,8 @@ const geometryTypes = {
     volumeAabb: 3
 };
 
-// 3 * vec3() vertices + 3 * vec3() normal + 3 * vec3() texture data + 2 * vec3() meta data
-const geoBlockDataSize = 33;
+// 3 * vec3() vertices + 3 * vec3() normal + 3 * vec3() texture data + 5 * vec3() meta data
+const geoBlockDataSize = 42; //36;
 
 function buildSceneBvh(scene) {
     let geometries = scene.geometries
@@ -167,5 +167,6 @@ function buildBvh(geometryData) {
 
 export {
     geometryTypes,
+    geoBlockDataSize,
     buildSceneBvh,
 }

@@ -8,6 +8,8 @@ import {Header} from './layout';
 
 import RenderStatus from './components/controls/render-status';
 import RenderControls from './components/controls/render-controls';
+import RealtimeControls from './components/controls/realtime-controls';
+
 import SceneControls from './components/controls/scene-controls';
 import SaveControls from './components/controls/save-controls';
 import EditorControls from './components/controls/editor-controls';
@@ -24,12 +26,13 @@ const UI = observer(() => {
     return (
         <Fragment>
             <Hotkeys
-                keyName="alt+r,alt+g,alt+h"
+                keyName="alt+r,alt+e,alt+g,alt+h"
                 onKeyDown={store.handleUiKeyShortcut}
             >
                 <Header>
                     <RenderStatus/>
                     <RenderControls/>
+                    <RealtimeControls/>
                     <SceneControls/>
                     <SaveControls/>
                     <EditorControls/>

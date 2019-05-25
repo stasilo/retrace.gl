@@ -28,7 +28,8 @@ class Camera {
     mouseDeltaY = 0;
     mouseDown = false;
 
-    moveVelocity = 1 * 0.25;// * 0.5;
+    velocity = 1;
+    moveVelocity = 1 * 0.75;// * 0.5;
     turningVelocity = 0.0125 * 0.5; // * 0.5; // 0.025
 
     constructor({
@@ -37,7 +38,8 @@ class Camera {
         vUp,
         vfov,
         aperture,
-        focusDistance
+        focusDistance,
+        velocity
     }) {
         this.lookFrom = lookFrom;
         this.lookAt = lookAt;
@@ -45,6 +47,13 @@ class Camera {
         this.vfov = vfov;
         this.aperture = aperture;
         this.focusDist = focusDistance;
+
+        if(defined(velocity)) {
+            this.velocity = velocity;
+
+            this.moveVelocity *= velocity;
+            this.turningVelocity *= velocity;
+        }
 
         this.updateCamera();
         this.listen();
@@ -227,31 +236,42 @@ class Camera {
             .join('');
 
         const lookFrom = Array.from(this.lookFrom)
-            .map(v => v.toFixed(3))
-            .join(', ');
+            .map(v => v.toFixed(3));
+            // .join(', ');
 
         const lookAt = Array.from(this.lookAt)
-            .map(v => v.toFixed(3))
-            .join(', ');
+            .map(v => v.toFixed(3));
+            // .join(', ');
 
         return 'camera({\n' +
-            `${innerIndentation}lookFrom: [${lookFrom}],\n` +
-            `${innerIndentation}lookAt: [${lookAt}],\n` +
+            `${innerIndentation}lookFrom: {x: ${lookFrom[0]}, y: ${lookFrom[1]}, z: ${lookFrom[2]}},\n` +
+            `${innerIndentation}lookAt: {x: ${lookAt[0]}, y: ${lookAt[1]}, z: ${lookAt[2]}},\n` +
             `${innerIndentation}vfov: ${this.vfov},\n` +
             `${innerIndentation}aperture: ${this.aperture},\n` +
+            `${innerIndentation}velocity: ${this.velocity},\n` +
         `${indentation}})`;
     }
 }
 
-function createCamera({lookFrom, lookAt, vUp, vfov, aperture, aspect}) {
-    let lookFromVec = vec3.create();
-    lookFromVec.set(lookFrom);
+function createCamera({
+    lookFrom,
+    lookAt,
+    vUp,
+    vfov,
+    aperture,
+    aspect,
+    velocity
+}) {
+    // let lookFromVec = vec3.create();
+    // lookFromVec.set(lookFrom);
+    let lookFromVec = vec3.fromValues(lookFrom.x, lookFrom.y, lookFrom.z);
 
-    let lookAtVec = vec3.create();
-    lookAtVec.set(lookAt);
+    // let lookAtVec = vec3.create();
+    // lookAtVec.set(lookAt);
+    let lookAtVec = vec3.fromValues(lookAt.x, lookAt.y, lookAt.z);
 
     let vUpVec = vec3.create();
-    vUpVec.set(vUp || [0, 1, 0]);
+    vUpVec.set(vUp ? [vUp.x, vUp.y, vUp.z] : [0, 1, 0]);
 
     return new Camera({
         lookFrom: lookFromVec,
@@ -259,7 +279,8 @@ function createCamera({lookFrom, lookAt, vUp, vfov, aperture, aspect}) {
         vUp: vUpVec,
         vfov,
         aspect,
-        aperture
+        aperture,
+        velocity
     });
 };
 

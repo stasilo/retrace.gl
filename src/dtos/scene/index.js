@@ -6,6 +6,7 @@ import {
     definedNotNull,
     flatten,
     normedColor,
+    isArray,
     isHexColor,
     isFn
 } from '../../utils';
@@ -17,7 +18,10 @@ class Scene {
         }
 
         this.camera = camera;
-        this.background = background;
+        this.background = isArray(background)
+            ? background
+            : [background, background];
+
         this.materials = new MaterialList(materials);
 
         return (async () => {
@@ -53,17 +57,39 @@ class Scene {
                     }
                 }
 
-                // replace texture name with name + id
                 if(defined(hitable.texture)) {
                     const texture = this.textures.elements
                         .find(texture => 
-                            texture.name === hitable.texture
+                            texture.name === (hitable.texture.name
+                                ? hitable.texture.name
+                                : hitable.texture
+                            )
                         );
 
                     if(defined(texture)) {
                         hitable.texture = {
-                            texture: hitable.texture,
-                            textureId: texture.id
+                            texture: hitable.texture.name,
+                            textureId: texture.id,
+                            scale: hitable.texture.scale
+                        }
+                    }
+                }
+
+                // replace normal map texture name with name + id
+                if(defined(hitable.normalMap)) {
+                    const normalMap = this.textures.elements
+                        .find(texture => 
+                            texture.name === (hitable.normalMap.name
+                                ? hitable.normalMap.name
+                                : hitable.normalMap
+                            )
+                        );
+
+                    if(defined(normalMap)) {
+                        hitable.normalMap = {
+                            texture: hitable.normalMap.name,
+                            textureId: normalMap.id,
+                            scale: hitable.normalMap.scale
                         }
                     }
                 }

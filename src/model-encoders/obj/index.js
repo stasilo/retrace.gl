@@ -20,6 +20,10 @@ function encodeObjModelTriangleVertexData({
     position,
     rotation,
     textureId,
+    textureUvScale,
+    normalMapId,
+    normalMapScale,
+    normalMapUvScale,
     materialId,
     smoothShading,
     doubleSided,
@@ -236,6 +240,23 @@ function encodeObjModelTriangleVertexData({
                 defined(flipNormals)
                     ? flipNormals | 0
                     : 0,
+
+                // vec3 meta3
+                defined(normalMapId)
+                    ? normalMapId
+                    : -1,
+                normalMapScale.x,
+                normalMapScale.y,
+
+                // vec3 meta4
+                textureUvScale.x,
+                textureUvScale.y,
+                -1,
+
+                // vec3 meta4
+                normalMapUvScale.x,
+                normalMapUvScale.y,
+                -1
             ]);
         }, []);
 

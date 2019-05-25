@@ -9,23 +9,53 @@ import {
     definedNotNull,
     normedColor,
     isHexColor,
+    isArray,
     glslFloat
 } from '../../utils';
 
 class Sphere {
     includeInBvh = true;
 
-    constructor({material, texture, radius, position}) {
+    constructor({material, texture, normalMap, radius, position}) {
         this.material = material;
-        this.texture = texture;
         this.radius = radius;
-
         this.position = {
             x: 0,
             y: 0,
             z: 0,
             ...(defined(position)
                 ? position
+                : [])
+        };
+
+        this.texture = texture;
+        this.textureUvScale = {
+            x: 1,
+            y: 1,
+            ...(defined(texture) && defined(texture.uvScale)
+                ? texture.uvScale.x || texture.uvScale.y
+                    ? texture.uvScale
+                    : {x: texture.uvScale, y: texture.uvScale}
+                : [])
+        };
+
+        this.normalMap = normalMap;
+        this.normalMapScale = {
+            x: 1,
+            y: 1,
+            ...(defined(normalMap) && defined(normalMap.scale)
+                ? normalMap.scale.x || normalMap.scale.y
+                    ? normalMap.scale
+                    : {x: normalMap.scale, y: normalMap.scale}
+                : [])
+        };
+        this.normalUvScale = {
+            x: 1,
+            y: 1,
+            ...(defined(normalMap) && defined(normalMap.uvScale)
+                ? normalMap.uvScale.x || normalMap.uvScale.y
+                    ? normalMap.uvScale
+                    : {x: normalMap.uvScale, y: normalMap.uvScale}
                 : [])
         };
     }
@@ -87,6 +117,23 @@ class Sphere {
                 ? this.texture.textureId
                 : -1,
             -1,
+            -1,
+
+            // vec3 meta3
+            defined(this.normalMap)
+                ? this.normalMap.textureId
+                : -1,
+            this.normalMapScale.x,
+            this.normalMapScale.y,
+
+            // vec3 meta4
+            this.textureUvScale.x,
+            this.textureUvScale.y,
+            -1,
+
+            // vec3 meta5
+            this.normalUvScale.x,
+            this.normalUvScale.y,
             -1
         ]
     }

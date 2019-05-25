@@ -20,6 +20,7 @@ class ObjModel {
         url,
         material,
         texture,
+        normalMap,
         scale,
         position,
         rotation,
@@ -29,7 +30,38 @@ class ObjModel {
     }) {
         this.url = url;
         this.material = material;
+
         this.texture = texture;
+        this.textureUvScale = {
+            x: 1,
+            y: 1,
+            ...(defined(texture) && defined(texture.uvScale)
+                ? texture.uvScale.x || texture.uvScale.y
+                    ? texture.uvScale
+                    : {x: exture.uvScale, y: texture.uvScale}
+                : [])
+        };
+
+        this.normalMap = normalMap;
+        this.normalMapScale = {
+            x: 1,
+            y: 1,
+            ...(defined(normalMap) && defined(normalMap.scale)
+                ? normalMap.scale.x || normalMap.scale.y
+                    ? normalMap.scale
+                    : {x: normalMap.scale, y: normalMap.scale}
+                : [])
+        };
+        this.normalMapUvScale = {
+            x: 1,
+            y: 1,
+            ...(defined(normalMap) && defined(normalMap.uvScale)
+                ? normalMap.uvScale.x || normalMap.uvScale.y
+                    ? normalMap.uvScale
+                    : {x: normalMap.uvScale, y: normalMap.uvScale}
+                : [])
+        };
+
         this._geometryData = null;
 
         this.smoothShading = defined(smoothShading)
@@ -93,6 +125,12 @@ class ObjModel {
                 textureId: defined(this.texture)
                     ? this.texture.textureId
                     : -1,
+                textureUvScale: this.textureUvScale,
+                normalMapId: defined(this.normalMap)
+                    ? this.normalMap.textureId
+                    : -1,
+                normalMapScale: this.normalMapScale,
+                normalMapUvScale: this.normalMapUvScale,
                 smoothShading: this.smoothShading,
                 doubleSided: this.doubleSided,
                 flipNormals: this.flipNormals

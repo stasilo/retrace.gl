@@ -92,6 +92,21 @@ class Volume {
             // vec3 meta2
             -1,
             -1,
+            -1,
+
+            // vec3 meta3
+            -1,
+            -1,
+            -1,
+
+            // vec3 meta4
+            -1,
+            -1,
+            -1,
+
+            // vec3 meta5
+            -1,
+            -1,
             -1
         ];
     }

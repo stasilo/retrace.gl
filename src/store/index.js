@@ -9,22 +9,18 @@ import {
 import fps from 'fps';
 
 import raytraceApp from '../raytracer';
+import dynamicScene from '../dtos/dynamic-scene';
 
 import {createCamera} from '../camera';
 import {getGlInstances} from '../gl';
 
 import {defined} from '../utils';
 
-// import createIsoFogScene from '../scenes/generative-iso-fog-test';
-// import createAnisoFogScene from '../scenes/generative-aniso-fog-test';
-// import createDynEvalScene from '../scenes/dyn-eval-test-scene';
-
-import dynamicScene from '../dtos/dynamic-scene';
-
-import introSceneSrc from '../scenes/example-scene/index.js.rtr';
+import exampleSceneSrc from '../scenes/example-scene/index.js.rtr';
 import basicSceneSrc from '../scenes/basic-scene/index.js.rtr';
 import volumeTestSceneSrc from '../scenes/volume-test-scene/index.js.rtr';
 import anisoVolumeTestSceneSrc from '../scenes/aniso-volume-test-scene/index.js.rtr';
+import normalMapTestSceneSrc from '../scenes/normal-map-test-scene/index.js.rtr';
 
 const shaderSampleCount = 1;
 const defaultMaxSampleCount = 10;
@@ -41,7 +37,8 @@ class Store {
 
     // @observable _sceneSrc = anisoVolumeTestSceneSrc;
     // @observable _sceneSrc = volumeTestSceneSrc;
-    @observable _sceneSrc = introSceneSrc;
+    @observable _sceneSrc = exampleSceneSrc;
+    // @observable _sceneSrc = normalMapTestSceneSrc;
 
     @observable _scene = null;
 
@@ -56,7 +53,7 @@ class Store {
     fpsTicker = null;
 
     constructor() {
-        this.fpsTicker = fps({every: 10});
+        this.fpsTicker = fps({every: 5});
 
         this.fpsTicker.on('data', (frameRate) => {
             this._currentFps = frameRate.toFixed(3);
@@ -92,6 +89,12 @@ class Store {
     }
 
     @action
+    realTime() {
+        this.realTimeMode = true;
+        this.trace();
+    }
+
+    @action
     async trace() {
         if(this._activeRenderInstance) {
             this.cancelTrace();
@@ -114,7 +117,7 @@ class Store {
     async regenerateScene() {
         await this.loadScene();
         this.currentMaxSampleCount = defaultMaxSampleCount;
-        this.realTimeMode = true;
+        // this.realTimeMode = true;
         this.trace();
     }
 
@@ -151,6 +154,11 @@ class Store {
         switch(keyName) {
             case 'alt+r':
                 this.render();
+                break;
+
+            case 'alt+e':
+                this.realTimeMode = true;
+                this.trace();
                 break;
 
             case 'alt+g':

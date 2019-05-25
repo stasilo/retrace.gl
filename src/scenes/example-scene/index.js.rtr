@@ -1,13 +1,37 @@
+const glassCube = ({
+    scale,
+    material,
+    texture,
+    glassDistance,
+    ...props
+}) => [
+    cube({
+        scale,
+        material,
+        texture,
+        ...props
+    }),
+    cube({
+        scale: {
+            x: scale.x + glassDistance,
+            y: scale.y + glassDistance,
+            z: scale.z + glassDistance
+        },
+        material: 'box-glass',
+        ...props
+    })
+];
+
 scene({
     background: [
         '#000000',
         '#050505'
     ],
     camera: camera({
-        lookFrom: [6.080, 0.674, 0.260],
-        lookAt: [2.239, 1.344, -2.023],
+        lookFrom: {x: 1.423, y: 0.605, z: 1.751},
+        lookAt: {x: -1.510, y: 0.966, z: -1.664},
         vfov: 45,
-        aperture: 0.001,
+        aperture: 0.05,
     }),
     geometries: [
         plane({
@@ -35,7 +59,6 @@ scene({
                 y: 15,
                 z: 10
             },
-
         }),
         sphere({
             material: 'ceil-light',
@@ -48,7 +71,7 @@ scene({
         }),
         diamond({
             material: 'box-light',
-            scale: 0.4,//0.8,
+            scale: 0.4,
             position: {
                 x: -0.3,
                 y: 1.0,
@@ -56,7 +79,6 @@ scene({
             },
             rotation: {
                 y: degToRad(220),
-                // x: degToRad(-45),
             }
         }),
         diamond({
@@ -69,52 +91,12 @@ scene({
             },
             rotation: {
                 y: degToRad(220),
-                // x: degToRad(-45),
             }
         }),
-        // objModel({
-        //     url: 'assets/models/hand.obj',
-        //     material: 'hand-fuzzy-metal',
-        //     smoothShading: true,
-        //     scale: 0.05,
-        //     position: {
-        //         x: 0.8,
-        //         y: 0.8,
-        //         z: -1.4
-        //     },
-        //     rotation: {
-        //         y: degToRad(-10),
-        //         x: degToRad(-45),
-        //     }
-        // }),
         range2d(0, 15, 0, 15)
             |> subRange(#, range2d(2, 6, 2, 6))
             |> takeRandom
             |> #.map(([x, z]) => {
-                const glassCube = ({
-                    scale,
-                    material,
-                    texture,
-                    glassDistance,
-                    ...props
-                }) => [
-                    cube({
-                        scale,
-                        material,
-                        texture,
-                        ...props
-                    }),
-                    cube({
-                        scale: {
-                            x: scale.x + glassDistance,
-                            y: scale.y + glassDistance,
-                            z: scale.z + glassDistance
-                        },
-                        material: 'box-glass',
-                        ...props
-                    })
-                ];
-
                 const material = pluckRandom([
                     'box-black',
                     'box-white',
@@ -123,13 +105,14 @@ scene({
                 ]);
 
                 const scale = 0.5;
+                const yScale = scale
+                    + (x + 1) * (z + 1) * 0.1;
 
                 const props = {
                     material,
                     scale: {
                         x: scale,
-                        y: scale
-                            + (x + 1) * (z + 1) * 0.1,
+                        y: yScale,
                         z: scale,
                     },
                     position: {
@@ -137,12 +120,20 @@ scene({
                         y: 0.1,
                         z: 0.1 - z*(scale+0.15)
                     },
+                    normalMap: {
+                        name: 'box-normal-map',
+                        scale: 1,
+                        uvScale: {
+                            y: yScale
+                        }
+                    }
                 };
 
                 return material !== 'box-black'
                     && material !== 'box-white'
-                        ? new glassCube({
+                        ? glassCube({
                             ...props,
+                            normalMap: undefined,
                             texture: `pattern-${randomIdx(6)}`,
                             glassDistance: 0.05,
                         })
@@ -163,6 +154,12 @@ scene({
             }),
     ],
     textures: [
+        // normal map
+        texture({
+            name: 'box-normal-map',
+            url: '/assets/images/testNormalMap.jpg'
+        }),
+        // floor
         texture({
             name: 'check',
             src: `
@@ -174,7 +171,8 @@ scene({
                 }
             `
         }),
-        ...range(0, 6).map(i =>
+        // box pattern
+        range(0, 6).map(i =>
             texture({
                 name: `pattern-${i}`,
                 src: `
@@ -249,12 +247,19 @@ scene({
         )
     ],
     materials: [
+        // fog
         anisotropicVolumeMaterial({
             name: 'volume-red',
             color: '#ff0000',
             albedo: [1.0, 1.0, 1.0],
             density: 0.25,
             volumeScale: 20
+        }),
+        // boxes
+        emissiveMaterial({
+            name: `box-light`,
+            color: '#ffffff',
+            intensity: 10
         }),
         dialectricMaterial({
             name: 'box-glass'
@@ -268,7 +273,6 @@ scene({
         lambertMaterial({
             name: `box-white`,
             color: '#ffffff',
-            // fuzz: 0.2,
             albedo: [0.9, 0.9, 0.9]
         }),
         metalMaterial({
@@ -277,12 +281,7 @@ scene({
             fuzz: 0.15,
             albedo: [0.8, 0.8, 0.8]
         }),
-        metalMaterial({
-            name: 'hand-fuzzy-metal',
-            color: '#ffffff',
-            fuzz: 0.05,
-            albedo: [0.9, 0.9, 0.9]
-        }),
+        // other lights
         emissiveMaterial({
             name: `halfsphere-light`,
             color: '#ffffff',
@@ -293,10 +292,5 @@ scene({
             color: '#ffffff',
             intensity: 0.05
         }),
-        emissiveMaterial({
-            name: `box-light`,
-            color: '#ffffff',
-            intensity: 10
-        })
     ]
 });

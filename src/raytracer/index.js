@@ -165,14 +165,10 @@ async function raytraceApp({
 
     //TODO: fixa!
     const bgColors = definedNotNull(scene.background)
-        ? [
-            ...normedColor(scene.background[0]),
-            ...normedColor(scene.background[1])
-        ]
-        : [
-            ...normedColor('#eeeeee'),
-            ...normedColor('#ffffff')
-        ];
+        ? [ ...normedColor(scene.background[0]),
+            ...normedColor(scene.background[1]) ]
+        : [ ...normedColor('#eeeeee'),
+            ...normedColor('#ffffff') ];
 
     const rayTraceDrawCall = glApp
         .createDrawCall(rayTraceGlProgram, fullScreenQuadVertArray)
