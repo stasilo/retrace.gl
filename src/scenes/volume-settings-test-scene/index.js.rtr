@@ -1,8 +1,8 @@
 scene({
     background: '#000000',
     camera: camera({
-        lookFrom: {x: -24.328, y: 18.568, z: 83.946},
-        lookAt: {x: -22.872, y: 18.564, z: 79.669},
+        lookFrom: {x: 16.228, y: 56.337, z: 61.795},
+        lookAt: {x: 15.577, y: 53.383, z: 58.439},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1,
@@ -16,9 +16,22 @@ scene({
             scale: 30,
             position: {
                 x: 0,
-                y: 0,
+                y: 0.0,
                 z: 0
             },
+        }),
+        volume({
+            material: 'volume-material',
+            minCoords: {
+                x: -25,
+                y: 0.0,
+                z: -25
+            },
+            maxCoords: {
+                x: 25,
+                y: 20.0,
+                z: 25
+            }
         }),
         plane({
             material: 'ceil-light',
@@ -29,39 +42,6 @@ scene({
                 z: 0
             },
         }),
-        sphere({
-            material: 'obj-material',
-            normalMap: {
-                name: 'normal-map',
-                uvScale: {
-                    x: 3,
-                    y: 3
-                }
-            },
-            position: {
-                x: -8,
-                y: 12,
-                z: 0
-            },
-            radius: 10
-        }),
-        cube({
-            material: 'obj-material',
-            normalMap: {
-                name: 'normal-map',
-                scale: 1,
-                uvScale: {
-                    x: 1,
-                    y: 1
-                }
-            },
-            position: {
-                x: 12,
-                y: 12,
-                z: 0
-            },
-            scale: 15
-        })
     ],
     textures: [
         texture({
@@ -75,19 +55,22 @@ scene({
                 }
             `
         }),
-        texture({
-            name: 'normal-map',
-            url: '/assets/images/testNormalMap.jpg'
-        }),
     ],
     materials: [
+        anisotropicVolumeMaterial({
+            name: 'volume-material',
+            color: '#00ff00',
+            albedo: [0.8, 0.8, 0.8],
+            density: 0.25,
+            volumeScale: 30,
+        }),
         lambertMaterial({
             name: `floor-white`,
             color: '#ffffff',
             albedo: [0.8, 0.8, 0.8]
         }),
         lambertMaterial({
-            name: `obj-material`,
+            name: `sphere-material`,
             color: '#ffffff',
             albedo: [0.8, 0.8, 0.8]
         }),

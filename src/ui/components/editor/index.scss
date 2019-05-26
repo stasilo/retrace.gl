@@ -20,9 +20,34 @@
     }
 
     #retrace-editor {
+        position: relative;
         width: 50vw;
         height: 80vh;
 
         filter: grayscale(100%);
+    }
+}
+
+.retrace-editor__error {
+    position: absolute;
+    bottom: 3px;
+    right: 0;
+
+    width: 50vw;
+    height: 100px;
+    overflow-y: scroll;
+
+    z-index: 4;
+
+    padding: 20px;
+    background-color: rgba(200, 0, 0, 0.8);
+    color: white;
+    text-align: left;
+
+    transition: opacity 0.3s ease-out;
+    opacity: 0.5;
+
+    .retrace-editor__wrapper:hover + & {
+        opacity: 1;
     }
 }

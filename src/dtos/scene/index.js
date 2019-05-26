@@ -54,16 +54,21 @@ class Scene {
                             material: hitable.material,
                             materialId: material.id
                         }
+                    } else {
+                        throw `Could not find material with name: "${hitable.material}"`;
                     }
                 }
 
+                // replace texture name with name + id
+
                 if(defined(hitable.texture)) {
+                    const textureName = hitable.texture.name
+                        ? hitable.texture.name
+                        : hitable.texture;
+
                     const texture = this.textures.elements
                         .find(texture => 
-                            texture.name === (hitable.texture.name
-                                ? hitable.texture.name
-                                : hitable.texture
-                            )
+                            texture.name === textureName
                         );
 
                     if(defined(texture)) {
@@ -72,25 +77,30 @@ class Scene {
                             textureId: texture.id,
                             scale: hitable.texture.scale
                         }
+                    } else {
+                        throw `Could not find texture with name "${textureName}"`;
                     }
                 }
 
                 // replace normal map texture name with name + id
                 if(defined(hitable.normalMap)) {
+                    const normTexName = hitable.normalMap.name
+                        ? hitable.normalMap.name
+                        : hitable.normalMap;
+
                     const normalMap = this.textures.elements
                         .find(texture => 
-                            texture.name === (hitable.normalMap.name
-                                ? hitable.normalMap.name
-                                : hitable.normalMap
-                            )
+                            texture.name === normTexName
                         );
 
                     if(defined(normalMap)) {
                         hitable.normalMap = {
-                            texture: hitable.normalMap.name,
+                            texture: normTexName,
                             textureId: normalMap.id,
                             scale: hitable.normalMap.scale
                         }
+                    } else {
+                        throw `Could not find normal map texture with name "${normTexName}"`;
                     }
                 }
 

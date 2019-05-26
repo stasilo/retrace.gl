@@ -4,8 +4,8 @@ scene({
         '#aaaaaa'
     ],
     camera: camera({
-        lookFrom: [-46.476, 47.535, 26.662],
-        lookAt: [-43.435, 44.766, 24.787],
+        lookFrom: {x: -46.476, y: 47.535, z: 26.662},
+        lookAt: {x: -43.435, y: 44.766, z: 24.787},
         vfov: 45,
         aperture: 0.001,
     }),

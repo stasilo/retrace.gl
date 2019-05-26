@@ -1,5 +1,5 @@
 import {definedNotNull, glslFloat} from '../utils';
-import {geometryTypes, geoBlockDataSize} from '../bvh';
+import {geometryTypes, geoTexturePackedBlockDataSize} from '../bvh';
 
 import simplexNoise from './lib/noise/simplex.glsl';
 
@@ -9,8 +9,7 @@ const getSource = ({options, Scene}) =>
     precision highp int;
     precision highp sampler2D;
 
-    // #define T_MIN 0.000001
-    // #define T_MAX 3.402823466e+38
+    #define FLT_MAX 3.402823466e+38
 
     #define T_MIN 0.0001
     #define T_MAX 10000.0
@@ -21,7 +20,7 @@ const getSource = ({options, Scene}) =>
     #define DATA_TEX_SIZE ${glslFloat(options.dataTexSize)}
     #define DATA_TEX_INV_SIZE ${glslFloat(1/options.dataTexSize)}
 
-    #define DATA_TEX_OFFSET_SIZE ${glslFloat(geoBlockDataSize/3)}
+    #define DATA_TEX_OFFSET_SIZE ${glslFloat(geoTexturePackedBlockDataSize/3)}
 
     #define PI 3.141592653589793
 
@@ -558,24 +557,19 @@ const getSource = ({options, Scene}) =>
     // "Chapter 28: Ray Tracing Inhomogeneous Volumes", p. 521, Nvidia Ray tracing Gems
     // see also: http://psgraphics.blogspot.com/2009/05/neat-trick-for-ray-collisions-in.html
 
-    float volumeFbm(vec3 p) {
-        mat3 m = mat3(
-            0.00,  0.80,  0.60,
-            -0.80,  0.36, -0.48,
-            -0.60, -0.48,  0.64
-        );
+    // fbm from: https://www.shadertoy.com/view/XslGRr
 
-    	float f = 0.5 * snoise(p);
-        p = m*p*2.02;
-
-    	f += 0.25 * snoise(p);
-        p = m*p*2.03;
-
-        f += 0.125 * snoise(p); //p = m*p*2.01;
-    	// f += 0.0625*snoise( p );
-
-    	return f;
+    float volumeFbm(in vec3 p) {
+    	vec3 q = p - vec3(0.0,0.1,1.0);
+    	float f;
+        f  = 0.50000*snoise( q ); q = q*2.02;
+        f += 0.25000*snoise( q ); q = q*2.03;
+        f += 0.12500*snoise( q ); q = q*2.01;
+        f += 0.06250*snoise( q ); q = q*2.02;
+        f += 0.03125*snoise( q );
+    	return clamp( 1.5 - p.y - 2.0 + 1.75*f, 0.0, 1.0 );
     }
+
 
     float sampleVolumeDistance(Ray ray, float volumeDensity, float volumeScale) {
         float t = 0.;
@@ -584,7 +578,10 @@ const getSource = ({options, Scene}) =>
         do {
             t -= ((1./volumeDensity) * log(1. - rand())) / maxExtinction;
         } while (snoise((ray.origin + ray.dir*t) * volumeScale) < rand()*maxExtinction);
+
         // } while (volumeFbm((ray.origin + ray.dir*t) * volumeScale) < rand()*maxExtinction);
+        //TODO: dynamic offset for noise function (150 in example below):
+        // } while (snoise((ray.origin + ray.dir*t) * volumeScale + 150.) < rand()*maxExtinction);
 
         return deNan(t);
     }

@@ -21,6 +21,7 @@ import basicSceneSrc from '../scenes/basic-scene/index.js.rtr';
 import volumeTestSceneSrc from '../scenes/volume-test-scene/index.js.rtr';
 import anisoVolumeTestSceneSrc from '../scenes/aniso-volume-test-scene/index.js.rtr';
 import normalMapTestSceneSrc from '../scenes/normal-map-test-scene/index.js.rtr';
+import volumeSettingsTestSceneSrc from '../scenes/volume-settings-test-scene/index.js.rtr';
 
 const shaderSampleCount = 1;
 const defaultMaxSampleCount = 10;
@@ -35,10 +36,14 @@ class Store {
     @observable _editorVisible = false;
     @observable _editorFocused = false;
 
+    // @observable _sceneSrc = exampleSceneSrc;
     // @observable _sceneSrc = anisoVolumeTestSceneSrc;
     // @observable _sceneSrc = volumeTestSceneSrc;
-    @observable _sceneSrc = exampleSceneSrc;
     // @observable _sceneSrc = normalMapTestSceneSrc;
+    @observable _sceneSrc = volumeSettingsTestSceneSrc;
+
+    @observable _hasSceneEvalError = false;
+    @observable _sceneSrcEvalError = [];
 
     @observable _scene = null;
 
@@ -73,12 +78,43 @@ class Store {
 
     @action
     async loadScene() {
-        this._scene = await dynamicScene(this._sceneSrc);
+        try {
+            this._scene = await dynamicScene(this._sceneSrc);
 
-        if(this._scene.camera) {
-            this._camera = this._scene.camera;
-        } else {
-            this.setupDefaultCamera();
+            this.hasSceneEvalError = false;
+            this.sceneSrcEvalError = null;
+
+            if(this._scene.camera) {
+                this._camera = this._scene.camera;
+            } else {
+                this.setupDefaultCamera();
+            }
+        } catch(evalError) {
+            const errorStr = evalError.toString();
+            const errorLocation = /\((.*):(.*)\)/
+                .exec(errorStr.split('\n')[0]);
+
+            if(errorLocation) {
+                const row = errorLocation[1];
+                const column = errorLocation[2];
+
+                this.sceneSrcEvalError = {
+                    row: parseInt(row) - 2,
+                    column: parseInt(column) - 2,
+                    text: errorStr,
+                    type: "error"
+                };
+
+            } else {
+                this.sceneSrcEvalError = {
+                    row: -1,
+                    column: -1,
+                    text: errorStr,
+                    type: "error"
+                };
+            }
+
+            this.hasSceneEvalError = true;
         }
     }
 
@@ -122,6 +158,15 @@ class Store {
     }
 
     @action
+    cancelTrace() {
+        if(this._activeRenderInstance) {
+            this._activeRenderInstance.cancel();
+            delete this._activeRenderInstance;
+            this.renderInProgress = false;
+        }
+    }
+
+    @action
     updateSceneSrc() {
         if(this.editorFocused) {
             return;
@@ -138,15 +183,6 @@ class Store {
                     cameraIndent: noOfSpacesBeforeCamera
                 })
             );
-    }
-
-    @action
-    cancelTrace() {
-        if(this._activeRenderInstance) {
-            this._activeRenderInstance.cancel();
-            delete this._activeRenderInstance;
-            this.renderInProgress = false;
-        }
     }
 
     @action
@@ -228,6 +264,24 @@ class Store {
 
     set sceneSrc(val) {
         this._sceneSrc = val;
+    }
+
+    @computed
+    get hasSceneEvalError() {
+        return this._hasSceneEvalError;
+    }
+
+    set hasSceneEvalError(val) {
+        this._hasSceneEvalError = val;
+    }
+
+    @computed
+    get sceneSrcEvalError() {
+        return this._sceneSrcEvalError;
+    }
+
+    set sceneSrcEvalError(val) {
+        this._sceneSrcEvalError = val;
     }
 
     // stats

@@ -10,13 +10,18 @@ const geometryTypes = {
 };
 
 // 3 * vec3() vertices + 3 * vec3() normal + 3 * vec3() texture data + 5 * vec3() meta data
-const geoBlockDataSize = 42; //36;
+const geoTexturePackedBlockDataSize = 42;
 
 function buildSceneBvh(scene) {
+    // let geometries = scene.geometries
+    //     .reduce((geos, geometry) =>
+    //         geos.concat(geometry.geometryData)
+    //     , []);
     let geometries = scene.geometries
-        .reduce((geos, geometry) =>
-            geos.concat(geometry.geometryData)
-        , []);
+        .reduce((geos, geometry) => {
+            geos.push(...geometry.geometryData);
+            return geos;
+        }, []);
 
     return {
         bvhData: buildBvh(geometries),
@@ -25,7 +30,7 @@ function buildSceneBvh(scene) {
 }
 
 function buildBvh(geometryData) {
-    let totalGeoCount = (geometryData.length / geoBlockDataSize);
+    let totalGeoCount = (geometryData.length / geoTexturePackedBlockDataSize);
 
     let vp0 = vec3.create();
     let vp1 = vec3.create();
@@ -43,27 +48,27 @@ function buildBvh(geometryData) {
             geoBoundBoxMin = vec3.fromValues(Infinity, Infinity, Infinity);
             geoBoundBoxMax = vec3.fromValues(-Infinity, -Infinity, -Infinity);
 
-            const geoType = geometryData[geoBlockDataSize * i + 29];
+            const geoType = geometryData[geoTexturePackedBlockDataSize * i + 29];
 
             switch(geoType) {
                 case geometryTypes.triangle:
                     // record vertex positions
                     vp0 = vec3.fromValues(
-                        geometryData[geoBlockDataSize * i + 0],
-                        geometryData[geoBlockDataSize * i + 1],
-                        geometryData[geoBlockDataSize * i + 2]
+                        geometryData[geoTexturePackedBlockDataSize * i + 0],
+                        geometryData[geoTexturePackedBlockDataSize * i + 1],
+                        geometryData[geoTexturePackedBlockDataSize * i + 2]
                     );
 
                     vp1 = vec3.fromValues(
-                        geometryData[geoBlockDataSize * i + 3],
-                        geometryData[geoBlockDataSize * i + 4],
-                        geometryData[geoBlockDataSize * i + 5]
+                        geometryData[geoTexturePackedBlockDataSize * i + 3],
+                        geometryData[geoTexturePackedBlockDataSize * i + 4],
+                        geometryData[geoTexturePackedBlockDataSize * i + 5]
                     );
 
                     vp2 = vec3.fromValues(
-                        geometryData[geoBlockDataSize * i + 6],
-                        geometryData[geoBlockDataSize * i + 7],
-                        geometryData[geoBlockDataSize * i + 8]
+                        geometryData[geoTexturePackedBlockDataSize * i + 6],
+                        geometryData[geoTexturePackedBlockDataSize * i + 7],
+                        geometryData[geoTexturePackedBlockDataSize * i + 8]
                     );
 
                     vec3.min(geoBoundBoxMin, geoBoundBoxMin, vp0);
@@ -86,15 +91,15 @@ function buildBvh(geometryData) {
                 case geometryTypes.sphere:
                     // sphere pos
                     let position = vec3.fromValues(
-                        geometryData[geoBlockDataSize * i + 0],
-                        geometryData[geoBlockDataSize * i + 1],
-                        geometryData[geoBlockDataSize * i + 2]
+                        geometryData[geoTexturePackedBlockDataSize * i + 0],
+                        geometryData[geoTexturePackedBlockDataSize * i + 1],
+                        geometryData[geoTexturePackedBlockDataSize * i + 2]
                     );
 
                     let radius = vec3.fromValues(
-                        geometryData[geoBlockDataSize * i + 3],
-                        geometryData[geoBlockDataSize * i + 3],
-                        geometryData[geoBlockDataSize * i + 3]
+                        geometryData[geoTexturePackedBlockDataSize * i + 3],
+                        geometryData[geoTexturePackedBlockDataSize * i + 3],
+                        geometryData[geoTexturePackedBlockDataSize * i + 3]
                     );
 
                     vec3.sub(geoBoundBoxMin, position, radius);
@@ -106,15 +111,15 @@ function buildBvh(geometryData) {
 
                 case geometryTypes.volumeAabb:
                     geoBoundBoxMin = vec3.fromValues(
-                        geometryData[geoBlockDataSize * i + 0],
-                        geometryData[geoBlockDataSize * i + 1],
-                        geometryData[geoBlockDataSize * i + 2]
+                        geometryData[geoTexturePackedBlockDataSize * i + 0],
+                        geometryData[geoTexturePackedBlockDataSize * i + 1],
+                        geometryData[geoTexturePackedBlockDataSize * i + 2]
                     );
 
                     geoBoundBoxMax = vec3.fromValues(
-                        geometryData[geoBlockDataSize * i + 3],
-                        geometryData[geoBlockDataSize * i + 4],
-                        geometryData[geoBlockDataSize * i + 5]
+                        geometryData[geoTexturePackedBlockDataSize * i + 3],
+                        geometryData[geoTexturePackedBlockDataSize * i + 4],
+                        geometryData[geoTexturePackedBlockDataSize * i + 5]
                     );
 
                     vec3.lerp(geoBoundBoxCentroid, geoBoundBoxMin, geoBoundBoxMax, 0.5);
@@ -167,6 +172,6 @@ function buildBvh(geometryData) {
 
 export {
     geometryTypes,
-    geoBlockDataSize,
+    geoTexturePackedBlockDataSize,
     buildSceneBvh,
 }
