@@ -77,6 +77,7 @@
         "rotate-vector-about-axis": "^1.0.2",
         "sass-loader": "^6.0.7",
         "save-canvas-to-image": "^0.1.1",
+        "simplex-noise": "^2.4.0",
         "source-map-loader": "^0.2.4",
         "spectorjs": "^0.9.5",
         "style-loader": "^0.20.3",

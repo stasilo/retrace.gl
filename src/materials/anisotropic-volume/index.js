@@ -4,7 +4,7 @@ import {materialTypes} from '../base-material';
 import {defined} from '../../utils';
 
 class AnisotropicVolumeMaterial extends BaseMaterial {
-    constructor({name, color, albedo, density, volumeScale}) {
+    constructor({name, color, albedo, density, scale, sampleOffset}) {
         super({
             name,
             color: defined(color)
@@ -20,9 +20,12 @@ class AnisotropicVolumeMaterial extends BaseMaterial {
             density: defined(density)
                 ? density
                 : 0.5,
-            volumeScale: defined(volumeScale)
-                ? 1/volumeScale
-                : 0.5
+            scale: defined(scale)
+                ? 1/scale
+                : 0.5,
+            sampleOffset: defined(sampleOffset)
+                ? sampleOffset
+                : 0,
         });
     }
 }

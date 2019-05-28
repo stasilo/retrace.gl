@@ -27,6 +27,20 @@ const range2d = (xStart, xEnd, yStart, yEnd) => {
     return combos;
 }
 
+const range3d = (xStart, xEnd, yStart, yEnd, zStart, zEnd) => {
+    var combos = [];
+
+    range(xStart, xEnd).forEach(a1 => {
+        range(yStart, yEnd).forEach(a2 => {
+            range(zStart, zEnd).forEach(a3 => {
+                combos.push([a1, a2, a3]);
+            });
+        });
+    });
+
+    return combos;
+}
+
 // subtract one range from another
 // (this is dimension agnostic)
 const subRange = (rangeA, rangeB) =>
@@ -161,6 +175,7 @@ export {
     isObj,
     range,
     range2d,
+    range3d,
     subRange,
     reverse,
     zip,

@@ -8,6 +8,8 @@ const getSource = ({options, Scene}) =>
     precision highp float;
     precision highp int;
     precision highp sampler2D;
+    // precision highp sampler3D;
+    precision lowp sampler3D;
 
     #define FLT_MAX 3.402823466e+38
 
@@ -37,6 +39,11 @@ const getSource = ({options, Scene}) =>
         : ''
     }
 
+
+    //////////
+    uniform sampler3D uNoiseTexTest;
+    ////////
+
     uniform float uTime;
     #ifndef REALTIME
         uniform float uOneOverSampleCount;
@@ -57,7 +64,16 @@ const getSource = ({options, Scene}) =>
      * "Includes"
      */
 
-    ${simplexNoise}
+    ${/*simplexNoise*/''}
+
+    float snoise(in vec3 p) {
+        float n = texture(uNoiseTexTest, p).x;
+        return n;
+
+        // return texelFetch(uNoiseTexTest, ivec3(p), 0).x;
+        // return texelFetch(uNoiseTexTest, ivec3(mod(p+10000., 128.)), 0).x;
+    }
+
 
     /*
      * Textures
@@ -334,31 +350,32 @@ const getSource = ({options, Scene}) =>
         float emissiveIntensity;
         // for volume mats
         float density;
-        float volumeScale;
+        float scale;
+        float sampleOffset;
     };
 
     Material getPackedMaterial(int index) {
-        float offset = float(index) * 4.;
+        float offset = float(index) * 5.;
 
         float xOffset = mod(offset, DATA_TEX_SIZE);
         float yOffset = floor(offset * DATA_TEX_INV_SIZE);
-
         vec3 matData1 = texelFetch(uMaterialDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
         xOffset = mod(offset + 1., DATA_TEX_SIZE);
         yOffset = floor((offset + 1.) * DATA_TEX_INV_SIZE);
-
         vec3 matData2 = texelFetch(uMaterialDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
         xOffset = mod(offset + 2., DATA_TEX_SIZE);
         yOffset = floor((offset + 2.) * DATA_TEX_INV_SIZE);
-
         vec3 matData3 = texelFetch(uMaterialDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
         xOffset = mod(offset + 3., DATA_TEX_SIZE);
         yOffset = floor((offset + 3.) * DATA_TEX_INV_SIZE);
-
         vec3 matData4 = texelFetch(uMaterialDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        xOffset = mod(offset + 4., DATA_TEX_SIZE);
+        yOffset = floor((offset + 4.) * DATA_TEX_INV_SIZE);
+        vec3 matData5 = texelFetch(uMaterialDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
         return Material(
             int(matData1.x), // int type
@@ -368,7 +385,8 @@ const getSource = ({options, Scene}) =>
             matData1.z, // float refIdx
             matData2.x, // float emissiveIntensity
             matData2.y, // float density
-            matData2.z // float volumeScale
+            matData2.z, // float scale,
+            matData5.x // float sampleOffset
         );
     }
 
@@ -570,18 +588,17 @@ const getSource = ({options, Scene}) =>
     	return clamp( 1.5 - p.y - 2.0 + 1.75*f, 0.0, 1.0 );
     }
 
-
-    float sampleVolumeDistance(Ray ray, float volumeDensity, float volumeScale) {
+    float sampleVolumeDistance(Ray ray, Material material) {
         float t = 0.;
         const float maxExtinction = 1.0;
 
         do {
-            t -= ((1./volumeDensity) * log(1. - rand())) / maxExtinction;
-        } while (snoise((ray.origin + ray.dir*t) * volumeScale) < rand()*maxExtinction);
+            t -= ((1./material.density) * log(1. - rand())) / maxExtinction;
+        // } while (snoise((ray.origin + ray.dir*t) * material.scale + material.sampleOffset) < rand()*maxExtinction);
 
-        // } while (volumeFbm((ray.origin + ray.dir*t) * volumeScale) < rand()*maxExtinction);
+        } while (volumeFbm((ray.origin + ray.dir*t) * material.scale) < rand()*maxExtinction);
         //TODO: dynamic offset for noise function (150 in example below):
-        // } while (snoise((ray.origin + ray.dir*t) * volumeScale + 150.) < rand()*maxExtinction);
+        // } while (snoise((ray.origin + ray.dir*t) * scale + 150.) < rand()*maxExtinction);
 
         return deNan(t);
     }
@@ -940,8 +957,7 @@ const getSource = ({options, Scene}) =>
                                             } else { // anisotropic
                                                 hitDist = sampleVolumeDistance(
                                                     ray,
-                                                    volumeMaterial.density,
-                                                    volumeMaterial.volumeScale
+                                                    volumeMaterial
                                                 );
                                             }
 
@@ -1014,8 +1030,7 @@ const getSource = ({options, Scene}) =>
                                             } else { // anisotropic
                                                 hitDist = sampleVolumeDistance(
                                                     ray,
-                                                    sphereMaterial.density,
-                                                    sphereMaterial.volumeScale
+                                                    sphereMaterial
                                                 );
                                             }
 

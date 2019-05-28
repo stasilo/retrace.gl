@@ -1,8 +1,8 @@
 scene({
     background: '#000000',
     camera: camera({
-        lookFrom: {x: 16.228, y: 56.337, z: 61.795},
-        lookAt: {x: 15.577, y: 53.383, z: 58.439},
+        lookFrom: {x: -24.313, y: 71.821, z: 43.822},
+        lookAt: {x: -22.736, y: 68.176, z: 41.666},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1,
@@ -59,10 +59,11 @@ scene({
     materials: [
         anisotropicVolumeMaterial({
             name: 'volume-material',
-            color: '#00ff00',
+            color: '#ffffff',
             albedo: [0.8, 0.8, 0.8],
-            density: 0.25,
-            volumeScale: 30,
+            density: 0.5,
+            scale: 200, //250, //100,
+            sampleOffset: 0
         }),
         lambertMaterial({
             name: `floor-white`,

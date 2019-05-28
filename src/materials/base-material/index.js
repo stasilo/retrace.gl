@@ -23,7 +23,8 @@ class BaseMaterial {
         refIdx,
         emissiveIntensity,
         density,
-        volumeScale
+        scale,
+        sampleOffset
     }) {
         this.id = -1;
         this.name = name;
@@ -33,7 +34,8 @@ class BaseMaterial {
         this.refIdx = refIdx;
         this.emissiveIntensity = emissiveIntensity;
         this.density = density;
-        this.volumeScale = volumeScale;
+        this.scale = scale;
+        this.sampleOffset = sampleOffset;
         this.color = defined(color)
             ? isHexColor(color)
                 ? normedColor(color)
@@ -62,13 +64,18 @@ class BaseMaterial {
             // matData2
             this.emissiveIntensity,
             this.density,
-            this.volumeScale,
+            this.scale,
 
             // matData3
             ...this.albedo,
 
             // matData4
             ...this.color,
+
+            // matData5
+            this.sampleOffset,
+            -1,
+            -1
         ];
     }
 }

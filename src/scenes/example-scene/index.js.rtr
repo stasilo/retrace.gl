@@ -253,7 +253,7 @@ scene({
             color: '#ff0000',
             albedo: [1.0, 1.0, 1.0],
             density: 0.25,
-            volumeScale: 20
+            scale: 20
         }),
         // boxes
         emissiveMaterial({

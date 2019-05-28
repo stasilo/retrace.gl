@@ -266,7 +266,7 @@ export default async () => {
                 color: '#ff0000',
                 albedo: [1.0, 1.0, 1.0],
                 density: 3.5, //0.3, //0.7, //0.6, //0.4,
-                volumeScale: 3
+                scale: 3
             }),
             new LambertMaterial({
                 name: `lambert-black`,
