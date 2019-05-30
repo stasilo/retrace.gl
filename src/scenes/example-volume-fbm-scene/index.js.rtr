@@ -1,8 +1,10 @@
+const volTexSize = 64;
+
 scene({
     background: '#000000',
     camera: camera({
-        lookFrom: {x: -24.313, y: 71.821, z: 43.822},
-        lookAt: {x: -22.736, y: 68.176, z: 41.666},
+        lookFrom: {x: -4.675, y: 18.019, z: 119.966},
+        lookAt: {x: -4.589, y: 18.129, z: 115.447},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1,
@@ -13,7 +15,7 @@ scene({
             texture: {
                 name: 'check',
             },
-            scale: 30,
+            scale: 60,
             position: {
                 x: 0,
                 y: 0.0,
@@ -22,23 +24,24 @@ scene({
         }),
         volume({
             material: 'volume-material',
+            texture: 'volume-texture',
             minCoords: {
-                x: -25,
+                x: -55,
                 y: 0.0,
-                z: -25
+                z: -55
             },
             maxCoords: {
-                x: 25,
-                y: 20.0,
-                z: 25
+                x: 55,
+                y: 40.0,
+                z: 55
             }
         }),
         plane({
             material: 'ceil-light',
-            scale: 20,
+            scale: 40,
             position: {
                 x: 0,
-                y: 50.0,
+                y: 70.0,
                 z: 0
             },
         }),
@@ -55,14 +58,44 @@ scene({
                 }
             `
         }),
+        volumeTexture({
+            name: 'volume-texture',
+            size: volTexSize,
+            data: range3d(0, volTexSize, 0, volTexSize, 0, volTexSize)
+                |> #.map(([x, y, z]) => {
+                    const scale = 0.01;
+
+                    let q = vec3.fromValues(x*scale, y*scale - 0.01, z*scale - 1);
+                    let f;
+
+                    // fbm inspired by: https://www.shadertoy.com/view/XslGRr
+
+                    f  = 0.50000*simplex.noise3D(...q);
+                    vec3.scale(q, q, 2.02);
+
+                    f += 0.25000*simplex.noise3D(...q);
+                    vec3.scale(q, q, 2.03);
+
+                    f += 0.12500*simplex.noise3D(...q);
+                    vec3.scale(q, q, 2.01);
+
+                    f += 0.06250*simplex.noise3D(...q);
+                    vec3.scale(q, q, 2.02);
+
+                    f += 0.03125*simplex.noise3D(...q);
+
+                    return clamp(1.5 - (y*scale) - 2.0 + 2.75*f, 0.0, 1.0 );
+                })
+                |> tileSeamless3d(#, volTexSize)
+        })
     ],
     materials: [
         anisotropicVolumeMaterial({
             name: 'volume-material',
             color: '#ffffff',
             albedo: [0.8, 0.8, 0.8],
-            density: 0.5,
-            scale: 200, //250, //100,
+            density: 0.9,
+            scale: 100,
             sampleOffset: 0
         }),
         lambertMaterial({

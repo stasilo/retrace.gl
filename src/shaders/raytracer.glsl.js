@@ -1,6 +1,9 @@
 import {definedNotNull, glslFloat} from '../utils';
 import {geometryTypes, geoTexturePackedBlockDataSize} from '../bvh';
 
+import Texture from '../textures/texture';
+import VolumeTexture from '../textures/volume-texture';
+
 import simplexNoise from './lib/noise/simplex.glsl';
 
 const getSource = ({options, Scene}) =>
@@ -39,11 +42,6 @@ const getSource = ({options, Scene}) =>
         : ''
     }
 
-
-    //////////
-    uniform sampler3D uNoiseTexTest;
-    ////////
-
     uniform float uTime;
     #ifndef REALTIME
         uniform float uOneOverSampleCount;
@@ -64,34 +62,46 @@ const getSource = ({options, Scene}) =>
      * "Includes"
      */
 
-    ${/*simplexNoise*/''}
-
-    float snoise(in vec3 p) {
-        float n = texture(uNoiseTexTest, p).x;
-        return n;
-
-        // return texelFetch(uNoiseTexTest, ivec3(p), 0).x;
-        // return texelFetch(uNoiseTexTest, ivec3(mod(p+10000., 128.)), 0).x;
-    }
-
+    ${simplexNoise}
 
     /*
      * Textures
      */
 
     ${Scene.textures.getTextures().map(texture =>
-        `uniform sampler2D uSceneTex${texture.id};`
+        texture instanceof Texture
+            ? `uniform sampler2D uSceneTex${texture.id};`
+            : `uniform sampler3D uSceneTex${texture.id};`
     ).join('\n')}
 
-    vec4 getSceneTexture(int textureId, vec2 uv) {
+    // 2d texs
+    vec4 getSceneTextureData(int textureId, vec2 uv) {
         vec4 color;
 
         switch(textureId) {
-            ${Scene.textures.getTextures().map(texture => `
+            ${Scene.textures.getTextures().filter(texture => texture instanceof Texture).map(texture => `
                 case ${texture.id}:
                     color = texture(uSceneTex${texture.id}, uv);
                     break;
             `).join('\n')};
+
+            default:
+                break;
+        }
+
+        return color;
+    }
+
+    // 3d texs
+    vec4 getSceneTextureData(int textureId, vec3 uv) {
+        vec4 color = vec4(0.);
+
+        switch(textureId) {
+            ${Scene.textures.getTextures().filter(texture => texture instanceof VolumeTexture).map(texture => `
+                    case ${texture.id}:
+                        color = texture(uSceneTex${texture.id}, uv);
+                        break;
+                `).join('\n')}
 
             default:
                 break;
@@ -465,7 +475,7 @@ const getSource = ({options, Scene}) =>
 
         mat3 btn = mat3(B, T, N);
 
-        vec3 mapNormal = getSceneTexture(normalTextureId, uv).xyz * 2.0 - 1.0;
+        vec3 mapNormal = getSceneTextureData(normalTextureId, uv).xyz * 2.0 - 1.0;
         mapNormal.xy *= normalScale;
 
         return normalize(btn * mapNormal);
@@ -571,21 +581,23 @@ const getSource = ({options, Scene}) =>
         return false;
     }
 
-    // cheap inhomogeneous/anisotropic volumes (no raymarching)
+    // easy inhomogeneous/anisotropic volumes (no raymarching)
     // "Chapter 28: Ray Tracing Inhomogeneous Volumes", p. 521, Nvidia Ray tracing Gems
     // see also: http://psgraphics.blogspot.com/2009/05/neat-trick-for-ray-collisions-in.html
 
-    // fbm from: https://www.shadertoy.com/view/XslGRr
+    float sampleVolumeDistInTexture(Ray ray, Material material, int textureId) {
+        float t = 0.;
+        const float maxExtinction = 1.0;
 
-    float volumeFbm(in vec3 p) {
-    	vec3 q = p - vec3(0.0,0.1,1.0);
-    	float f;
-        f  = 0.50000*snoise( q ); q = q*2.02;
-        f += 0.25000*snoise( q ); q = q*2.03;
-        f += 0.12500*snoise( q ); q = q*2.01;
-        f += 0.06250*snoise( q ); q = q*2.02;
-        f += 0.03125*snoise( q );
-    	return clamp( 1.5 - p.y - 2.0 + 1.75*f, 0.0, 1.0 );
+        do {
+            t -= ((1./material.density) * log(1. - rand()))
+                / maxExtinction;
+        } while (
+            getSceneTextureData(textureId, (ray.origin + ray.dir*t) * material.scale + material.sampleOffset).x
+                < rand()*maxExtinction
+        );
+
+        return deNan(t);
     }
 
     float sampleVolumeDistance(Ray ray, Material material) {
@@ -594,11 +606,10 @@ const getSource = ({options, Scene}) =>
 
         do {
             t -= ((1./material.density) * log(1. - rand())) / maxExtinction;
-        // } while (snoise((ray.origin + ray.dir*t) * material.scale + material.sampleOffset) < rand()*maxExtinction);
-
-        } while (volumeFbm((ray.origin + ray.dir*t) * material.scale) < rand()*maxExtinction);
-        //TODO: dynamic offset for noise function (150 in example below):
-        // } while (snoise((ray.origin + ray.dir*t) * scale + 150.) < rand()*maxExtinction);
+        } while (
+            snoise((ray.origin + ray.dir*t) * material.scale + material.sampleOffset)
+                < rand()*maxExtinction
+        );
 
         return deNan(t);
     }
@@ -955,10 +966,24 @@ const getSource = ({options, Scene}) =>
                                             if(volumeMaterial.type == ISOTROPIC_VOLUME_MATERIAL_TYPE) {
                                                 hitDist = -(1./volumeMaterial.density) * log(1. - rand());
                                             } else { // anisotropic
-                                                hitDist = sampleVolumeDistance(
-                                                    ray,
-                                                    volumeMaterial
-                                                );
+                                                xOffset = mod(geoOffset + 10., DATA_TEX_SIZE);
+                                                yOffset = floor((geoOffset + 10.) * DATA_TEX_INV_SIZE);
+                                                meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                                                int textureId = int(meta.x);
+
+                                                if(textureId > -1) {
+                                                    hitDist = sampleVolumeDistInTexture(
+                                                        ray,
+                                                        volumeMaterial,
+                                                        textureId
+                                                    );
+                                                } else {
+                                                    hitDist = sampleVolumeDistance(
+                                                        ray,
+                                                        volumeMaterial
+                                                    );
+                                                }
                                             }
 
                                             if(hitDist < distInsideBound) {
@@ -1028,10 +1053,24 @@ const getSource = ({options, Scene}) =>
                                             if(sphereMaterial.type == ISOTROPIC_VOLUME_MATERIAL_TYPE) {
                                                 hitDist = -(1./sphereMaterial.density) * log(1. - rand());
                                             } else { // anisotropic
-                                                hitDist = sampleVolumeDistance(
-                                                    ray,
-                                                    sphereMaterial
-                                                );
+                                                xOffset = mod(geoOffset + 10., DATA_TEX_SIZE);
+                                                yOffset = floor((geoOffset + 10.) * DATA_TEX_INV_SIZE);
+                                                meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                                                int textureId = int(meta.x);
+
+                                                if(textureId > -1) {
+                                                    hitDist = sampleVolumeDistInTexture(
+                                                        ray,
+                                                        sphereMaterial,
+                                                        textureId
+                                                    );
+                                                } else {
+                                                    hitDist = sampleVolumeDistance(
+                                                        ray,
+                                                        sphereMaterial
+                                                    );
+                                                }
                                             }
 
                                             if(hitDist < distInsideBound) {
@@ -1234,7 +1273,7 @@ const getSource = ({options, Scene}) =>
                 record.material = getPackedMaterial(materialId);
                 record.color = textureId == -1
                     ? record.material.color
-                    : getSceneTexture(textureId, interpUv * texUvScale).rgb;
+                    : getSceneTextureData(textureId, interpUv * texUvScale).rgb;
                 record.hitPoint = pointOnRay(ray, tMax);
 
                 vec3 normal;
@@ -1324,7 +1363,7 @@ const getSource = ({options, Scene}) =>
 
                         vec2 texUvScale = meta.xy;
 
-                        record.color = getSceneTexture(textureId, uv * texUvScale).rgb;
+                        record.color = getSceneTextureData(textureId, uv * texUvScale).rgb;
                     } else {
                         record.color = record.material.color;
                     }
@@ -1408,12 +1447,6 @@ const getSource = ({options, Scene}) =>
                 if(!shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray)) {
                     break;
                 }
-
-                // if(shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray)) {
-                //     ray.origin = hitRecord.hitPoint;
-                // } else {
-                //     break;
-                // }
             } else {
                 color *= background(ray.dir);
                 break;

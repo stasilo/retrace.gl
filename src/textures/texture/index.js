@@ -1,13 +1,13 @@
 import PicoGL from 'picogl';
 import {vec3, vec2} from 'gl-matrix';
 
-import {getGlInstances} from '../gl';
-import {defined, loadImage} from '../utils';
+import {getGlInstances} from '../../gl';
+import {defined, loadImage} from '../../utils';
 
 const {glCanvas, gl, glApp} = getGlInstances();
 
-import vertShader from '../shaders/vert.glsl';
-import createTexRenderShader from '../shaders/dynamicTexRender.glsl.js';
+import vertShader from '../../shaders/vert.glsl';
+import createTexRenderShader from '../../shaders/dynamicTexRender.glsl.js';
 
 class Texture {
     constructor({name, url, src, options}) {

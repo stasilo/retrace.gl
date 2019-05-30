@@ -5,7 +5,7 @@ import Cube from '../../models/Cube';
 
 import Scene from '../../dtos/scene';
 
-import Texture from '../../texture';
+import Texture from '../../textures/texture';
 
 import MetalMaterial from '../../materials/metal';
 import LambertMaterial from '../../materials/lambert';

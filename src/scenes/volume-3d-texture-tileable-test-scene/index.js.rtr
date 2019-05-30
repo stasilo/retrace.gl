@@ -1,0 +1,98 @@
+const volTexSize = 84;
+
+scene({
+    background: '#000000',
+    camera: camera({
+        lookFrom: {x: -184.937, y: 144.911, z: -378.987},
+        lookAt: {x: -182.932, y: 143.686, z: -375.124},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1,
+    }),
+    geometries: [
+        plane({
+            material: 'floor-white',
+            texture: {
+                name: 'check',
+            },
+            scale: 160,
+            position: {
+                x: 0,
+                y: 0.0,
+                z: 0
+            },
+        }),
+        volume({
+            material: 'volume-material',
+            texture: 'volume-texture',
+            minCoords: {
+                x: -155,
+                y: 0.0,
+                z: -155
+            },
+            maxCoords: {
+                x: 155,
+                y: 80.0,
+                z: 155
+            }
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 40,
+            position: {
+                x: 0,
+                y: 110.0,
+                z: 0
+            },
+        }),
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.3, 0.0, 0.0, 1.);
+                }
+            `
+        }),
+        volumeTexture({
+            name: 'volume-texture',
+            size: volTexSize,
+            data: range3d(0, volTexSize, 0, volTexSize, 0, volTexSize)
+                |> #.map(([x, y, z]) => {
+                    const scale = 50;
+                    let f = simplex.noise3D(x*scale, y*scale, z*scale);
+                    return clamp(f, 0.0, 1.0);
+                })
+                |> tileSeamless3d(#, volTexSize)
+        })
+    ],
+    materials: [
+        anisotropicVolumeMaterial({
+            name: 'volume-material',
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8],
+            density: 0.1,
+            scale: 500,
+            sampleOffset: 0
+        }),
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        lambertMaterial({
+            name: `sphere-material`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        }),
+    ]
+});

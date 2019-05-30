@@ -156,10 +156,6 @@ function encodeObjModelTriangleVertexData({
 
                 let textureData = [t0, t1, t2];
 
-                // return faceData
-                //     .concat(normalData)
-                //     .concat(textureData);
-
                 faceData.push(...normalData);
                 faceData.push(...textureData);
 
@@ -171,7 +167,6 @@ function encodeObjModelTriangleVertexData({
         .reduce((allFaces, faceArr) => {
             allFaces.push(...faceArr);
             return allFaces;
-            // allFaces.concat(faceArr)
         }, []);
 
     // encode triangles for bvh construction & texture packing
@@ -269,94 +264,6 @@ function encodeObjModelTriangleVertexData({
             );
 
             return tris;
-
-            // return tris.concat([
-            //     // vertices
-            //
-            //     // vec3 v0
-            //     face[0][0],
-            //     face[0][1],
-            //     face[0][2],
-            //
-            //     // vec3 v1
-            //     face[1][0],
-            //     face[1][1],
-            //     face[1][2],
-            //
-            //     // vec3 v2
-            //     face[2][0],
-            //     face[2][1],
-            //     face[2][2],
-            //
-            //     // normals
-            //
-            //     // vec3 n0
-            //     face[3][0],
-            //     face[3][1],
-            //     face[3][2],
-            //
-            //     // vec3 n1
-            //     face[4][0],
-            //     face[4][1],
-            //     face[4][2],
-            //
-            //     // vec3 n2
-            //     face[5][0],
-            //     face[5][1],
-            //     face[5][2],
-            //
-            //     // texture coords
-            //
-            //     // vec3 t0
-            //     face[6][0],
-            //     face[6][1],
-            //     face[6][2],
-            //
-            //     // vec3 t1
-            //     face[7][0],
-            //     face[7][1],
-            //     face[7][2],
-            //
-            //     // vec3 t2
-            //     face[8][0],
-            //     face[8][1],
-            //     face[8][2],
-            //
-            //     // meta data
-            //
-            //     // vec3 meta
-            //     materialId,
-            //     smoothShading ? 1 : 0,
-            //     geometryTypes.triangle,
-            //
-            //     // vec3 meta2
-            //     defined(textureId)
-            //         ? textureId
-            //         : -1,
-            //     defined(doubleSided)
-            //         ? doubleSided | 0 // bool to int conv.
-            //         : 0,
-            //     defined(flipNormals)
-            //         ? flipNormals | 0
-            //         : 0,
-            //
-            //     // vec3 meta3
-            //     defined(normalMapId)
-            //         ? normalMapId
-            //         : -1,
-            //     normalMapScale.x,
-            //     normalMapScale.y,
-            //
-            //     // vec3 meta4
-            //     textureUvScale.x,
-            //     textureUvScale.y,
-            //     -1,
-            //
-            //     // vec3 meta4
-            //     normalMapUvScale.x,
-            //     normalMapUvScale.y,
-            //     -1
-            // ]);
         }, []);
 
     return triangles;

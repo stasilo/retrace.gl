@@ -17,15 +17,15 @@ import {getGlInstances} from '../gl';
 import {defined} from '../utils';
 
 import exampleSceneSrc from '../scenes/example-scene/index.js.rtr';
+import exampleVolumeFbmSceneSrc from '../scenes/example-volume-fbm-scene/index.js.rtr';
 import basicSceneSrc from '../scenes/basic-scene/index.js.rtr';
 import volumeTestSceneSrc from '../scenes/volume-test-scene/index.js.rtr';
 import anisoVolumeTestSceneSrc from '../scenes/aniso-volume-test-scene/index.js.rtr';
 import normalMapTestSceneSrc from '../scenes/normal-map-test-scene/index.js.rtr';
-import volumeSettingsTestSceneSrc from '../scenes/volume-settings-test-scene/index.js.rtr';
+import volume3dTexTestSceneSrc from '../scenes/volume-3d-texture-tileable-test-scene/index.js.rtr';
 
 const shaderSampleCount = 1;
 const defaultMaxSampleCount = 10;
-
 
 let instance = null;
 class Store {
@@ -40,7 +40,8 @@ class Store {
     // @observable _sceneSrc = anisoVolumeTestSceneSrc;
     // @observable _sceneSrc = volumeTestSceneSrc;
     // @observable _sceneSrc = normalMapTestSceneSrc;
-    @observable _sceneSrc = volumeSettingsTestSceneSrc;
+    @observable _sceneSrc = volume3dTexTestSceneSrc;
+    // @observable _sceneSrc = exampleVolumeFbmSceneSrc;
 
     @observable _hasSceneEvalError = false;
     @observable _sceneSrcEvalError = [];

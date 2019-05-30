@@ -5,6 +5,13 @@ import babelDecoratorPlugin from '@babel/plugin-proposal-decorators';
 import babelObjSpreadPlugin from '@babel/plugin-proposal-object-rest-spread';
 import babelPipesPlugin from '@babel/plugin-proposal-pipeline-operator';
 
+import SimplexNoise from 'simplex-noise';
+
+import {
+    vec3 as _vec3,
+    vec2 as _vec2
+} from 'gl-matrix';
+
 import Scene from '../../dtos/scene';
 import {createCamera} from '../../camera';
 
@@ -15,7 +22,8 @@ import Sphere from '../../models/sphere';
 import Diamond from '../../models/diamond';
 import Volume from '../../models/volume';
 
-import Texture from '../../texture';
+import Texture from '../../textures/texture';
+import VolumeTexture from '../../textures/volume-texture';
 
 import MetalMaterial from '../../materials/metal';
 import LambertMaterial from '../../materials/lambert';
@@ -34,11 +42,16 @@ import {
     takeRandom as _takeRandom,
     range as _range,
     range2d as _range2d,
+    range3d as _range3d,
     subRange as _subRange,
     glslFloat as _glslFloat,
     normedColor as _normedColor,
     normedColorStr as _normedColorStr,
-    degToRad as _degToRad
+    degToRad as _degToRad,
+    radToDeg as _radToDeg,
+    clamp as _clamp,
+    lerp as _lerp,
+    tileSeamless3d as _tileSeamless3d,
 } from '../../utils';
 
 // bring everything into local scope - this is
@@ -46,19 +59,30 @@ import {
 // into names like '_xxxxx_js__WEBPACK_IMPORTED_MODULE_5__'
 // ...also and add some syntactic sugar :)
 
+const vec3 = _vec3;
+const vec2 = _vec2;
+
 const random = _random;
 const randomIdx = _randomIdx;
 const randomBool = _randomBool;
 const maybe = _maybe;
 const pluckRandom = _pluckRandom;
 const takeRandom = _takeRandom;
+
 const range = _range;
 const range2d = _range2d;
+const range3d = _range3d;
 const subRange = _subRange;
+
 const glslFloat = _glslFloat;
 const normedColor = _normedColor;
 const normedColorStr = _normedColorStr;
+
 const degToRad = _degToRad;
+const radToDeg = _radToDeg;
+const clamp = _clamp;
+const lerp = _lerp;
+const tileSeamless3d = _tileSeamless3d;
 
 const scene = (o) =>
     new Scene(o);
@@ -80,6 +104,8 @@ const volume = (o) =>
 
 const texture = (o) =>
     new Texture(o);
+const volumeTexture = (o) =>
+    new VolumeTexture(o);
 
 const lambertMaterial = (o) =>
     new LambertMaterial(o);
@@ -98,6 +124,8 @@ let cachedSrc = null;
 let transpiledSrc = null;
 
 export default async (src) => {
+    const simplex = new SimplexNoise();
+
     if(cachedSrc != src) {
         transpiledSrc = babel.transformSync(src, {
             presets: [babelEnvPreset],

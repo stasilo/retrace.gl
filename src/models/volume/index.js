@@ -15,8 +15,9 @@ import {
 class Volume {
     includeInBvh = true;
 
-    constructor({material, minCoords, maxCoords}) {
+    constructor({material, texture, minCoords, maxCoords}) {
         this.material = material;
+        this.texture = texture;
 
         this.minCoords = {
             x: 0,
@@ -90,7 +91,9 @@ class Volume {
             geometryTypes.volumeAabb,
 
             // vec3 meta2
-            -1,
+            defined(this.texture)
+                ? this.texture.textureId
+                : -1,
             -1,
             -1,
 

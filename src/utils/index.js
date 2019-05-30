@@ -110,6 +110,83 @@ const maybe = (cb, p = 0.5) =>
 const degToRad = (d) => d * Math.PI / 180;
 const radToDeg = (r) => r * 180 / Math.PI;
 
+const clamp = (value, min, max) => min < max
+    ? (value < min ? min : value > max ? max : value)
+    : (value < max ? max : value > min ? min : value);
+
+const lerp = (value1, value2, amount) => {
+    amount = amount < 0 ? 0 : amount;
+    amount = amount > 1 ? 1 : amount;
+    return value1 + (value2 - value1) * amount;
+}
+
+// https://www.gamedev.net/forums/topic/678392-how-do-i-create-tileable-3d-perlinsimplex-noise/
+// blend edges linearly
+
+const tileSeamless3d = (data, size) => {
+    let size3Over4 = (size * 3) / 4;
+    let sizePowTo2 = size * size;
+    let sizeOver4 = size / 4;
+
+    for (let z = 0; z < size; z++) {
+        for (let y = 0; y < size; y++) {
+            for (let x = 0; x < size; x++) {
+                if ((x >= size3Over4) || (y >= size3Over4)
+                    || (z >= size3Over4))
+                {
+                    let x0 = x;
+                    let y0 = y;
+                    let z0 = z;
+
+                    let x1 = x;
+                    let y1 = y;
+                    let z1 = z;
+
+                    let xi = 0;
+                    let yi = 0;
+                    let zi = 0;
+
+                    if (x1 >= size3Over4) {
+                        x1 = size - 1 - x1;
+                        xi = 1 - (x1 / sizeOver4);
+                    }
+
+                    if (y1 >= size3Over4) {
+                        y1 = size - 1 - y1;
+                        yi = 1 - (y1 / sizeOver4);
+                    }
+
+                    if (z1 >= size3Over4) {
+                        z1 = size - 1 - z1;
+                        zi = 1 - (z1 / sizeOver4);
+                    }
+
+                    let value0a = data[x0 + y0 * size + z0 * sizePowTo2];
+                    let value1a = data[x1 + y0 * size + z0 * sizePowTo2];
+                    let value2a = data[x0 + y1 * size + z0 * sizePowTo2];
+                    let value3a = data[x1 + y1 * size + z0 * sizePowTo2];
+                    let value0b = data[x0 + y0 * size + z1 * sizePowTo2];
+                    let value1b = data[x1 + y0 * size + z1 * sizePowTo2];
+                    let value2b = data[x0 + y1 * size + z1 * sizePowTo2];
+                    let value3b = data[x1 + y1 * size + z1 * sizePowTo2];
+
+                    let value00 = lerp(value0a, value1a, xi);
+                    let value01 = lerp(value2a, value3a, xi);
+                    let value02 = lerp(value00, value01, yi);
+                    let value10 = lerp(value0b, value1b, xi);
+                    let value11 = lerp(value2b, value3b, xi);
+                    let value12 = lerp(value10, value11, yi);
+
+                    let value = lerp(value02, value12, zi);
+                    data[x + y * size + z * sizePowTo2] = value;
+                }
+            }
+        }
+    }
+
+    return data;
+}
+
 // glsl inject helpers
 
 const glslFloat = (n) => Number.isInteger(n)
@@ -189,6 +266,9 @@ export {
     takeRandom,
     degToRad,
     radToDeg,
+    clamp,
+    lerp,
+    tileSeamless3d,
     isHexColor,
     normedColor,
     normedColorStr,
