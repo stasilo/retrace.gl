@@ -346,6 +346,7 @@ const getSource = ({options, Scene}) =>
     #define DIFFUSE_EMISSIVE_MATERIAL_TYPE 4
     #define ISOTROPIC_VOLUME_MATERIAL_TYPE 5
     #define ANISOTROPIC_VOLUME_MATERIAL_TYPE 6
+    #define CLEARCOAT_MATERIAL_TYPE 7
 
     struct Material {
         int type;
@@ -483,7 +484,6 @@ const getSource = ({options, Scene}) =>
 
     // amass color and scatter ray on material
     bool shadeAndScatter(HitRecord hitRecord, inout vec3 color, inout Ray ray) {
-
         // LAMBERT / DIFFUSE
 
         if(hitRecord.material.type == LAMBERT_MATERIAL_TYPE) {
@@ -550,6 +550,47 @@ const getSource = ({options, Scene}) =>
 
             ray.origin = hitRecord.hitPoint;
 
+            color *= hitRecord.material.albedo * hitRecord.color;
+            return true;
+        }
+
+        // DIALECTRIC + DIFFUSE ("CLEARCOAT")
+
+        if(hitRecord.material.type == CLEARCOAT_MATERIAL_TYPE) {
+            float cosine;
+            float niOverNt;
+            float reflectProb;
+
+            vec3 outwardNormal;
+
+            if(dot(ray.dir, hitRecord.normal) > 0.) {
+                outwardNormal = -hitRecord.normal;
+                niOverNt = hitRecord.material.refIdx;
+                cosine = hitRecord.material.refIdx * dot(ray.dir, hitRecord.normal) / length(ray.dir);
+            } else {
+                outwardNormal = hitRecord.normal;
+                niOverNt = 1. / hitRecord.material.refIdx;
+                cosine = -dot(ray.dir, hitRecord.normal) / length(ray.dir);
+            }
+
+            vec3 refracted = refract(normalize(ray.dir), normalize(outwardNormal), niOverNt);
+            if(refracted.x != 0.0 && refracted.y != 0.0 && refracted.z != 0.0) {
+                reflectProb = schlick(cosine, hitRecord.material.refIdx);
+            } else {
+                reflectProb = 1.;
+            }
+
+            if(rand() < reflectProb) {
+                vec3 reflected = reflect(ray.dir, hitRecord.normal);
+                ray.dir = reflected;
+                ray.invDir = 1./ray.dir;
+            } else {
+                // get lambertian random reflection direction
+                ray.dir = hitRecord.normal + randomPointInUnitSphere();
+                ray.invDir = 1./ray.dir;
+            }
+
+            ray.origin = hitRecord.hitPoint;
             color *= hitRecord.material.albedo * hitRecord.color;
             return true;
         }

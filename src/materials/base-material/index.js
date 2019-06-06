@@ -10,7 +10,8 @@ const materialTypes = {
     dialetric: 3,
     emissive: 4,
     isotropic: 5,
-    anisotropic: 6
+    anisotropic: 6,
+    clearcoat: 7
 }
 
 class BaseMaterial {
