@@ -38,7 +38,7 @@ class ObjModel {
             ...(defined(texture) && defined(texture.uvScale)
                 ? texture.uvScale.x || texture.uvScale.y
                     ? texture.uvScale
-                    : {x: exture.uvScale, y: texture.uvScale}
+                    : {x: texture.uvScale, y: texture.uvScale}
                 : [])
         };
 

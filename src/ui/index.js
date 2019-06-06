@@ -15,7 +15,7 @@ import SaveControls from './components/controls/save-controls';
 import EditorControls from './components/controls/editor-controls';
 
 import Editor from './components/editor';
-
+import Error from './components/error';
 import ProgressBar from './components/progress-bar';
 
 import getStore from '../store';
@@ -37,6 +37,9 @@ const UI = observer(() => {
                     <SaveControls/>
                     <EditorControls/>
                 </Header>
+                {store.hasLoadingError &&
+                    <Error message={store.loadingError} />
+                }
                 <Editor/>
                 <ProgressBar
                     progress={store.renderProgress}

@@ -2,16 +2,24 @@ import PicoGL from 'picogl';
 import {vec3, vec2} from 'gl-matrix';
 
 import {getGlInstances} from '../../gl';
-import {defined, definedNotNull, oadImage} from '../../utils';
 
-const {glCanvas, gl, glApp} = getGlInstances();
+import {
+    isFn,
+    defined,
+    definedNotNull,
+    hashCode
+} from '../../utils';
+
 
 import vertShader from '../../shaders/vert.glsl';
 import createTexRenderShader from '../../shaders/dynamicTexRender.glsl.js';
 
+let cachedVolumes = {};
+
 class VolumeTexture {
-    constructor({name, size, data, options}) {
-        this.name = name;
+    constructor(props) {
+        const {glCanvas, gl, glApp} = getGlInstances();
+        const {name, size, data, options, cache} = props;
 
         if(!definedNotNull(size)) {
             throw `No volume texture data supplied for texture "${name}"`;
@@ -21,8 +29,20 @@ class VolumeTexture {
             throw `No volume texture data supplied for texture "${name}"`;
         }
 
+        this.name = name;
         this.size = size;
-        this.data = data;
+
+        const propsHash = hashCode(props);
+
+        if(propsHash in cachedVolumes && cache) {
+            this.data = cachedVolumes[hashCode(props)];
+        } else {
+            this.data = isFn(data)
+                ? data()
+                : data;
+
+            cachedVolumes[hashCode(props)] = this.data;
+        }
 
         this.texture = glApp.createTexture3D(new Float32Array(this.data), size, size, size, {
             type: gl.FLOAT,

@@ -37,6 +37,7 @@ import {
     random as _random,
     randomIdx as _randomIdx,
     randomBool as _randomBool,
+    randomSign as _randomSign,
     maybe as _maybe,
     pluckRandom as _pluckRandom,
     takeRandom as _takeRandom,
@@ -65,6 +66,7 @@ const vec2 = _vec2;
 const random = _random;
 const randomIdx = _randomIdx;
 const randomBool = _randomBool;
+const randomSign = _randomSign;
 const maybe = _maybe;
 const pluckRandom = _pluckRandom;
 const takeRandom = _takeRandom;

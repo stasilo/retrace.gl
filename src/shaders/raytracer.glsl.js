@@ -11,8 +11,8 @@ const getSource = ({options, Scene}) =>
     precision highp float;
     precision highp int;
     precision highp sampler2D;
-    // precision highp sampler3D;
-    precision lowp sampler3D;
+    precision highp sampler3D;
+    // precision lowp sampler3D;
 
     #define FLT_MAX 3.402823466e+38
 
@@ -587,7 +587,7 @@ const getSource = ({options, Scene}) =>
 
     float sampleVolumeDistInTexture(Ray ray, Material material, int textureId) {
         float t = 0.;
-        const float maxExtinction = 1.0;
+        const float maxExtinction = 1.0; //0.5; //1.0;
 
         do {
             t -= ((1./material.density) * log(1. - rand()))
@@ -602,7 +602,7 @@ const getSource = ({options, Scene}) =>
 
     float sampleVolumeDistance(Ray ray, Material material) {
         float t = 0.;
-        const float maxExtinction = 1.0;
+        const float maxExtinction = 1.0; //1.0;
 
         do {
             t -= ((1./material.density) * log(1. - rand())) / maxExtinction;
@@ -1451,6 +1451,8 @@ const getSource = ({options, Scene}) =>
                 color *= background(ray.dir);
                 break;
             }
+
+            if(dot(color, color) < 0.0001) return color; // optimisation
         }
 
         return color;

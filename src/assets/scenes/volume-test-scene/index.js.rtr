@@ -13,7 +13,7 @@ scene({
         plane({
             material: 'floor-white',
             texture: 'check',
-            scale: 70,
+            scale: 60,
             position: {
                 x: 0.3,
                 y: -0.0,
@@ -25,7 +25,7 @@ scene({
         }),
         cube({
             material: 'wall-color',
-            scale: 140,
+            scale: 120,
             position: {
                 x: 0.3,
                 y: 20.0,
@@ -38,25 +38,40 @@ scene({
         }),
         plane({
             material: 'ceil-light',
-            scale: 30,//0.8,
+            scale: 30,
             position: {
                 x: -0.3,
                 y: 79.9,
                 z: -1.6
             },
         }),
-        range(0, 3).map(i =>
+        range(3).map(i =>
+            volume({
+                material: `iso-volume-${i}`,
+                minCoords: {
+                    x: -10 + 15 * i,
+                    y: 0,
+                    z: -30 + 8 * i
+                },
+                maxCoords: {
+                    x: 0 + 15 * i,
+                    y: 15,
+                    z: -20 + 8 * i
+                },
+            })
+        ),
+        range(3).map(i =>
             volume({
                 material: `aniso-volume-${i}`,
                 minCoords: {
-                    x: 0 - 25 * i,
+                    x: -10 + 15 * i,
                     y: 0,
-                    z: 30 - 25 * i
+                    z: 20 - 8 * i
                 },
                 maxCoords: {
-                    x: 20 - 25 * i,
-                    y: 40,
-                    z: 50 - 25 * i
+                    x: 0 + 15 * i,
+                    y: 15,
+                    z: 30 - 8 * i
                 },
             })
         ),
@@ -75,7 +90,15 @@ scene({
         }),
     ],
     materials: [
-        range(0, 3).map(i =>
+        range(3).map(i =>
+            isotropicVolumeMaterial({
+                name: `iso-volume-${i}`,
+                color: [random(), random(), random()],
+                albedo: [0.8, 0.8, 0.8],
+                density: 0.1 + i * 0.3,
+            }),
+        ),
+        range(3).map(i =>
             anisotropicVolumeMaterial({
                 name: `aniso-volume-${i}`,
                 color: [random(), random(), random()],

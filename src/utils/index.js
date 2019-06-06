@@ -10,14 +10,24 @@ const isObj = obj => typeof obj === 'object';
 
 // ranges
 
-const range = (start, end) =>
-    Array.from({length: (end - start)},
+const range = (...args) => {
+    let [start, end] = args.length == 2
+        ? args
+        : [0, args[0]];
+
+    return Array.from({length: (end - start)},
         (v, k) => k + start
     );
+}
 
-const range2d = (xStart, xEnd, yStart, yEnd) => {
-    var combos = [];
+const range2d = (...args) => {
+    let [xStart, xEnd, yStart, yEnd] = args.length == 4
+        ? args
+        : args.length == 2
+            ? [args[0], args[1], args[0], args[1]]
+            : [0, args[0], 0, args[0]];
 
+    let combos = [];
     range(xStart, xEnd).forEach(a1 => {
         range(yStart, yEnd).forEach(a2 => {
             combos.push([a1, a2]);
@@ -27,9 +37,14 @@ const range2d = (xStart, xEnd, yStart, yEnd) => {
     return combos;
 }
 
-const range3d = (xStart, xEnd, yStart, yEnd, zStart, zEnd) => {
-    var combos = [];
+const range3d = (...args) => {
+    let [xStart, xEnd, yStart, yEnd, zStart, zEnd] = args.length == 6
+        ? args
+        : args.length == 3
+            ? [0, args[0], 0, args[1], 0, args[2]]
+            : [0, args[0], 0, args[0], 0, args[0]];
 
+    let combos = [];
     range(xStart, xEnd).forEach(a1 => {
         range(yStart, yEnd).forEach(a2 => {
             range(zStart, zEnd).forEach(a3 => {
@@ -118,6 +133,26 @@ const lerp = (value1, value2, amount) => {
     amount = amount < 0 ? 0 : amount;
     amount = amount > 1 ? 1 : amount;
     return value1 + (value2 - value1) * amount;
+}
+
+const hashCode = (data) => {
+    let hash = 0;
+
+    data = typeof data === 'string'
+        ? data
+        : JSON.stringify(data);
+
+    if(data.length == 0) {
+        return hash;
+    }
+
+    for (var i = 0; i < data.length; i++) {
+        var char = data.charCodeAt(i);
+        hash = ((hash<<5)-hash)+char;
+        hash = hash & hash; // Convert to 32bit integer
+    }
+
+    return hash;
 }
 
 // https://www.gamedev.net/forums/topic/678392-how-do-i-create-tileable-3d-perlinsimplex-noise/
@@ -233,7 +268,7 @@ const animationFrame = (render) => {
     }
 }
 
-// image stuff
+// loaders
 
 const loadImage = async (url) =>
     new Promise((resolve, reject) => {
@@ -242,7 +277,6 @@ const loadImage = async (url) =>
             resolve(image);
         image.src = url;
     });
-
 
 export {
     defined,
@@ -268,11 +302,12 @@ export {
     radToDeg,
     clamp,
     lerp,
+    hashCode,
     tileSeamless3d,
     isHexColor,
     normedColor,
     normedColorStr,
     glslFloat,
     animationFrame,
-    loadImage
+    loadImage,
 };

@@ -13,7 +13,6 @@ import renderShader from '../shaders/render.glsl';
 
 import {buildSceneBvh} from '../bvh';
 
-
 import {
     flatten,
     definedNotNull,
@@ -21,7 +20,6 @@ import {
     normedColor,
     normedColorStr,
     animationFrame,
-    //
     range3d
 } from '../utils';
 
@@ -31,26 +29,6 @@ const defaultMaxSampleCount = 4;
 const dataTextureSize = 2048;
 
 const {glCanvas, glImgCanvas, gl, glApp} = getGlInstances();
-
-
-
-
-
-
-
-// //
-// import SimplexNoise from 'simplex-noise';
-// const simplex = new SimplexNoise();
-// console.dir(simplex.noise3D(0, 1, 10));
-//
-// const noiseTexSize = 128; //128; //32;
-// let noiseData = range3d(0, noiseTexSize, 0, noiseTexSize, 0, noiseTexSize)
-//     .map(([x, y, z]) => simplex.noise3D(x*0.1, y*0.1, z*0.1));
-//     // .map(([x, y, z]) => simplex.noise3D(x*0.25, y*0.25, z*0.25));
-//
-// console.dir(noiseData);
-
-//
 
 async function raytraceApp({
     scene,
@@ -182,24 +160,6 @@ async function raytraceApp({
         flipY: false
     });
 
-    ////////////
-    // let noiseTexTest = glApp.createTexture3D(new Float32Array(noiseData), noiseTexSize, noiseTexSize, noiseTexSize, {
-    //     type: gl.FLOAT,
-    //     internalFormat: gl.R32F, //gl.RGBA32F,
-    //     format: gl.RED, //gl.RGBA
-    //     generateMipmaps: false,
-    //     minFilter: gl.NEAREST,
-    //     magFilter: gl.NEAREST,
-    //     wrapS: gl.REPEAT,
-    //     wrapT: gl.REPEAT,
-    //     wrapR: gl.REPEAT,
-    //     // wrapS: gl.CLAMP_TO_EDGE,
-    //     // wrapT: gl.CLAMP_TO_EDGE,
-    //     // wrapR: gl.CLAMP_TO_EDGE
-    // });
-
-    /////////////
-
     /*
      * main raytrace draw call
      */
@@ -216,9 +176,6 @@ async function raytraceApp({
         .texture('uGeometryDataTexture', geoDataTexture)
         .texture('uBvhDataTexture', bvhDataTexture)
         .texture('uMaterialDataTexture', materialDataTexture)
-        ////////
-        // .texture('uNoiseTexTest', noiseTexTest)
-        ////////////e
         .uniform('uBgGradientColors[0]', new Float32Array(bgColors))
         .uniform('uResolution', vec2.fromValues(glApp.width, glApp.height))
         .uniform('uSeed', vec2.fromValues(random(), random()))

@@ -61,7 +61,7 @@ scene({
         volumeTexture({
             name: 'volume-texture',
             size: volTexSize,
-            data: range3d(0, volTexSize, 0, volTexSize, 0, volTexSize)
+            data: range3d(volTexSize)
                 |> #.map(([x, y, z]) => {
                     const scale = 0.01;
 
@@ -95,7 +95,7 @@ scene({
             color: '#ffffff',
             albedo: [0.8, 0.8, 0.8],
             density: 0.9,
-            scale: 100,
+            scale: 50,
             sampleOffset: 0
         }),
         lambertMaterial({

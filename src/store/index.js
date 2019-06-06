@@ -1,4 +1,4 @@
-// import queryString from 'query-string';
+import queryString from 'query-string';
 import {
     observable,
     computed,
@@ -14,34 +14,49 @@ import dynamicScene from '../dtos/dynamic-scene';
 import {createCamera} from '../camera';
 import {getGlInstances} from '../gl';
 
-import {defined} from '../utils';
+import {
+    defined,
+    definedNotNull,
+} from '../utils';
 
-import exampleSceneSrc from '../scenes/example-scene/index.js.rtr';
-import exampleVolumeFbmSceneSrc from '../scenes/example-volume-fbm-scene/index.js.rtr';
-import basicSceneSrc from '../scenes/basic-scene/index.js.rtr';
-import volumeTestSceneSrc from '../scenes/volume-test-scene/index.js.rtr';
-import anisoVolumeTestSceneSrc from '../scenes/aniso-volume-test-scene/index.js.rtr';
-import normalMapTestSceneSrc from '../scenes/normal-map-test-scene/index.js.rtr';
-import volume3dTexTestSceneSrc from '../scenes/volume-3d-texture-tileable-test-scene/index.js.rtr';
+// import basicSceneSrc from '../scenes/basic-scene/index.js.rtr';
+// import materialTestSceneSrc from '../scenes/material-test-scene/index.js.rtr';
+// import exampleSceneSrc from '../scenes/example-scene/index.js.rtr';
+// import volume3dTexTestSceneSrc from '../scenes/volume-3d-texture-tileable-test-scene/index.js.rtr';
+// import normalMapTestSceneSrc from '../scenes/normal-map-test-scene/index.js.rtr';
+// import volumeTestSceneSrc from '../scenes/volume-test-scene/index.js.rtr';
+// import exampleVolumeFbmSceneSrc from '../scenes/example-volume-fbm-scene/index.js.rtr';
+// import anisoVolumeTestSceneSrc from '../scenes/aniso-volume-test-scene/index.js.rtr';
+// import modelTestScene from '../scenes/model-test-scene/index.js.rtr';
 
 const shaderSampleCount = 1;
 const defaultMaxSampleCount = 10;
 
+// const defaultSceneUrl = '/assets/scenes/basic-scene/index.js.rtr';
+// const defaultSceneUrl = '/assets/scenes/example-scene/index.js.rtr';
+// const defaultSceneUrl = '/assets/scenes/example-volume-fbm-scene/index.js.rtr';
+// const defaultSceneUrl = '/assets/scenes/normal-map-test-scene/index.js.rtr';
+// const defaultSceneUrl = '/assets/scenes/volume-test-scene/index.js.rtr';
+// const defaultSceneUrl = '/assets/scenes/aniso-volume-test-scene/index.js.rtr';
+
+// const defaultSceneUrl = '/assets/scenes/volume-3d-texture-tileable-test-scene/index.js.rtr';
+// const defaultSceneUrl = '/assets/scenes/model-test-scene/index.js.rtr';
+const defaultSceneUrl = '/assets/scenes/material-test-scene/index.js.rtr';
+
 let instance = null;
 class Store {
+    appArgs = null;
+
     @observable _realTimeMode = true;
     @observable _loadingApp = true;
+    @observable _hasLoadingError = false;
+    @observable _loadingError = null;
     @observable _renderInProgress = false;
 
     @observable _editorVisible = false;
     @observable _editorFocused = false;
 
-    // @observable _sceneSrc = exampleSceneSrc;
-    // @observable _sceneSrc = anisoVolumeTestSceneSrc;
-    // @observable _sceneSrc = volumeTestSceneSrc;
-    // @observable _sceneSrc = normalMapTestSceneSrc;
-    @observable _sceneSrc = volume3dTexTestSceneSrc;
-    // @observable _sceneSrc = exampleVolumeFbmSceneSrc;
+    @observable _sceneSrc = '';
 
     @observable _hasSceneEvalError = false;
     @observable _sceneSrcEvalError = [];
@@ -59,8 +74,9 @@ class Store {
     fpsTicker = null;
 
     constructor() {
-        this.fpsTicker = fps({every: 5});
+        this.appArgs = queryString.parse(window.location.search);
 
+        this.fpsTicker = fps({every: 5});
         this.fpsTicker.on('data', (frameRate) => {
             this._currentFps = frameRate.toFixed(3);
         });
@@ -75,10 +91,34 @@ class Store {
             aperture: 0.001,
         });
     }
+
     // actions
 
     @action
     async loadScene() {
+        const sceneUrl = definedNotNull(this.appArgs.scene)
+            ? this.appArgs.scene
+            : defaultSceneUrl;
+
+        try {
+            let resp = await fetch(sceneUrl, {cache: 'no-store'});
+
+            if(!resp.ok) {
+                throw `Could not fetch scene: ${resp.status}`;
+            }
+
+            this._sceneSrc = await resp.text();
+
+        } catch(e) {
+            this.loadingError = defined(e.message)
+                ? e.message
+                : e;
+            this.hasLoadingError = true;
+        }
+    }
+
+    @action
+    async compileScene() {
         try {
             this._scene = await dynamicScene(this._sceneSrc);
 
@@ -116,6 +156,7 @@ class Store {
             }
 
             this.hasSceneEvalError = true;
+            this.editorVisible = true;
         }
     }
 
@@ -152,7 +193,7 @@ class Store {
 
     @action
     async regenerateScene() {
-        await this.loadScene();
+        await this.compileScene();
         this.currentMaxSampleCount = defaultMaxSampleCount;
         // this.realTimeMode = true;
         this.trace();
@@ -220,6 +261,24 @@ class Store {
 
     set loadingApp(val) {
         this._loadingApp = val;
+    }
+
+    @computed
+    get hasLoadingError() {
+        return this._hasLoadingError;
+    }
+
+    set hasLoadingError(val) {
+        this._hasLoadingError = val;
+    }
+
+    @computed
+    get loadingError() {
+        return this._loadingError;
+    }
+
+    set loadingError(val) {
+        this._loadingError = val;
     }
 
     @computed

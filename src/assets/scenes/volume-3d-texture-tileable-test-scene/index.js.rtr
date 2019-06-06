@@ -61,7 +61,7 @@ scene({
         volumeTexture({
             name: 'volume-texture',
             size: volTexSize,
-            data: range3d(0, volTexSize, 0, volTexSize, 0, volTexSize)
+            data: range3d(volTexSize)
                 |> #.map(([x, y, z]) => {
                     const scale = 50;
                     let f = simplex.noise3D(x*scale, y*scale, z*scale);

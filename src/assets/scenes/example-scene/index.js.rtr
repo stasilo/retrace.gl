@@ -1,3 +1,5 @@
+const volTexSize = 64;
+
 const glassCube = ({
     scale,
     material,
@@ -28,10 +30,11 @@ scene({
         '#050505'
     ],
     camera: camera({
-        lookFrom: {x: 1.423, y: 0.605, z: 1.751},
-        lookAt: {x: -1.510, y: 0.966, z: -1.664},
+        lookFrom: {x: 3.047, y: 0.908, z: 1.092},
+        lookAt: {x: -0.170, y: 0.842, z: -2.077},
         vfov: 45,
-        aperture: 0.05,
+        aperture: 0.09,
+        velocity: 0.25,
     }),
     geometries: [
         plane({
@@ -49,6 +52,7 @@ scene({
         }),
         volume({
             material: 'volume-red',
+            texture: 'fog-texture',
             minCoords: {
                 x: -20,
                 y: 0,
@@ -93,8 +97,8 @@ scene({
                 y: degToRad(220),
             }
         }),
-        range2d(0, 15, 0, 15)
-            |> subRange(#, range2d(2, 6, 2, 6))
+        range2d(15)
+            |> subRange(#, range2d(2, 6))
             |> takeRandom
             |> #.map(([x, z]) => {
                 const material = pluckRandom([
@@ -171,8 +175,8 @@ scene({
                 }
             `
         }),
-        // box pattern
-        range(0, 6).map(i =>
+        // box pattern, from thebookofshaders.com
+        range(6).map(i =>
             texture({
                 name: `pattern-${i}`,
                 src: `
@@ -223,8 +227,6 @@ scene({
                         st = tile(st, 3.0);
                         st = rotateTilePattern(st);
 
-                        // Make more interesting combinations
-
                         ${randomBool()
                             ? 'st = tile(st,2.0);'
                             : ''
@@ -235,16 +237,22 @@ scene({
                             : ''
                         }
 
-                        // st = rotateTilePattern(st*2.);
-                        // st = rotate2D(st,PI*u_time*0.25);
-
-                        // step(st.x,st.y) just makes a b&w triangles
-                        // but you can use whatever design you want.
                         tColor = vec4(vec3(step(st.x,st.y))*0.5, 1.0);
                     }
                 `
             })
-        )
+        ),
+        volumeTexture({
+            name: 'fog-texture',
+            size: volTexSize,
+            data: range3d(volTexSize)
+                |> #.map(([x, y, z]) => {
+                    const scale = 0.05; //50
+                    let f = simplex.noise3D(x*scale, y*scale, z*scale);
+                    return clamp(f, 0.0, 1.0);
+                })
+                |> tileSeamless3d(#, volTexSize)
+        })
     ],
     materials: [
         // fog
@@ -252,8 +260,8 @@ scene({
             name: 'volume-red',
             color: '#ff0000',
             albedo: [1.0, 1.0, 1.0],
-            density: 0.25,
-            scale: 20
+            density: 0.15,
+            scale: 50
         }),
         // boxes
         emissiveMaterial({

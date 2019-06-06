@@ -1,0 +1,105 @@
+let testMaterials = [
+    'lambert-test',
+    'metal-test',
+    'metal-fuzz-test',
+    'emissive-test',
+    'dialectric-test'
+];
+
+scene({
+    background: '#000000',
+    camera: camera({
+        lookFrom: {x: 0.362, y: 7.387, z: 35.494},
+        lookAt: {x: 0.409, y: 7.332, z: 30.977},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1,
+    }),
+    geometries: [
+        plane({
+            material: 'floor-white',
+            texture: {
+                name: 'check',
+                uvScale: 300
+            },
+            scale: 10000, //30,
+            position: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 20,
+            position: {
+                x: 0,
+                y: 50.0,
+                z: 0
+            },
+        }),
+        range(testMaterials.length).map(i =>
+            sphere({
+                material: testMaterials[i], //'lambert-test',
+                position: {
+                    x: -15 + 8*i,
+                    y: 6.0,
+                    z: 0
+                },
+                radius: 3
+            })
+        )
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.3, 0.0, 0.0, 1.);
+                }
+            `
+        })
+    ],
+    materials: [
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        lambertMaterial({
+            name: `lambert-test`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        metalMaterial({
+            name: 'metal-test',
+            color: '#ffffff',
+            fuzz: 0,
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        metalMaterial({
+            name: 'metal-fuzz-test',
+            color: '#ffffff',
+            fuzz: 0.5,
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        dialectricMaterial({
+            name: 'dialectric-test',
+            color: '#ffffff',
+            refIdx: 1.8,
+        }),
+        emissiveMaterial({
+            name: `emissive-test`,
+            color: '#ffffff',
+            intensity: 2
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        }),
+    ]
+});

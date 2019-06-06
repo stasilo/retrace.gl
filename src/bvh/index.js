@@ -1,7 +1,7 @@
 import {vec3} from 'gl-matrix';
 import {bvhBuildIterative} from './bvh-builder';
 
-import {range} from '../utils';
+import {range, hashCode} from '../utils';
 
 const geometryTypes = {
     triangle: 1,
@@ -13,15 +13,16 @@ const geometryTypes = {
 const geoTexturePackedBlockDataSize = 42;
 
 function buildSceneBvh(scene) {
-    // let geometries = scene.geometries
-    //     .reduce((geos, geometry) =>
-    //         geos.concat(geometry.geometryData)
-    //     , []);
     let geometries = scene.geometries
-        .reduce((geos, geometry) => {
-            geos.push(...geometry.geometryData);
-            return geos;
-        }, []);
+        .reduce((geos, geometry) =>
+            geos.concat(geometry.geometryData)
+        , []);
+
+    // let geometries = scene.geometries
+    //     .reduce((geos, geometry) => {
+    //         geos.push(...geometry.geometryData);
+    //         return geos;
+    //     }, []);
 
     return {
         bvhData: buildBvh(geometries),

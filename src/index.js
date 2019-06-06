@@ -10,7 +10,9 @@ import getStore from './store';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const store = getStore();
+
     await store.loadScene();
+    await store.compileScene();
 
     let loader = document.querySelector('.loader');
     loader.remove();

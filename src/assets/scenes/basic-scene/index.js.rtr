@@ -1,0 +1,58 @@
+scene({
+    background: '#000000',
+    camera: camera({
+        lookFrom: {x: -1.652, y: 32.649, z: 117.020},
+        lookAt: {x: -1.558, y: 32.225, z: 112.523},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1,
+    }),
+    geometries: [
+        plane({
+            material: 'floor-white',
+            texture: {
+                name: 'check',
+            },
+            scale: 30,
+            position: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 20,
+            position: {
+                x: 0,
+                y: 50.0,
+                z: 0
+            },
+        })
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.3, 0.0, 0.0, 1.);
+                }
+            `
+        })
+    ],
+    materials: [
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        }),
+    ]
+});

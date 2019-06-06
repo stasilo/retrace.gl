@@ -12,12 +12,13 @@ html, body {
 
 body {
     position: relative;
-    background-color: white;
+    background-color: black;
 
     font-size: 14px;
     font-family: 'Roboto', sans-serif;
     text-align: center;
     font-weight: lighter;
+    color: white;
 }
 
 canvas#gl-canvas {
