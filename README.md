@@ -4,7 +4,7 @@
 
 Retrace.gl is a physically based path tracer written in webgl2/glsl. It has a declarative scene api geared towards generative art. It is currently in a pre-alpha stage (kinda).
 
-This project started as a glsl implementation of the path tracer described by Peter Shirley in his book ["Raytracing in one weekend"](http://in1weekend.blogspot.com/2016/01/ray-tracing-in-one-weekend.html); many of the techniques used here are described in Shirley's book.
+This project started as a glsl implementation of the path tracer described by Peter Shirley in his book ["Raytracing in one weekend"](http://in1weekend.blogspot.com/2016/01/ray-tracing-in-one-weekend.html) - many of the techniques used here are described in Shirley's book.
 
 ## Features
   - Renders triangles, spheres and volumes
@@ -22,7 +22,12 @@ This project started as a glsl implementation of the path tracer described by Pe
   - ...probably some other stuff I can't think of now :)
 
 ## Example scenes
-todo
+
+![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/pattern-example.jpg)
+[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/example-scene/index.js.rtr)
+
+![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/model-example.jpg)
+[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/model-test-scene/index.js.rtr)
 
 ## Demo scenes
 todo
