@@ -22,11 +22,13 @@ This project started as a glsl implementation of the path tracer described by Pe
   - ...probably some other stuff I can't think of now :)
 
 ## Example scenes
-
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/pattern-example.jpg)
+-
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/example-scene/index.js.rtr)
 
+
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/model-example.jpg)
+-
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/model-test-scene/index.js.rtr)
 
 ## Demo scenes
