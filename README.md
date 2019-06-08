@@ -1,7 +1,8 @@
 
 # Retrace.gl
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/retrace.jpg)
--
+
+
 [Live demo](https://stasilo.github.io/raytracer-demo/)
 -
 
