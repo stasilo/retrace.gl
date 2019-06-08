@@ -19,29 +19,21 @@ import {
     definedNotNull,
 } from '../utils';
 
-// import basicSceneSrc from '../scenes/basic-scene/index.js.rtr';
-// import materialTestSceneSrc from '../scenes/material-test-scene/index.js.rtr';
-// import exampleSceneSrc from '../scenes/example-scene/index.js.rtr';
-// import volume3dTexTestSceneSrc from '../scenes/volume-3d-texture-tileable-test-scene/index.js.rtr';
-// import normalMapTestSceneSrc from '../scenes/normal-map-test-scene/index.js.rtr';
-// import volumeTestSceneSrc from '../scenes/volume-test-scene/index.js.rtr';
-// import exampleVolumeFbmSceneSrc from '../scenes/example-volume-fbm-scene/index.js.rtr';
-// import anisoVolumeTestSceneSrc from '../scenes/aniso-volume-test-scene/index.js.rtr';
-// import modelTestScene from '../scenes/model-test-scene/index.js.rtr';
-
 const shaderSampleCount = 1;
 const defaultMaxSampleCount = 10;
 
-// const defaultSceneUrl = '/assets/scenes/basic-scene/index.js.rtr';
-// const defaultSceneUrl = '/assets/scenes/example-scene/index.js.rtr';
-// const defaultSceneUrl = '/assets/scenes/example-volume-fbm-scene/index.js.rtr';
-// const defaultSceneUrl = '/assets/scenes/normal-map-test-scene/index.js.rtr';
-// const defaultSceneUrl = '/assets/scenes/volume-test-scene/index.js.rtr';
-// const defaultSceneUrl = '/assets/scenes/aniso-volume-test-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/basic-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/example-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/example-volume-fbm-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/normal-map-test-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/volume-test-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/aniso-volume-test-scene/index.js.rtr';
 
-// const defaultSceneUrl = '/assets/scenes/volume-3d-texture-tileable-test-scene/index.js.rtr';
-// const defaultSceneUrl = '/assets/scenes/model-test-scene/index.js.rtr';
-const defaultSceneUrl = '/assets/scenes/material-test-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/volume-3d-texture-tileable-test-scene/index.js.rtr';
+const defaultSceneUrl = 'assets/scenes/example-model-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/material-test-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/model-test-scene/index.js.rtr';
+
 
 let instance = null;
 class Store {

@@ -1,6 +1,8 @@
 .idea
 /node_modules
 dist
+backups
 .DS_Store
 *.swp
 *.icloud
+resources.txt

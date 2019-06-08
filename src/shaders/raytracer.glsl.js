@@ -347,6 +347,7 @@ const getSource = ({options, Scene}) =>
     #define ISOTROPIC_VOLUME_MATERIAL_TYPE 5
     #define ANISOTROPIC_VOLUME_MATERIAL_TYPE 6
     #define CLEARCOAT_MATERIAL_TYPE 7
+    #define COATED_EMISSIVE_MATERIAL_TYPE 8
 
     struct Material {
         int type;
@@ -483,7 +484,7 @@ const getSource = ({options, Scene}) =>
     }
 
     // amass color and scatter ray on material
-    bool shadeAndScatter(HitRecord hitRecord, inout vec3 color, inout Ray ray) {
+    bool shadeAndScatter(inout HitRecord hitRecord, inout vec3 color, inout Ray ray) {
         // LAMBERT / DIFFUSE
 
         if(hitRecord.material.type == LAMBERT_MATERIAL_TYPE) {
@@ -511,6 +512,8 @@ const getSource = ({options, Scene}) =>
                 color *= hitRecord.material.albedo * hitRecord.color;
                 return true;
             }
+
+            return false;
         }
 
         // DIALECTRIC / GLASS
@@ -584,14 +587,59 @@ const getSource = ({options, Scene}) =>
                 vec3 reflected = reflect(ray.dir, hitRecord.normal);
                 ray.dir = reflected;
                 ray.invDir = 1./ray.dir;
+                color *= hitRecord.material.albedo; // * hitRecord.color;
+
             } else {
                 // get lambertian random reflection direction
                 ray.dir = hitRecord.normal + randomPointInUnitSphere();
                 ray.invDir = 1./ray.dir;
+                color *= hitRecord.material.albedo * hitRecord.color;
             }
 
             ray.origin = hitRecord.hitPoint;
-            color *= hitRecord.material.albedo * hitRecord.color;
+            return true;
+        }
+
+        // DIALECTRIC + EMISSIVE ("lightbulb")
+
+        if(hitRecord.material.type == COATED_EMISSIVE_MATERIAL_TYPE) {
+            float cosine;
+            float niOverNt;
+            float reflectProb;
+
+            vec3 outwardNormal;
+
+            if(dot(ray.dir, hitRecord.normal) > 0.) {
+                outwardNormal = -hitRecord.normal;
+                niOverNt = hitRecord.material.refIdx;
+                cosine = hitRecord.material.refIdx * dot(ray.dir, hitRecord.normal) / length(ray.dir);
+            } else {
+                outwardNormal = hitRecord.normal;
+                niOverNt = 1. / hitRecord.material.refIdx;
+                cosine = -dot(ray.dir, hitRecord.normal) / length(ray.dir);
+            }
+
+            vec3 refracted = refract(normalize(ray.dir), normalize(outwardNormal), niOverNt);
+            if(refracted.x != 0.0 && refracted.y != 0.0 && refracted.z != 0.0) {
+                reflectProb = schlick(cosine, hitRecord.material.refIdx);
+            } else {
+                reflectProb = 1.;
+            }
+
+            if(rand() < reflectProb) {
+                vec3 reflected = reflect(ray.dir, hitRecord.normal);
+                ray.dir = reflected;
+                ray.invDir = 1./ray.dir;
+
+                ray.origin = hitRecord.hitPoint;
+                color = clamp(color, 0.0, 0.5);
+                color *= hitRecord.material.albedo;// * hitRecord.color;
+
+                hitRecord.material.type = -1;
+
+                // return true;
+            }
+
             return true;
         }
 
@@ -613,10 +661,15 @@ const getSource = ({options, Scene}) =>
     }
 
     // amass emissive color
-    bool emit(HitRecord hitRecord, out vec3 emittedColor) {
+    bool emit(HitRecord hitRecord, inout vec3 color) {
         if(hitRecord.material.type == DIFFUSE_EMISSIVE_MATERIAL_TYPE) {
-            emittedColor = hitRecord.material.emissiveIntensity * hitRecord.color;
+            vec3 emittedColor = hitRecord.material.emissiveIntensity * hitRecord.color;
+            color *= emittedColor;
             return true;
+        } else if(hitRecord.material.type == COATED_EMISSIVE_MATERIAL_TYPE) {
+            vec3 emittedColor = hitRecord.material.emissiveIntensity * hitRecord.color;
+            color *= emittedColor;
+            // return false;
         }
 
         return false;
@@ -1478,10 +1531,7 @@ const getSource = ({options, Scene}) =>
         for(int hitCounts = 0; hitCounts < MAX_HIT_DEPTH; hitCounts++) {
             hitWorld(ray, tMax, /* out => */ hitRecord);
             if(hitRecord.hasHit) {
-                vec3 emittedColor;
-
-                if(emit(hitRecord, /* out => */ emittedColor)) {
-                    color *= emittedColor;
+                if(emit(hitRecord, /* out => */ color)) {
                     break;
                 }
 
@@ -1493,7 +1543,7 @@ const getSource = ({options, Scene}) =>
                 break;
             }
 
-            if(dot(color, color) < 0.0001) return color; // optimisation
+            if(dot(color, color) < 0.0001) return color; // optimization
         }
 
         return color;

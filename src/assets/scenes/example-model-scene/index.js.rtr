@@ -1,0 +1,122 @@
+const volTexSize = 64;
+
+scene({
+    background: '#000000',
+    camera: camera({
+        lookFrom: {x: 72.889, y: 12.656, z: 61.162},
+        lookAt: {x: 2.399, y: 22.616, z: 2.480},
+        vfov: 45,
+        aperture: 3.5,
+        velocity: 0.25,
+    }),
+    geometries: [
+        plane({
+            material: 'floor-material',
+            texture: {
+                name: 'concrete-texture',
+                uvScale: 70
+            },
+            normalMap: {
+                name: 'concrete-normals',
+                uvScale: 70,
+                scale: 1
+            },
+            scale: 1000,
+            position: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+        }),
+        sphere({
+            material: 'ceil-light',
+            radius: 180,
+            position: {
+                x: 0,
+                y: 800.0,
+                z: -100
+            },
+        }),
+        range3d(10, 6, 10)
+            |> subRange(#, range3d(4, 6, 0, 1, 4, 5))
+            |> #.map(([x, y, z]) => {
+                const radius = 1 + random(8);
+                const spacing = 50;
+
+                return sphere({
+                    material: `sphere-light-${randomIdx(20)}`,
+                    radius,
+                    position: {
+                        x: -240 + x*radius + spacing*x + random(3) * randomSign(),
+                        y: 20 + y*radius + spacing*y*0.7 + random(10) * randomSign(),
+                        z: -220 + z*radius + spacing*z + random(3) * randomSign(),
+                    },
+                });
+        }),
+        objModel({
+            url: 'assets/models/rock.obj',
+            material: 'skin-material',
+            texture: {
+                name: 'skin-texture',
+                uvScale: 1
+            },
+            normalMap: {
+                name: 'skin-normals',
+                uvScale: 1,
+                scale: 0.5
+            },
+            smoothShading: true,
+            scale: 0.2,
+            position: {
+                x: 0,
+                y: 27,
+                z: 0
+            },
+        })
+    ],
+    textures: [
+        texture({
+            name: 'concrete-texture',
+            url: 'assets/images/concrete.jpg'
+        }),
+        texture({
+            name: 'concrete-normals',
+            url: 'assets/images/concreteNormalMap.png'
+        }),
+        texture({
+            name: 'skin-texture',
+            url: 'assets/images/skin2.jpg'
+        }),
+        texture({
+            name: 'skin-normals',
+            url: 'assets/images/skinNormalMap.png'
+        }),
+    ],
+    materials: [
+        lambertMaterial({
+            name: `floor-material`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        metalMaterial({
+            name: 'skin-material',
+            color: '#010101',
+            fuzz: 0,
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#aaaaaa',
+            intensity: 15
+        }),
+        range(20).map(i =>
+            emissiveMaterial({
+                name: `sphere-light-${i}`,
+                color: i % 2 == 0
+                    ? '#fff3af'
+                    : '#aaaaaa',
+                intensity: 2 * random(10)
+            })
+        ),
+    ]
+});

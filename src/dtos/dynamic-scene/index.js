@@ -30,6 +30,7 @@ import LambertMaterial from '../../materials/lambert';
 import EmissiveMaterial from '../../materials/emissive';
 import DialectricMaterial from '../../materials/dialectric';
 import ClearcoatMaterial from '../../materials/clearcoat';
+import CoatedEmissiveMaterial from '../../materials/coated-emissive';
 
 import IsotropicVolumeMaterial from '../../materials/isotropic-volume';
 import AnisotropicVolumeMaterial from '../../materials/anisotropic-volume';
@@ -120,6 +121,9 @@ const clearcoatMaterial = (o) =>
     new ClearcoatMaterial(o);
 const emissiveMaterial = (o) =>
     new EmissiveMaterial(o);
+const coatedEmissiveMaterial = (o) =>
+    new CoatedEmissiveMaterial(o);
+
 const isotropicVolumeMaterial = (o) =>
     new IsotropicVolumeMaterial(o);
 const anisotropicVolumeMaterial = (o) =>

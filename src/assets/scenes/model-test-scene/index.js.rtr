@@ -1,201 +1,101 @@
-const volTexSize = 128;
-
 scene({
-    background: '#000000', //'#aaaaaa',
-    // backup({
-    //     lookFrom: {x: 72.889, y: 12.656, z: 61.162},
-    //     lookAt: {x: 2.399, y: 22.616, z: 2.480},
-    //     vfov: 45,
-    //     aperture: 3.5,
-    //     velocity: 0.25,
-    // }),
+    background: '#000000',
     camera: camera({
-        lookFrom: {x: 72.889, y: 12.656, z: 61.162},
-        lookAt: {x: 2.399, y: 22.616, z: 2.480},
+        lookFrom: {x: -43.990, y: 27.130, z: 30.668},
+        lookAt: {x: -7.662, y: 16.142, z: 7.098},
         vfov: 45,
-        aperture: 3.5,
-        velocity: 0.25,
+        aperture: 0.0001,
+        velocity: 1,
     }),
     geometries: [
         plane({
-            material: 'floor-material',
+            material: 'floor-white',
             texture: {
-                name: 'concrete-texture',
-                uvScale: 70
+                name: 'check',
+                uvScale: 300
             },
-            normalMap: {
-                name: 'concrete-normals',
-                uvScale: 70,
-                scale: 1
-            },
-            scale: 1000,
+            scale: 10000,
             position: {
                 x: 0,
                 y: 0,
                 z: 0
             },
         }),
-        sphere({
+        plane({
             material: 'ceil-light',
-            radius: 180,
+            scale: 20,
             position: {
-                x: 0,
-                y: 800.0,
-                z: -100
+                x: -5,
+                y: 60.0,
+                z: -25
             },
         }),
-        range3d(10, 6, 10)
-            |> subRange(#, range3d(4, 6, 0, 1, 4, 5))
-            |> #.map(([x, y, z]) => {
-                const radius = 1 + random(8);
-                const spacing = 50;
-
-                return sphere({
-                    material: `sphere-light-${randomIdx(20)}`, //'sphere-light',
-                    radius,
-                    position: {
-                        x: -240 + x*radius + spacing*x + random(3) * randomSign(),
-                        y: 20 + y*radius + spacing*y*0.7 + random(10) * randomSign(),
-                        z: -220 + z*radius + spacing*z + random(3) * randomSign(),
-                    },
-                });
+        plane({
+            material: 'ceil-light',
+            scale: 20,
+            position: {
+                x: -5,
+                y: 60.0,
+                z: 25
+            },
         }),
         objModel({
-            url: '/assets/models/mountains.obj',
-            material: 'skin-material',
-            texture: {
-                name: 'skin-texture',
-                uvScale: 1
-            },
-            normalMap: {
-                name: 'skin-normals',
-                uvScale: 1,
-                scale: 0.5
-            },
+            url: 'assets/models/deer.obj',
+            material: 'model-material',
             smoothShading: true,
-            scale: 0.2,
+            scale: 0.02,
             position: {
                 x: 0,
-                y: 27, //.35,
-                z: 0
+                y: 0,
+                z: -10
             },
-            // rotation: {
-            //     x: degToRad(-10),
-            //     // y: degToRad(70),
-            //     // z: degToRad(-10)
-            // }
+            rotation: {
+                y: degToRad(180),
+            }
         }),
-        // volume({
-        //     material: 'volume-material',
-        //     texture: 'volume-texture',
-        //     minCoords: {
-        //         x: -220,
-        //         y: 0.0,
-        //         z: -220
-        //     },
-        //     maxCoords: {
-        //         x: 220,
-        //         y: 80.0,
-        //         z: 220
-        //     }
-        // }),
+        objModel({
+            url: 'assets/models/deer.obj',
+            material: 'model-material',
+            smoothShading: false,
+            scale: 0.02,
+            position: {
+                x: 0,
+                y: 0,
+                z: 10
+            },
+            rotation: {
+                y: degToRad(180),
+            }
+        }),
     ],
     textures: [
         texture({
-            name: 'concrete-texture',
-            url: '/assets/images/concrete.jpg'
-        }),
-        texture({
-            name: 'concrete-normals',
-            url: '/assets/images/concreteNormalMap.png'
-        }),
-        texture({
-            name: 'skin-texture',
-            url: '/assets/images/skin2.jpg'
-        }),
-        texture({
-            name: 'skin-normals',
-            url: '/assets/images/skinNormalMap.png'
-        }),
-        // volumeTexture({
-        //     name: 'volume-texture',
-        //     size: volTexSize,
-        //     data: range3d(volTexSize)
-        //         |> #.map(([x, y, z]) => {
-        //             const scale = 1/volTexSize; //0.005;
-        //
-        //             let q = vec3.fromValues(x*scale, y*scale - 0.01, z*scale - 1);
-        //             let f;
-        //
-        //             // fbm inspired by: https://www.shadertoy.com/view/XslGRr
-        //
-        //             f  = 0.50000*simplex.noise3D(...q);
-        //             vec3.scale(q, q, 2.02);
-        //
-        //             f += 0.25000*simplex.noise3D(...q);
-        //             vec3.scale(q, q, 2.03);
-        //
-        //             f += 0.12500*simplex.noise3D(...q);
-        //             vec3.scale(q, q, 2.01);
-        //
-        //             f += 0.06250*simplex.noise3D(...q);
-        //             vec3.scale(q, q, 2.02);
-        //
-        //             f += 0.03125*simplex.noise3D(...q);
-        //
-        //             return clamp(1.5 - (y*scale) - 2.0 + 2.75*f, 0.0, 1.0 );
-        //
-        //             // let q = vec3.fromValues(x*scale, y*scale - 0.01, z*scale - 1);
-        //             // let f;
-        //
-        //             // // fbm inspired by: https://www.shadertoy.com/view/XslGRr
-        //
-        //             // f  = 0.50000*simplex.noise3D(...q);
-        //             // vec3.scale(q, q, 2.02);
-        //
-        //             // f += 0.25000*simplex.noise3D(...q);
-        //             // vec3.scale(q, q, 2.03);
-        //
-        //             // return clamp(f, 0.0, 1.0);
-        //         })
-        //         |> tileSeamless3d(#, volTexSize)
-        // })
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(${normedColorStr('#010101')}, 1.0);
+                }
+            `
+        })
     ],
     materials: [
-        anisotropicVolumeMaterial({
-            name: 'volume-material',
-            color: '#ffffff',
-            albedo: [0.8, 0.8, 0.8],
-            density: 0.1,
-            scale: 2000, //1000,
-            sampleOffset: 0
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#cccccc',
+            albedo: [0.8, 0.8, 0.8]
         }),
         lambertMaterial({
-            name: `floor-material`,
-            color: '#ffffff',
+            name: `model-material`,
+            color: '#ff0000',
             albedo: [0.8, 0.8, 0.8]
         }),
-        metalMaterial({
-            name: 'skin-material',
-            color: '#010101',
-            fuzz: 0,
-            albedo: [0.8, 0.8, 0.8]
-        }),
-        // dialectricMaterial({
-        //    name: 'skin-glass-material',
-        //    color: '#ffffff'
-        // }),
         emissiveMaterial({
             name: `ceil-light`,
-            color: '#aaaaaa',
-            intensity: 15
+            color: '#ffffff',
+            intensity: 5
         }),
-        range(20).map(i =>
-            emissiveMaterial({
-                name: `sphere-light-${i}`,
-                color: i % 2 == 0 ? '#fff3af' : '#aaaaaa',
-                intensity: 2 * random(10)
-            })
-        ),
     ]
 });

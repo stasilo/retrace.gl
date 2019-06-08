@@ -8,7 +8,8 @@
         "start": "webpack-dev-server --config webpack.dev.js --mode development",
         "build": "webpack --config webpack.prod.js --mode production",
         "preview": "npm run build && http-server dist",
-        "deploy": "scp -i ~/stasilo.pem -r dist/* ec2-user@labb.stasilo.se:/var/www/lighttpd/raytracer/"
+        "deploy": "scp -i ~/stasilo.pem -r dist/* ec2-user@labb.stasilo.se:/var/www/lighttpd/raytracer/",
+        "release": "npm run build; cp -Rp dist/* ../raytracer-pages/ ; cd ../raytracer-pages/ ; git stage . ; git commit -m 'Update demo' ; git push ; cd ../raytracer"
     },
     "repository": {
         "type": "git",

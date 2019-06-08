@@ -11,7 +11,8 @@ const materialTypes = {
     emissive: 4,
     isotropic: 5,
     anisotropic: 6,
-    clearcoat: 7
+    clearcoat: 7,
+    coatedemissive: 8
 }
 
 class BaseMaterial {

@@ -1,8 +1,8 @@
 scene({
     background: '#000000',
     camera: camera({
-        lookFrom: {x: -24.328, y: 18.568, z: 83.946},
-        lookAt: {x: -22.872, y: 18.564, z: 79.669},
+        lookFrom: {x: 2.533, y: 16.575, z: 67.897},
+        lookAt: {x: 2.539, y: 16.067, z: 63.407},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1,
@@ -12,8 +12,9 @@ scene({
             material: 'floor-white',
             texture: {
                 name: 'check',
+                uvScale: 35
             },
-            scale: 30,
+            scale: 1000,
             position: {
                 x: 0,
                 y: 0,
@@ -26,7 +27,7 @@ scene({
             position: {
                 x: 0,
                 y: 50.0,
-                z: 0
+                z: 10
             },
         }),
         sphere({
@@ -39,7 +40,7 @@ scene({
                 }
             },
             position: {
-                x: -8,
+                x: -10,
                 y: 12,
                 z: 0
             },
@@ -77,7 +78,7 @@ scene({
         }),
         texture({
             name: 'normal-map',
-            url: '/assets/images/testNormalMap.jpg'
+            url: 'assets/images/aluminumNormalMap.jpg'
         }),
     ],
     materials: [
@@ -88,13 +89,13 @@ scene({
         }),
         lambertMaterial({
             name: `obj-material`,
-            color: '#ffffff',
+            color: '#707070',
             albedo: [0.8, 0.8, 0.8]
         }),
         emissiveMaterial({
             name: `ceil-light`,
             color: '#ffffff',
-            intensity: 10
+            intensity: 5
         }),
     ]
 });
