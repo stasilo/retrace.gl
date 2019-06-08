@@ -738,7 +738,7 @@ const getSource = ({options, Scene}) =>
     	float tN = max( max(tmin.x, tmin.y), tmin.z);
     	float tF = min( min(tmax.x, tmax.y), tmax.z);
 
-    	if( tN > tF || tF < tMin) {//0.) {
+    	if( tN > tF || tF < tMin) {
             record.hasHit = false;
             return;
         }
@@ -747,7 +747,6 @@ const getSource = ({options, Scene}) =>
         if (t < tMax && t > tMin) {
             record.hitT = t;
             record.hasHit = true;
-    		// normal = -sign(r.direction)*step(t1.yzx,t1.xyz)*step(t1.zxy,t1.xyz);
     	    return;
         }
 

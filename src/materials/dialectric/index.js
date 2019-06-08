@@ -3,12 +3,6 @@ import {materialTypes} from '../base-material';
 
 import {defined} from '../../utils';
 
-// int type;
-// vec3 albedo;
-// float fuzz;
-// float refIdx;
-// float emissiveIntensity;
-
 class DialectricMaterial extends BaseMaterial {
     constructor({name, color, refIdx}) {
         super({

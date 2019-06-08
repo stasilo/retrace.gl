@@ -164,7 +164,7 @@ async function raytraceApp({
      * main raytrace draw call
      */
 
-    //TODO: fixa!
+    //TODO: fix!
     const bgColors = definedNotNull(scene.background)
         ? [ ...normedColor(scene.background[0]),
             ...normedColor(scene.background[1]) ]
