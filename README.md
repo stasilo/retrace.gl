@@ -28,18 +28,47 @@ This project started as a glsl implementation of the path tracer described by Pe
 
 ## Example scenes
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/pattern-example.jpg)
--
+
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/example-scene/index.js.rtr)
 
+-
 
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/model-example.jpg)
--
-[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/model-test-scene/index.js.rtr)
+
+[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/example-model-scene/index.js.rtr)
 
 ## Demo scenes
-todo
+
+#### Model smooth/flat shading
+![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/model-test-scene.jpg)
+
+[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/model-test-scene/index.js.rtr)
+
+-
+
+#### Normal mapping
+![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/normal-map-test-scene.jpg)
+
+[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/normal-map-test-scene/index.js.rtr)
+
+-
+
+#### Dynamic volumes
+![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/volume-test-scene.jpg)
+
+[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/volume-test-scene/index.js.rtr)
+
+-
+
+#### Tiled 3d texture volume
+![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/3d-texture-tileable-test-scene.jpg)
+
+[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/volume-3d-texture-tileable-test-scene/index.js.rtr)
+
+-
 
 ## Todo/ideas
+  - Better error handling/reporting
   - GLTF model support
   - Instancing (would allow BVH caching & other nice stuff)
   - Ping-pong feedback support for dynamic textures
