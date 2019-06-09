@@ -25,6 +25,7 @@ const defaultMaxSampleCount = 10;
 // const defaultSceneUrl = 'assets/scenes/basic-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/example-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/example-volume-fbm-scene/index.js.rtr';
+
 // const defaultSceneUrl = 'assets/scenes/normal-map-test-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/volume-test-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/aniso-volume-test-scene/index.js.rtr';
@@ -32,7 +33,7 @@ const defaultMaxSampleCount = 10;
 // const defaultSceneUrl = 'assets/scenes/volume-3d-texture-tileable-test-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/example-model-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/model-test-scene/index.js.rtr';
-const defaultSceneUrl = 'assets/scenes/material-test-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/material-test-scene/index.js.rtr';
 
 let instance = null;
 class Store {

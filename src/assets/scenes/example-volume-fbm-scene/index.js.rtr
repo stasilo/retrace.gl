@@ -3,8 +3,8 @@ const volTexSize = 64;
 scene({
     background: '#000000',
     camera: camera({
-        lookFrom: {x: -4.675, y: 18.019, z: 119.966},
-        lookAt: {x: -4.589, y: 18.129, z: 115.447},
+        lookFrom: {x: -5.032, y: 17.563, z: 138.707},
+        lookAt: {x: -4.946, y: 17.673, z: 134.188},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1,
@@ -14,8 +14,9 @@ scene({
             material: 'floor-white',
             texture: {
                 name: 'check',
+                uvScale: 30
             },
-            scale: 60,
+            scale: 1000,
             position: {
                 x: 0,
                 y: 0.0,

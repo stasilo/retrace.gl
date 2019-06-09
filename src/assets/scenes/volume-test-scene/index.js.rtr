@@ -4,16 +4,20 @@ scene({
         '#aaaaaa'
     ],
     camera: camera({
-        lookFrom: {x: -46.476, y: 47.535, z: 26.662},
-        lookAt: {x: -43.435, y: 44.766, z: 24.787},
+        lookFrom: {x: -49.219, y: 27.278, z: 11.233},
+        lookAt: {x: -45.168, y: 25.427, z: 10.461},
         vfov: 45,
         aperture: 0.001,
+        velocity: 1,
     }),
     geometries: [
         plane({
             material: 'floor-white',
-            texture: 'check',
-            scale: 60,
+            texture: {
+                name: 'check',
+                uvScale: 3
+            },
+            scale: 40,
             position: {
                 x: 0.3,
                 y: -0.0,
@@ -80,7 +84,7 @@ scene({
         texture({
             name: 'check',
             src: `
-                float s = sin(30.*uv.x)*sin(30.*uv.y);
+                float s = sin(13.*uv.x)*sin(13.*uv.y);
                 if(s < 0.) {
                     tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
                 } else {
@@ -93,7 +97,7 @@ scene({
         range(3).map(i =>
             isotropicVolumeMaterial({
                 name: `iso-volume-${i}`,
-                color: [random(), random(), random()],
+                color: '#ff0000',
                 albedo: [0.8, 0.8, 0.8],
                 density: 0.1 + i * 0.3,
             }),
@@ -101,7 +105,7 @@ scene({
         range(3).map(i =>
             anisotropicVolumeMaterial({
                 name: `aniso-volume-${i}`,
-                color: [random(), random(), random()],
+                color: '#ff0000',
                 albedo: [0.8, 0.8, 0.8],
                 density: 0.3 + i * 0.3,
                 scale: 1 + i * 3

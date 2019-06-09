@@ -18,6 +18,7 @@ This project started as a glsl implementation of the path tracer described by Pe
   - Regular & dynamic textures
   - Normal maps
   - Realtime mode with a positionable turntable camera
+  - Depth of field
   - Bounding Volume Hierarchy (BVH) acceleration (many, many thanks to [Erich Loftis](https://github.com/erichlof) for helping me out with this)
   - Isotripic (homogenous) & anisotropic (inhomogenous) volume support
   - 3d texture support for volumes

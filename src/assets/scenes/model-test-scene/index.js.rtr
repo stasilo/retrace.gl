@@ -1,10 +1,10 @@
 scene({
     background: '#000000',
     camera: camera({
-        lookFrom: {x: -43.990, y: 27.130, z: 30.668},
-        lookAt: {x: -7.662, y: 16.142, z: 7.098},
+        lookFrom: {x: -59.058, y: 21.489, z: 20.033},
+        lookAt: {x: 3.335, y: 15.370, z: 0.167},
         vfov: 45,
-        aperture: 0.0001,
+        aperture: 0.5,
         velocity: 1,
     }),
     geometries: [

@@ -12,8 +12,9 @@ scene({
             material: 'floor-white',
             texture: {
                 name: 'check',
+                uvScale: 20
             },
-            scale: 30,
+            scale: 1000,
             position: {
                 x: 0,
                 y: 0,

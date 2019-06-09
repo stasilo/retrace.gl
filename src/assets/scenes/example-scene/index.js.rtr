@@ -30,12 +30,8 @@ scene({
         '#050505'
     ],
     camera: camera({
-        lookFrom: {x: 2.609, y: 0.920, z: 0.740},
-        lookAt: {
-                x: -0.3,
-                y: 1.0,
-                z: -1.6
-            },
+        lookFrom: {x: 3.017, y: 0.645, z: 0.278},
+        lookAt: {x: -0.214, y: 1.114, z: -1.535},
         vfov: 45,
         aperture: 0.09,
         velocity: 0.25,
