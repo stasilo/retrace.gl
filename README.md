@@ -82,6 +82,7 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 ## Todo/ideas
   - Scene api documentation
   - Better error handling/reporting
+  - Constructive solid geometry support (would be cool to get this working together with this api!)
   - GLTF model support
   - Instancing (would allow BVH caching & other nice stuff)
   - Ping-pong feedback support for dynamic textures
