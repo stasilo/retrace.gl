@@ -6,6 +6,9 @@ import VolumeTexture from '../textures/volume-texture';
 
 import simplexNoise from './lib/noise/simplex.glsl';
 
+// TODO: maybe port this to glsl es?
+// import hgSdf from './lib/sdf/hg_sdf.glsl';
+
 const getSource = ({options, Scene}) =>
 `   #version 300 es
     precision highp float;
@@ -17,10 +20,22 @@ const getSource = ({options, Scene}) =>
     #define FLT_MAX 3.402823466e+38
 
     #define T_MIN 0.0001
-    #define T_MAX 10000.0
+    #define T_MAX 100000.0 //10000.0
 
     #define MAX_HIT_DEPTH 4
     #define NUM_SAMPLES ${options.numSamples}
+
+    // working
+    // #define MAX_MARCHING_STEPS  255
+    // #define MIN_DIST 0.0
+    // #define MAX_DIST 100000000.
+    // #define EPSILON 0.0001
+
+    #define MAX_MARCHING_STEPS  255
+    #define MIN_DIST 0.0
+    #define MAX_DIST T_MAX
+    #define EPSILON 0.0001
+
 
     #define DATA_TEX_SIZE ${glslFloat(options.dataTexSize)}
     #define DATA_TEX_INV_SIZE ${glslFloat(1/options.dataTexSize)}
@@ -436,13 +451,20 @@ const getSource = ({options, Scene}) =>
         vec3 offset = camera.u * rd.x + camera.v * rd.y;
 
         if(camera.lensRadius > 0.) { // camera with aperture
-            vec3 dir = camera.lowerLeft + uv.x * camera.horizontal
-                + uv.y * camera.vertical - camera.origin - offset;
+            // vec3 dir = camera.lowerLeft + uv.x * camera.horizontal
+            //     + uv.y * camera.vertical - camera.origin - offset;
+
+            vec3 dir = normalize(
+                    camera.lowerLeft + uv.x * camera.horizontal
+                        + uv.y * camera.vertical - camera.origin - offset
+            );
+
             return Ray(
                 camera.origin + offset,
                 dir,
                 1./dir
             );
+
         } else { // regular camera
             vec3 dir = camera.lowerLeft + uv.x * camera.horizontal + uv.y * camera.vertical;
             return Ray(
@@ -940,6 +962,120 @@ const getSource = ({options, Scene}) =>
         return vec2(u, v);
     }
 
+    // Maximum/minumum elements of a vector
+    float vmax(vec2 v) {
+    	return max(v.x, v.y);
+    }
+
+    float vmax(vec3 v) {
+    	return max(max(v.x, v.y), v.z);
+    }
+
+    float vmax(vec4 v) {
+    	return max(max(v.x, v.y), max(v.z, v.w));
+    }
+
+    float vmin(vec2 v) {
+    	return min(v.x, v.y);
+    }
+
+    float vmin(vec3 v) {
+    	return min(min(v.x, v.y), v.z);
+    }
+
+    float vmin(vec4 v) {
+    	return min(min(v.x, v.y), min(v.z, v.w));
+    }
+
+    float opUnion( float d1, float d2 ) {  return min(d1,d2); }
+    float opSubtraction( float d1, float d2 ) { return max(-d1,d2); }
+    float opIntersection( float d1, float d2 ) { return max(d1,d2); }
+
+    float opUnionRound(float a, float b, float r) {
+    	vec2 u = max(vec2(r - a,r - b), vec2(0));
+    	return max(r, min (a, b)) - length(u);
+    }
+
+    /**
+     * Signed distance function for a sphere centered at the origin with radius 1.0;
+     */
+    float sphereSDF(float radius, vec3 samplePoint) {
+        return length(samplePoint) - radius;
+        // return length(samplePoint) - 0.1;
+    }
+
+    // Box: correct distance to corners
+    float fBox(vec3 p, vec3 b) {
+    	vec3 d = abs(p) - b;
+    	return length(max(d, vec3(0))) + vmax(min(d, vec3(0)));
+    }
+
+
+    /**
+     * Signed distance function describing the scene.
+     *
+     * Absolute value of the return value indicates the distance to the surface.
+     * Sign indicates whether the point is inside or outside the surface,
+     * negative indicating inside.
+     */
+    float sceneSDF(vec3 samplePoint) {
+        // // vec3 point = normalize(samplePoint);
+        // // return sphereSDF(point);
+        // vec3 p = samplePoint - vec3(0., 19., 0.)  + sin(uv.x*100.)*0.9;// + vec3(sin(uv.y*100.)*2., 0., 0.);
+        // vec3 p2 = samplePoint - vec3(0., 19./2., 0.)  + sin(uv.x*100.)*0.8;// + vec3(sin(uv.y*100.)*2., 0., 0.);
+        // vec3 p3 = samplePoint - vec3(0., 19./2., 0.);
+        //
+        // float d = sphereSDF(10., p);
+        // float d2 = sphereSDF(20., p2);
+        //
+        // d = opSubtraction(d, d2);
+        // float d3 = sphereSDF(15., p3);
+        // d = opIntersection(d, d3);
+
+        vec3 p1 = samplePoint - vec3(0., 19./2., 0.);
+        vec3 p2 = samplePoint - vec3(10., 19./2., 0.) + sin(uv.x*100.);
+
+        float d1 = sphereSDF(20., p1);
+        float d2 = sphereSDF(25., p2);
+
+        float d = opSubtraction(d1, d2);
+
+        d1 = sphereSDF(10., p1 - vec3(0., 15., 0.));
+
+        d = opUnionRound(d, d1, 0.1);
+
+        return d;
+    }
+
+    /**
+     * Using the gradient of the SDF, estimate the normal on the surface at point p.
+     */
+    vec3 estimateSdfNormal(vec3 p) {
+        return normalize(vec3(
+            sceneSDF(vec3(p.x + EPSILON, p.y, p.z)) - sceneSDF(vec3(p.x - EPSILON, p.y, p.z)),
+            sceneSDF(vec3(p.x, p.y + EPSILON, p.z)) - sceneSDF(vec3(p.x, p.y - EPSILON, p.z)),
+            sceneSDF(vec3(p.x, p.y, p.z  + EPSILON)) - sceneSDF(vec3(p.x, p.y, p.z - EPSILON))
+        ));
+    }
+
+    float shortestDistanceToSurface(vec3 eye, vec3 marchingDirection, float start, float end) {
+        float depth = start;
+
+        for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
+            float dist = sceneSDF(eye + depth * marchingDirection);
+
+            if (dist < EPSILON) {
+    			return depth;
+            }
+
+            depth += dist;
+            if (depth >= end) {
+                return end;
+            }
+        }
+        return end;
+    }
+
     /*
      * World
      */
@@ -948,7 +1084,9 @@ const getSource = ({options, Scene}) =>
         HitRecord record;
 
         record.hasHit = false;
+        record.hitT = T_MAX;
         hitRecord.hasHit = false;
+        // hitRecord.hitT = T_MAX;
         int lookupGeometryType = -1;
 
         float lookupOffset = 0.;
@@ -1506,6 +1644,25 @@ const getSource = ({options, Scene}) =>
                 break;
         }
 
+        // https://www.sebastiansylvan.com/post/ray-tracing-signed-distance-functions/
+
+        float dist = shortestDistanceToSurface(ray.origin, ray.dir, 0., T_MAX);
+        if(dist < record.hitT && dist < T_MAX && dist > T_MIN) {
+            record.hasHit = true;
+            record.hitT = dist;
+            record.hitPoint = pointOnRay(ray, dist);
+            record.material = getPackedMaterial(2);
+
+            record.normal = estimateSdfNormal(record.hitPoint);
+            record.color = record.material.color;
+        }
+
+        // if (dist > MAX_DIST - EPSILON) {
+        //     // Didn't hit anything
+        //     fragColor = vec4(0.0, 0.0, 0.0, 0.0);
+    	// 	return;
+        // }
+
         hitRecord = record;
     }
 
@@ -1514,7 +1671,7 @@ const getSource = ({options, Scene}) =>
      */
 
     vec3 background(vec3 rayDir) {
-        vec3 normedDir = normalize(rayDir);
+        vec3 normedDir = rayDir; //normalize(rayDir);
         // transpose y range from [-1, 1] to [0, 1]
         float t = .5*(normedDir.y + 1.);
         // do linear interpolation of colors

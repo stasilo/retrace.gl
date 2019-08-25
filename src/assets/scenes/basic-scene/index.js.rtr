@@ -1,8 +1,9 @@
 scene({
-    background: '#000000',
+    // background: ['#000', '#010101'],
+    background: '#000',
     camera: camera({
-        lookFrom: {x: -1.652, y: 32.649, z: 117.020},
-        lookAt: {x: -1.558, y: 32.225, z: 112.523},
+        lookFrom: {x: -52.220, y: 34.008, z: -39.666},
+        lookAt: {x: -48.599, y: 32.749, z: -37.274},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1,
@@ -23,7 +24,7 @@ scene({
         }),
         plane({
             material: 'ceil-light',
-            scale: 20,
+            scale: 30,
             position: {
                 x: 0,
                 y: 50.0,
@@ -54,6 +55,22 @@ scene({
             name: `ceil-light`,
             color: '#ffffff',
             intensity: 10
+        }),
+        // dialectricMaterial({
+        //     name: 'dialectric-test',
+        //     color: '#cccccc',
+        //     refIdx: 1.8,
+        // }),
+        clearcoatMaterial({
+            name: 'clearcoat-test',
+            color: '#ff0000',
+            refIdx: 1.8,
+        }),
+        metalMaterial({
+            name: 'metal-fuzz-test',
+            color: '#ffffff',
+            fuzz: 0.0,
+            albedo: [0.9, 0.9, 0.9]
         }),
     ]
 });
