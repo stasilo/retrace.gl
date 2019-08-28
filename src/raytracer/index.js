@@ -30,6 +30,16 @@ const dataTextureSize = 2048;
 
 const {glCanvas, glImgCanvas, gl, glApp} = getGlInstances();
 
+//// TEMP
+import SdfSphere from '../models/sdf-sphere';
+import {
+    sdfOpUnion,
+    sdfOpUnionRound,
+    sdfOpSubtract,
+    sdfOpIntersect
+} from '../models/sdf-model';
+///////////
+
 async function raytraceApp({
     scene,
     camera,
@@ -112,6 +122,76 @@ async function raytraceApp({
     let bvhDataPadded = new Float32Array(dataTextureSize * dataTextureSize * 3);
     let materialDataPadded = new Float32Array(dataTextureSize * dataTextureSize * 3);
 
+    let sdfDataPadded = new Float32Array(dataTextureSize * dataTextureSize * 3);
+    sdfDataPadded.fill(-1);
+
+    let s1 = new SdfSphere({radius: 10, position: {x: 0, y: 5, z: 0}});
+    let s2 = new SdfSphere({radius: 10, position: {x: 9, y: 5, z: 0}});
+    // let sdfData = sdfOpUnion(s1.geometryData(), s2.geometryData());
+
+    let s3 = new SdfSphere({radius: 7, position: {x: 10, y: 25, z: 0}});
+
+    let sdfData = sdfOpUnionRound({radius: 99.0},
+        sdfOpSubtract(s2.geometryData(), s1.geometryData()),
+        s3.geometryData()
+    );
+
+    console.log('sdfData: ', sdfData);
+
+    // console.log('s1 sdf: ', s1.geometryData());
+
+    sdfData.forEach((geoItem, n) =>
+        sdfDataPadded[n] = geoItem
+    );
+
+    // struct SdfNode {
+    //     int geoType;
+    //     int opType; // if -1, no union next
+    //     int materialId;
+    //     vec3 dimensions;
+    //     vec3 position;
+    // };
+
+    // sdfDataPadded[0] = 1; // sphere
+    // sdfDataPadded[1] = 2; // union round
+    // sdfDataPadded[2] = 0; // material 0
+    //
+    // sdfDataPadded[3] = 10; // vec3 dimnensions (radius)
+    // sdfDataPadded[4] = 10;
+    // sdfDataPadded[5] = 10;
+    //
+    // sdfDataPadded[6] = 0; // vec3 position (radius)
+    // sdfDataPadded[7] = 5;
+    // sdfDataPadded[8] = 0;
+    //
+    // ////
+    //
+    // sdfDataPadded[9] = 1; // sphere
+    // sdfDataPadded[10] = 3; //substr
+    // sdfDataPadded[11] = 0; // material 0
+    //
+    // sdfDataPadded[12] = 15; // vec3 dimnensions (radius)
+    // sdfDataPadded[13] = 15;
+    // sdfDataPadded[14] = 15;
+    //
+    // sdfDataPadded[15] = 5; // vec3 position
+    // sdfDataPadded[16] = 35;
+    // sdfDataPadded[17] = 0;
+    //
+    // ////
+    //
+    // sdfDataPadded[18] = 1; // sphere
+    // sdfDataPadded[19] = -1; // the end
+    // sdfDataPadded[20] = 0; // material 0
+    //
+    // sdfDataPadded[21] = 10; // vec3 dimnensions (radius)
+    // sdfDataPadded[22] = 10;
+    // sdfDataPadded[23] = 10;
+    //
+    // sdfDataPadded[24] = 5; // vec3 position
+    // sdfDataPadded[25] = 20;
+    // sdfDataPadded[26] = 0;
+
     geometryData.forEach((geoItem, n) =>
         geometryDataPadded[n] = geoItem
     );
@@ -160,6 +240,18 @@ async function raytraceApp({
         flipY: false
     });
 
+    let sdfDataTexture = glApp.createTexture2D(sdfDataPadded, dataTextureSize, dataTextureSize, {
+        type: gl.FLOAT,
+        internalFormat: gl.RGB32F,
+        format: gl.RGB,
+        generateMipmaps: false,
+        minFilter: gl.NEAREST,
+        magFilter: gl.NEAREST,
+        wrapS: gl.CLAMP_TO_EDGE,
+        wrapT: gl.CLAMP_TO_EDGE,
+        flipY: false
+    });
+
     /*
      * main raytrace draw call
      */
@@ -176,6 +268,7 @@ async function raytraceApp({
         .texture('uGeometryDataTexture', geoDataTexture)
         .texture('uBvhDataTexture', bvhDataTexture)
         .texture('uMaterialDataTexture', materialDataTexture)
+        .texture('uSdfDataTexture', sdfDataTexture)
         .uniform('uBgGradientColors[0]', new Float32Array(bgColors))
         .uniform('uResolution', vec2.fromValues(glApp.width, glApp.height))
         .uniform('uSeed', vec2.fromValues(random(), random()))

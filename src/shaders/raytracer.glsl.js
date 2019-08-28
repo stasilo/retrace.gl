@@ -133,6 +133,8 @@ const getSource = ({options, Scene}) =>
     uniform sampler2D uBvhDataTexture;
     uniform sampler2D uMaterialDataTexture;
 
+    uniform sampler2D uSdfDataTexture;
+
     /*
      * Camera
      */
@@ -962,6 +964,48 @@ const getSource = ({options, Scene}) =>
         return vec2(u, v);
     }
 
+    /**
+     * SDF handling
+     */
+
+    struct SdfGeometry {
+        int geoType;
+        int opType; // if -1, no union next
+        float opRadius;
+        int materialId;
+        vec3 dimensions;
+        vec3 position;
+    };
+
+    SdfGeometry getPackedSdf(int index) {
+        float offset = float(index) * 4.;
+
+        float xOffset = mod(offset, DATA_TEX_SIZE);
+        float yOffset = floor(offset * DATA_TEX_INV_SIZE);
+        vec3 sdfData1 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        xOffset = mod(offset + 1., DATA_TEX_SIZE);
+        yOffset = floor((offset + 1.) * DATA_TEX_INV_SIZE);
+        vec3 sdfData2 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        xOffset = mod(offset + 2., DATA_TEX_SIZE);
+        yOffset = floor((offset + 2.) * DATA_TEX_INV_SIZE);
+        vec3 sdfData3 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        xOffset = mod(offset + 3., DATA_TEX_SIZE);
+        yOffset = floor((offset + 3.) * DATA_TEX_INV_SIZE);
+        vec3 sdfData4 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        return SdfGeometry(
+            int(sdfData1.x), // geo type
+            int(sdfData1.y), // op type
+            sdfData1.z, //  op radius
+            int(sdfData2.x), // material id
+            sdfData3, // dimensions
+            sdfData4 // position
+        );
+    }
+
     // Maximum/minumum elements of a vector
     float vmax(vec2 v) {
     	return max(v.x, v.y);
@@ -987,25 +1031,46 @@ const getSource = ({options, Scene}) =>
     	return min(min(v.x, v.y), min(v.z, v.w));
     }
 
-    float opUnion( float d1, float d2 ) {  return min(d1,d2); }
-    float opSubtraction( float d1, float d2 ) { return max(-d1,d2); }
-    float opIntersection( float d1, float d2 ) { return max(d1,d2); }
+    // sdf operations
 
-    float opUnionRound(float a, float b, float r) {
-    	vec2 u = max(vec2(r - a,r - b), vec2(0));
-    	return max(r, min (a, b)) - length(u);
+    #define SDF_NOOP_OP 0
+
+    #define SDF_UNION 1
+    float opUnion(float d1, float d2) {
+        return min(d1,d2);
     }
+
+    #define SDF_UNION_ROUND 2
+    float opUnionRound(float a, float b, float r) {
+        vec2 u = max(vec2(r - a,r - b), vec2(0));
+        return max(r, min (a, b)) - length(u);
+    }
+
+    #define SDF_SUBSTRACT 3
+    float opSubtraction( float d1, float d2) {
+        return max(-d1,d2);
+    }
+
+    #define SDF_INTERSECT 4
+    float opIntersection(float d1, float d2) {
+        return max(d1,d2);
+    }
+
+
 
     /**
      * Signed distance function for a sphere centered at the origin with radius 1.0;
      */
-    float sphereSDF(float radius, vec3 samplePoint) {
+
+    #define SDF_SPHERE 1
+
+    float sphereSdf(float radius, vec3 samplePoint) {
         return length(samplePoint) - radius;
         // return length(samplePoint) - 0.1;
     }
 
     // Box: correct distance to corners
-    float fBox(vec3 p, vec3 b) {
+    float boxSdf(vec3 p, vec3 b) {
     	vec3 d = abs(p) - b;
     	return length(max(d, vec3(0))) + vmax(min(d, vec3(0)));
     }
@@ -1018,33 +1083,101 @@ const getSource = ({options, Scene}) =>
      * Sign indicates whether the point is inside or outside the surface,
      * negative indicating inside.
      */
-    float sceneSDF(vec3 samplePoint) {
-        // // vec3 point = normalize(samplePoint);
-        // // return sphereSDF(point);
-        // vec3 p = samplePoint - vec3(0., 19., 0.)  + sin(uv.x*100.)*0.9;// + vec3(sin(uv.y*100.)*2., 0., 0.);
-        // vec3 p2 = samplePoint - vec3(0., 19./2., 0.)  + sin(uv.x*100.)*0.8;// + vec3(sin(uv.y*100.)*2., 0., 0.);
-        // vec3 p3 = samplePoint - vec3(0., 19./2., 0.);
-        //
-        // float d = sphereSDF(10., p);
-        // float d2 = sphereSDF(20., p2);
-        //
-        // d = opSubtraction(d, d2);
-        // float d3 = sphereSDF(15., p3);
-        // d = opIntersection(d, d3);
+    // float sceneSdf(vec3 samplePoint) {
+    //     vec3 p1 = samplePoint - vec3(0., 19./2., 0.);
+    //     vec3 p2 = samplePoint - vec3(10., 19./2., 0.) + sin(uv.x*100.);
+    //
+    //     float d1 = sphereSdf(20., p1);
+    //     float d2 = sphereSdf(25., p2);
+    //
+    //     float d = opSubtraction(d1, d2);
+    //
+    //     d1 = sphereSdf(10., p1 - vec3(0., 15., 0.));
+    //
+    //     d = opUnionRound(d, d1, 0.1);
+    //
+    //     return d;
+    // }
 
-        vec3 p1 = samplePoint - vec3(0., 19./2., 0.);
-        vec3 p2 = samplePoint - vec3(10., 19./2., 0.) + sin(uv.x*100.);
+    float sceneSdf(vec3 samplePoint) {
+        int idx = 0;
 
-        float d1 = sphereSDF(20., p1);
-        float d2 = sphereSDF(25., p2);
+        float d1 = 0.;
+        float d2 = 0.;
 
-        float d = opSubtraction(d1, d2);
+        SdfGeometry sdfData, prevSdfData;
 
-        d1 = sphereSDF(10., p1 - vec3(0., 15., 0.));
+        int opType = SDF_NOOP_OP; // default union
 
-        d = opUnionRound(d, d1, 0.1);
+        while(true) {
+            prevSdfData = sdfData = getPackedSdf(idx);
 
-        return d;
+            if(sdfData.geoType == -1) {
+                break;
+            }
+
+            vec3 p = samplePoint - sdfData.position;
+
+            if(idx == 0) {
+                switch(sdfData.geoType) {
+                    case SDF_SPHERE: {
+                        float radius = sdfData.dimensions.x;
+                        opType = sdfData.opType;
+                        prevSdfData = sdfData;
+
+                        d1 = sphereSdf(radius, p);
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+            } else {
+                switch(sdfData.geoType) {
+                    case SDF_SPHERE: {
+                        float radius = sdfData.dimensions.x;
+                        d2 = sphereSdf(radius, p);
+                        break;
+                    }
+
+                    default:
+                        break;
+                }
+
+                switch(opType) {
+                    case -1: {
+                        return d1;
+                    }
+
+                    case SDF_UNION: {
+                        d1 = opUnion(d1, d2);
+                        break;
+                    }
+
+                    case SDF_UNION_ROUND: {
+                        d1 = opUnionRound(d1, d2, prevSdfData.opRadius);
+                        break;
+                    }
+
+                    case SDF_SUBSTRACT: {
+                        d1 = opSubtraction(d2, d1);
+                        // d1 = opUnion(d1, d2);
+
+                        break;
+                    }
+
+                    case SDF_NOOP_OP:
+                    default:
+                        break;
+                }
+            }
+
+            opType = sdfData.opType;
+
+            idx+=1;
+        }
+
+        return d1;
     }
 
     /**
@@ -1052,17 +1185,17 @@ const getSource = ({options, Scene}) =>
      */
     vec3 estimateSdfNormal(vec3 p) {
         return normalize(vec3(
-            sceneSDF(vec3(p.x + EPSILON, p.y, p.z)) - sceneSDF(vec3(p.x - EPSILON, p.y, p.z)),
-            sceneSDF(vec3(p.x, p.y + EPSILON, p.z)) - sceneSDF(vec3(p.x, p.y - EPSILON, p.z)),
-            sceneSDF(vec3(p.x, p.y, p.z  + EPSILON)) - sceneSDF(vec3(p.x, p.y, p.z - EPSILON))
+            sceneSdf(vec3(p.x + EPSILON, p.y, p.z)) - sceneSdf(vec3(p.x - EPSILON, p.y, p.z)),
+            sceneSdf(vec3(p.x, p.y + EPSILON, p.z)) - sceneSdf(vec3(p.x, p.y - EPSILON, p.z)),
+            sceneSdf(vec3(p.x, p.y, p.z  + EPSILON)) - sceneSdf(vec3(p.x, p.y, p.z - EPSILON))
         ));
     }
 
-    float shortestDistanceToSurface(vec3 eye, vec3 marchingDirection, float start, float end) {
+    float raymarchDistance(vec3 eye, vec3 marchingDirection, float start, float end) {
         float depth = start;
 
         for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
-            float dist = sceneSDF(eye + depth * marchingDirection);
+            float dist = sceneSdf(eye + depth * marchingDirection);
 
             if (dist < EPSILON) {
     			return depth;
@@ -1646,7 +1779,7 @@ const getSource = ({options, Scene}) =>
 
         // https://www.sebastiansylvan.com/post/ray-tracing-signed-distance-functions/
 
-        float dist = shortestDistanceToSurface(ray.origin, ray.dir, 0., T_MAX);
+        float dist = raymarchDistance(ray.origin, ray.dir, 0., T_MAX);
         if(dist < record.hitT && dist < T_MAX && dist > T_MIN) {
             record.hasHit = true;
             record.hitT = dist;
@@ -1654,7 +1787,7 @@ const getSource = ({options, Scene}) =>
             record.material = getPackedMaterial(2);
 
             record.normal = estimateSdfNormal(record.hitPoint);
-            record.color = record.material.color;
+            record.color = vec3(0.99); //record.material.color;
         }
 
         // if (dist > MAX_DIST - EPSILON) {

@@ -1,9 +1,9 @@
 scene({
-    // background: ['#000', '#010101'],
-    background: '#000',
+    background: ['#000', '#010101'],
+    // background: '#000',
     camera: camera({
-        lookFrom: {x: -52.220, y: 34.008, z: -39.666},
-        lookAt: {x: -48.599, y: 32.749, z: -37.274},
+        lookFrom: {x: -2.291, y: 19.252, z: -71.281},
+        lookAt: {x: -1.873, y: 18.948, z: -66.792},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1,
@@ -27,7 +27,7 @@ scene({
             scale: 30,
             position: {
                 x: 0,
-                y: 50.0,
+                y: 80.0,
                 z: 0
             },
         })
