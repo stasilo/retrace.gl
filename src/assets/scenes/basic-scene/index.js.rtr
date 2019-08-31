@@ -9,6 +9,28 @@ scene({
         velocity: 1,
     }),
     geometries: [
+        sdf({
+                domainOp: 'mod1d',
+                axis: 'z',
+                size: 5
+            },
+            opUnionRound({radius: 6.0},
+                opSubtract(
+                    sdfSphere({
+                        radius: 10,
+                        position: {x: 9, y: 5, z: 0}
+                    }),
+                    sdfSphere({
+                        radius: 10,
+                        position: {x: 0, y: 5, z: 0}
+                    })
+                ),
+                sdfBox({
+                    dimensions: {x: 7, y: 7, z: 7},
+                    position: {x: 10, y: 25, z: 0}
+                })
+            )
+        ),
         plane({
             material: 'floor-white',
             texture: {

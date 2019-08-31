@@ -27,6 +27,9 @@ class Scene {
         return (async () => {
             this.textures = await new TextureList(textures);
             this.geometries = await this.finalizeGeometries(geometries);
+            //TODO: support multiple sdf "geos"
+            this.sdfGeometry = geometries
+                .filter(g => g.isSdfGeometry)[0];
 
             return this;
         })();

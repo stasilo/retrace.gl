@@ -31,7 +31,7 @@ const getSource = ({options, Scene}) =>
     // #define MAX_DIST 100000000.
     // #define EPSILON 0.0001
 
-    #define MAX_MARCHING_STEPS  255
+    #define MAX_MARCHING_STEPS 100 //255
     #define MIN_DIST 0.0
     #define MAX_DIST T_MAX
     #define EPSILON 0.0001
@@ -968,6 +968,16 @@ const getSource = ({options, Scene}) =>
      * SDF handling
      */
 
+    #define SDF_X_AXIS 0
+    #define SDF_Y_AXIS 1
+    #define SDF_Z_AXIS 2
+
+    struct SdfCsgHeader {
+        int opType;
+        int axis; // 0 = x, 1 = y, ...
+        float size;
+    };
+
     struct SdfGeometry {
         int geoType;
         int opType; // if -1, no union next
@@ -999,7 +1009,7 @@ const getSource = ({options, Scene}) =>
         return SdfGeometry(
             int(sdfData1.x), // geo type
             int(sdfData1.y), // op type
-            sdfData1.z, //  op radius
+            float(sdfData1.z), //  op radius
             int(sdfData2.x), // material id
             sdfData3, // dimensions
             sdfData4 // position
@@ -1056,20 +1066,30 @@ const getSource = ({options, Scene}) =>
         return max(d1,d2);
     }
 
+    // sdf domain operations
 
+    // Repeat space along one axis. Use like this to repeat along the x axis:
+    // <float cell = pMod1(p.x,5);> - using the return value is optional.
+    #define SDF_PMOD1 1
+    float pMod1(inout float p, float size) {
+    	float halfsize = size*0.5;
+    	float c = floor((p + halfsize)/size);
+    	p = mod(p + halfsize, size) - halfsize;
+    	return c;
+    }
 
     /**
      * Signed distance function for a sphere centered at the origin with radius 1.0;
      */
 
     #define SDF_SPHERE 1
-
-    float sphereSdf(float radius, vec3 samplePoint) {
+    float sphereSdf(vec3 samplePoint, float radius) {
         return length(samplePoint) - radius;
         // return length(samplePoint) - 0.1;
     }
 
     // Box: correct distance to corners
+    #define SDF_BOX 2
     float boxSdf(vec3 p, vec3 b) {
     	vec3 d = abs(p) - b;
     	return length(max(d, vec3(0))) + vmax(min(d, vec3(0)));
@@ -1105,27 +1125,35 @@ const getSource = ({options, Scene}) =>
         float d1 = 0.;
         float d2 = 0.;
 
-        SdfGeometry sdfData, prevSdfData;
+        SdfGeometry sdfData;
 
-        int opType = SDF_NOOP_OP; // default union
+        int opType = SDF_NOOP_OP;
+        float opRadius = -1.;
 
         while(true) {
-            prevSdfData = sdfData = getPackedSdf(idx);
-
+            sdfData = getPackedSdf(idx);
             if(sdfData.geoType == -1) {
                 break;
             }
 
             vec3 p = samplePoint - sdfData.position;
+            // pMod1(p.x, 5.);
+            // pMod1(p.z, 15.);
 
             if(idx == 0) {
+                opType = sdfData.opType;
+                opRadius = sdfData.opRadius;
+
                 switch(sdfData.geoType) {
                     case SDF_SPHERE: {
                         float radius = sdfData.dimensions.x;
-                        opType = sdfData.opType;
-                        prevSdfData = sdfData;
+                        d1 = sphereSdf(p, radius);
 
-                        d1 = sphereSdf(radius, p);
+                        break;
+                    }
+
+                    case SDF_BOX: {
+                        d1 = boxSdf(p, sdfData.dimensions);
                         break;
                     }
 
@@ -1136,7 +1164,14 @@ const getSource = ({options, Scene}) =>
                 switch(sdfData.geoType) {
                     case SDF_SPHERE: {
                         float radius = sdfData.dimensions.x;
-                        d2 = sphereSdf(radius, p);
+                        d2 = sphereSdf(p, radius);
+
+                        break;
+                    }
+
+                    case SDF_BOX: {
+                        d2 = boxSdf(p, sdfData.dimensions);
+
                         break;
                     }
 
@@ -1155,14 +1190,12 @@ const getSource = ({options, Scene}) =>
                     }
 
                     case SDF_UNION_ROUND: {
-                        d1 = opUnionRound(d1, d2, prevSdfData.opRadius);
+                        d1 = opUnionRound(d1, d2, opRadius);
                         break;
                     }
 
                     case SDF_SUBSTRACT: {
                         d1 = opSubtraction(d2, d1);
-                        // d1 = opUnion(d1, d2);
-
                         break;
                     }
 
@@ -1173,6 +1206,7 @@ const getSource = ({options, Scene}) =>
             }
 
             opType = sdfData.opType;
+            opRadius = sdfData.opRadius ;
 
             idx+=1;
         }
@@ -1780,7 +1814,7 @@ const getSource = ({options, Scene}) =>
         // https://www.sebastiansylvan.com/post/ray-tracing-signed-distance-functions/
 
         float dist = raymarchDistance(ray.origin, ray.dir, 0., T_MAX);
-        if(dist < record.hitT && dist < T_MAX && dist > T_MIN) {
+        if(dist < record.hitT && dist < T_MAX - EPSILON && dist > T_MIN) {
             record.hasHit = true;
             record.hitT = dist;
             record.hitPoint = pointOnRay(ray, dist);

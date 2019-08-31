@@ -15,15 +15,21 @@ import {
 } from '../../utils';
 
 const sdfOperators = {
-    noOp: -1,
+    noOp: 0,
     union: 1,
     unionRound: 2,
     subtract: 3,
     intersect: 4
 };
 
+const sdfDomainOperations = {
+    noOp: 0,
+    mod1d: 1
+};
+
 const sdfGeometryTypes = {
-    sphere: 1
+    sphere: 1,
+    box: 2
 };
 
 const standardSdfOpArrayDataOffset = 1;
@@ -82,10 +88,37 @@ const sdfOpSubtract = (...geometries) =>
 const sdfOpIntersect = (...geometries) =>
     sdfOperation(sdfOperators.intersect, {}, ...geometries);
 
-class SdfModel {
-    includeInBvh = false;
-    isSdfGeometry = true;
+const sdf = (...args) => {
+    const opts = args.length == 1
+        ? {}
+        : args[0];
 
+    const dataArray = args.length == 1
+        ? args[0]
+        : args[1];
+
+    const csgHeader = [
+        opts.domainOp
+            ? sdfDomainOperations[opts.domainOp]
+            : sdfDomainOperations.noOp,
+
+        opts.axis
+            ? {x: 0, y: 1, z: 2}[opts.axis]
+            : 0,
+
+        opts.size
+            ? opts.size
+            : 1
+    ];
+
+    console.log('sdf header: ', csgHeader);
+    return {
+        isSdfGeometry: true,
+        data: dataArray
+    };
+};
+
+class SdfModel {
     constructor({
         material,
         geoType,
@@ -143,6 +176,7 @@ class SdfModel {
 export default SdfModel;
 
 export {
+    sdf,
     sdfOperators,
     sdfGeometryTypes,
 

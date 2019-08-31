@@ -4,7 +4,7 @@
 //
 //     GLSL LIBRARY FOR BUILDING SIGNED DISTANCE BOUNDS
 //
-//     version 2016-01-10
+//     version 2016-01-04
 //
 //     Check http://mercury.sexy/hg_sdf for updates
 //     and usage examples. Send feedback to spheretracing@mercury.sexy.
@@ -134,23 +134,23 @@
 //
 ////////////////////////////////////////////////////////////////
 
-//#define PI 3.14159265
+#define PI 3.14159265
 #define TAU (2*PI)
-#define PHI (sqrt(5)*0.5 + 0.5)
+#define PHI (sqrt(5.)*0.5 + 0.5)
 
 // Clamp to [0,1] - this operation is free under certain circumstances.
 // For further information see
 // http://www.humus.name/Articles/Persson_LowLevelThinking.pdf and
 // http://www.humus.name/Articles/Persson_LowlevelShaderOptimization.pdf
-#define saturate(x) clamp(x, 0, 1)
+#define saturate(x) clamp(x, 0., 1.)
 
 // Sign function that doesn't return 0
 float sgn(float x) {
-	return (x<0)?-1:1;
+	return (x<0.)?-1.:1.;
 }
 
-vec2 sgn(vec2 v) {
-	return vec2((v.x<0)?-1:1, (v.y<0)?-1:1);
+vec2 sgn(vec2 x) {
+	return vec2(sgn(x.x), sgn(x.y));
 }
 
 float square (float x) {
@@ -257,11 +257,11 @@ float fBlob(vec3 p) {
 	if (p.x < max(p.y, p.z)) p = p.yzx;
 	float b = max(max(max(
 		dot(p, normalize(vec3(1, 1, 1))),
-		dot(p.xz, normalize(vec2(PHI+1, 1)))),
-		dot(p.yx, normalize(vec2(1, PHI)))),
-		dot(p.xz, normalize(vec2(1, PHI))));
+		dot(p.xz, normalize(vec2(PHI+1., 1.)))),
+		dot(p.yx, normalize(vec2(1., PHI)))),
+		dot(p.xz, normalize(vec2(1., PHI))));
 	float l = length(p);
-	return l - 1.5 - 0.2 * (1.5 / 2)* cos(min(sqrt(1.01 - b / l)*(PI / 0.25), PI));
+	return l - 1.5 - 0.2 * (1.5 / 2.)* cos(min(sqrt(1.01 - b / l)*(PI / 0.25), PI));
 }
 
 // Cylinder standing upright on the xz plane
@@ -303,20 +303,20 @@ float fCircle(vec3 p, float r) {
 // Subtract some value to make a flat disc with rounded edge.
 float fDisc(vec3 p, float r) {
 	float l = length(p.xz) - r;
-	return l < 0 ? abs(p.y) : length(vec2(p.y, l));
+	return l < 0. ? abs(p.y) : length(vec2(p.y, l));
 }
 
 // Hexagonal prism, circumcircle variant
 float fHexagonCircumcircle(vec3 p, vec2 h) {
 	vec3 q = abs(p);
-	return max(q.y - h.y, max(q.x*sqrt(3)*0.5 + q.z*0.5, q.z) - h.x);
+	return max(q.y - h.y, max(q.x*sqrt(3.)*0.5 + q.z*0.5, q.z) - h.x);
 	//this is mathematically equivalent to this line, but less efficient:
 	//return max(q.y - h.y, max(dot(vec2(cos(PI/3), sin(PI/3)), q.zx), q.z) - h.x);
 }
 
 // Hexagonal prism, incircle variant
 float fHexagonIncircle(vec3 p, vec2 h) {
-	return fHexagonCircumcircle(p, vec2(h.x*sqrt(3)*0.5, h.y));
+	return fHexagonCircumcircle(p, vec2(h.x*sqrt(3.)*0.5, h.y));
 }
 
 // Cone with correct distances to tip and base circle. Y is up, 0 is in the middle of the base.
@@ -329,7 +329,7 @@ float fCone(vec3 p, float radius, float height) {
 	float projected = dot(tip, vec2(mantleDir.y, -mantleDir.x));
 
 	// distance to tip
-	if ((q.y > height) && (projected < 0)) {
+	if ((q.y > height) && (projected < 0.)) {
 		d = max(d, length(tip));
 	}
 
@@ -351,90 +351,108 @@ float fCone(vec3 p, float radius, float height) {
 // Specialized implementations can well be faster in all cases.
 //
 
-const vec3 GDFVectors[19] = vec3[](
-	normalize(vec3(1, 0, 0)),
-	normalize(vec3(0, 1, 0)),
-	normalize(vec3(0, 0, 1)),
+vec3 GDFVectors[19];
 
-	normalize(vec3(1, 1, 1 )),
-	normalize(vec3(-1, 1, 1)),
-	normalize(vec3(1, -1, 1)),
-	normalize(vec3(1, 1, -1)),
+void hg_sdf_init() {
+	GDFVectors[0] = normalize(vec3(1, 0, 0));
+	GDFVectors[1] = normalize(vec3(0, 1, 0));
+	GDFVectors[2] = normalize(vec3(0, 0, 1));
 
-	normalize(vec3(0, 1, PHI+1)),
-	normalize(vec3(0, -1, PHI+1)),
-	normalize(vec3(PHI+1, 0, 1)),
-	normalize(vec3(-PHI-1, 0, 1)),
-	normalize(vec3(1, PHI+1, 0)),
-	normalize(vec3(-1, PHI+1, 0)),
+	GDFVectors[3] = normalize(vec3(1, 1, 1 ));
+	GDFVectors[4] = normalize(vec3(-1, 1, 1));
+	GDFVectors[5] = normalize(vec3(1, -1, 1));
+	GDFVectors[6] = normalize(vec3(1, 1, -1));
 
-	normalize(vec3(0, PHI, 1)),
-	normalize(vec3(0, -PHI, 1)),
-	normalize(vec3(1, 0, PHI)),
-	normalize(vec3(-1, 0, PHI)),
-	normalize(vec3(PHI, 1, 0)),
-	normalize(vec3(-PHI, 1, 0))
-);
+	GDFVectors[7] = normalize(vec3(0., 1., PHI+1.));
+	GDFVectors[8] = normalize(vec3(0., -1., PHI+1.));
+	GDFVectors[9] = normalize(vec3(PHI+1., 0., 1.));
+	GDFVectors[10] = normalize(vec3(-PHI-1., 0., 1.));
+	GDFVectors[11] = normalize(vec3(1., PHI+1., 0.));
+	GDFVectors[12] = normalize(vec3(-1., PHI+1., 0.));
+
+	GDFVectors[13] = normalize(vec3(0, PHI, 1));
+	GDFVectors[14] = normalize(vec3(0, -PHI, 1));
+	GDFVectors[15] = normalize(vec3(1, 0, PHI));
+	GDFVectors[16] = normalize(vec3(-1, 0, PHI));
+	GDFVectors[17] = normalize(vec3(PHI, 1, 0));
+	GDFVectors[18] = normalize(vec3(-PHI, 1, 0));
+}
+//);
 
 // Version with variable exponent.
 // This is slow and does not produce correct distances, but allows for bulging of objects.
+#define fGDF_t(begin,end) float d = 0.; for (int i = begin; i <= end; ++i) {d += pow(abs(dot(p, GDFVectors[i])), e);} return pow(d, 1./e) - r;
+// Original method, not suitable for WebGL:
 float fGDF(vec3 p, float r, float e, int begin, int end) {
-	float d = 0;
+	float d = 0.;
 	for (int i = begin; i <= end; ++i)
 		d += pow(abs(dot(p, GDFVectors[i])), e);
-	return pow(d, 1/e) - r;
+	return pow(d, 1./e) - r;
 }
+float fGDF36(vec3 p, float r, float e) { fGDF_t(3,6) }
+float fGDF1318(vec3 p, float r, float e) { fGDF_t(13,18) }
+float fGDF318(vec3 p, float r, float e) { fGDF_t(3,18) }
+float fGDF312(vec3 p, float r, float e) { fGDF_t(3,12) }
+float fGDF06(vec3 p, float r, float e) { fGDF_t(0,6) }
+#undef fGDF_t
 
 // Version with without exponent, creates objects with sharp edges and flat faces
+#define fGDF_t(begin,end) float d = 0.; for (int i = begin; i <= end; ++i){ d = max(d, abs(dot(p, GDFVectors[i])));} return d - r;
+// Original method, not suitable for WebGL:
 float fGDF(vec3 p, float r, int begin, int end) {
-	float d = 0;
+	float d = 0.;
 	for (int i = begin; i <= end; ++i)
 		d = max(d, abs(dot(p, GDFVectors[i])));
 	return d - r;
 }
+float fGDF36(vec3 p, float r) { fGDF_t(3,6) }
+float fGDF1318(vec3 p, float r) { fGDF_t(13,18) }
+float fGDF318(vec3 p, float r) { fGDF_t(3,18) }
+float fGDF312(vec3 p, float r) { fGDF_t(3,12) }
+float fGDF06(vec3 p, float r) { fGDF_t(0,6) }
+#undef fGDF_t
 
 // Primitives follow:
 
 float fOctahedron(vec3 p, float r, float e) {
-	return fGDF(p, r, e, 3, 6);
+	return fGDF36(p, r, e);
 }
 
 float fDodecahedron(vec3 p, float r, float e) {
-	return fGDF(p, r, e, 13, 18);
+	return fGDF1318(p, r, e);
 }
 
 float fIcosahedron(vec3 p, float r, float e) {
-	return fGDF(p, r, e, 3, 12);
+	return fGDF312(p, r, e);
 }
 
 float fTruncatedOctahedron(vec3 p, float r, float e) {
-	return fGDF(p, r, e, 0, 6);
+	return fGDF06(p, r, e);
 }
 
 float fTruncatedIcosahedron(vec3 p, float r, float e) {
-	return fGDF(p, r, e, 3, 18);
+	return fGDF318(p, r, e);
 }
 
 float fOctahedron(vec3 p, float r) {
-	return fGDF(p, r, 3, 6);
+	return fGDF36(p, r);
 }
 
 float fDodecahedron(vec3 p, float r) {
-	return fGDF(p, r, 13, 18);
+	return fGDF1318(p, r);
 }
 
 float fIcosahedron(vec3 p, float r) {
-	return fGDF(p, r, 3, 12);
+	return fGDF312(p, r);
 }
 
 float fTruncatedOctahedron(vec3 p, float r) {
-	return fGDF(p, r, 0, 6);
+	return fGDF06(p, r);
 }
 
 float fTruncatedIcosahedron(vec3 p, float r) {
-	return fGDF(p, r, 3, 18);
+	return fGDF318(p, r);
 }
-
 
 ////////////////////////////////////////////////////////////////
 //
@@ -491,7 +509,7 @@ float pModMirror1(inout float p, float size) {
 	float halfsize = size*0.5;
 	float c = floor((p + halfsize)/size);
 	p = mod(p + halfsize,size) - halfsize;
-	p *= mod(c, 2.0)*2 - 1;
+	p *= mod(c, 2.0)*2. - 1.;
 	return c;
 }
 
@@ -499,7 +517,7 @@ float pModMirror1(inout float p, float size) {
 float pModSingle1(inout float p, float size) {
 	float halfsize = size*0.5;
 	float c = floor((p + halfsize)/size);
-	if (p >= 0)
+	if (p >= 0.)
 		p = mod(p + halfsize, size) - halfsize;
 	return c;
 }
@@ -524,7 +542,7 @@ float pModInterval1(inout float p, float size, float start, float stop) {
 // Repeat around the origin by a fixed angle.
 // For easier use, num of repetitions is use to specify the angle.
 float pModPolar(inout vec2 p, float repetitions) {
-	float angle = 2*PI/repetitions;
+	float angle = 2.*PI/repetitions;
 	float a = atan(p.y, p.x) + angle/2.;
 	float r = length(p);
 	float c = floor(a/angle);
@@ -532,7 +550,7 @@ float pModPolar(inout vec2 p, float repetitions) {
 	p = vec2(cos(a), sin(a))*r;
 	// For an odd number of repetitions, fix cell index of the cell in -x direction
 	// (cell index would be e.g. -5 and 5 in the two halves of the cell):
-	if (abs(c) >= (repetitions/2)) c = abs(c);
+	if (abs(c) >= (repetitions/2.)) c = abs(c);
 	return c;
 }
 
@@ -548,7 +566,7 @@ vec2 pModMirror2(inout vec2 p, vec2 size) {
 	vec2 halfsize = size*0.5;
 	vec2 c = floor((p + halfsize)/size);
 	p = mod(p + halfsize, size) - halfsize;
-	p *= mod(c,vec2(2))*2 - vec2(1);
+	p *= mod(c,vec2(2))*2. - vec2(1);
 	return c;
 }
 
@@ -556,10 +574,10 @@ vec2 pModMirror2(inout vec2 p, vec2 size) {
 vec2 pModGrid2(inout vec2 p, vec2 size) {
 	vec2 c = floor((p + size*0.5)/size);
 	p = mod(p + size*0.5, size) - size*0.5;
-	p *= mod(c,vec2(2))*2 - vec2(1);
-	p -= size/2;
+	p *= mod(c,vec2(2))*2. - vec2(1);
+	p -= size/2.;
 	if (p.x > p.y) p.xy = p.yx;
-	return floor(c/2);
+	return floor(c/2.);
 }
 
 // Repeat in three dimensions
@@ -590,8 +608,8 @@ vec2 pMirrorOctant (inout vec2 p, vec2 dist) {
 // Reflect space at a plane
 float pReflect(inout vec3 p, vec3 planeNormal, float offset) {
 	float t = dot(p, planeNormal)+offset;
-	if (t < 0) {
-		p = p - (2*t)*planeNormal;
+	if (t < 0.) {
+		p = p - (2.*t)*planeNormal;
 	}
 	return sgn(t);
 }
@@ -690,17 +708,17 @@ float fOpDifferenceRound (float a, float b, float r) {
 float fOpUnionColumns(float a, float b, float r, float n) {
 	if ((a < r) && (b < r)) {
 		vec2 p = vec2(a, b);
-		float columnradius = r*sqrt(2)/((n-1)*2+sqrt(2));
+		float columnradius = r*sqrt(2.)/((n-1.)*2.+sqrt(2.));
 		pR45(p);
-		p.x -= sqrt(2)/2*r;
-		p.x += columnradius*sqrt(2);
-		if (mod(n,2) == 1) {
+		p.x -= sqrt(2.)/2.*r;
+		p.x += columnradius*sqrt(2.);
+		if (mod(n,2.) == 1.) {
 			p.y += columnradius;
 		}
 		// At this point, we have turned 45 degrees and moved at a point on the
 		// diagonal that we want to place the columns on.
 		// Now, repeat the domain along this direction and place a circle.
-		pMod1(p.y, columnradius*2);
+		pMod1(p.y, columnradius*2.);
 		float result = length(p) - columnradius;
 		result = min(result, p.x);
 		result = min(result, a);
@@ -716,18 +734,18 @@ float fOpDifferenceColumns(float a, float b, float r, float n) {
 	//avoid the expensive computation where not needed (produces discontinuity though)
 	if ((a < r) && (b < r)) {
 		vec2 p = vec2(a, b);
-		float columnradius = r*sqrt(2)/n/2.0;
-		columnradius = r*sqrt(2)/((n-1)*2+sqrt(2));
+		float columnradius = r*sqrt(2.)/n/2.0;
+		columnradius = r*sqrt(2.)/((n-1.)*2.+sqrt(2.));
 
 		pR45(p);
 		p.y += columnradius;
-		p.x -= sqrt(2)/2*r;
-		p.x += -columnradius*sqrt(2)/2;
+		p.x -= sqrt(2.)/2.*r;
+		p.x += -columnradius*sqrt(2.)/2.;
 
-		if (mod(n,2) == 1) {
+		if (mod(n,2.) == 1.) {
 			p.y += columnradius;
 		}
-		pMod1(p.y,columnradius*2);
+		pMod1(p.y,columnradius*2.);
 
 		float result = -length(p) + columnradius;
 		result = max(result, p.x);
@@ -747,7 +765,7 @@ float fOpIntersectionColumns(float a, float b, float r, float n) {
 float fOpUnionStairs(float a, float b, float r, float n) {
 	float s = r/n;
 	float u = b-r;
-	return min(min(a,b), 0.5 * (u + a + abs ((mod (u - a + s, 2 * s)) - s)));
+	return min(min(a,b), 0.5 * (u + a + abs ((mod (u - a + s, 2. * s)) - s)));
 }
 
 // We can just call Union since stairs are symmetric.
@@ -764,7 +782,7 @@ float fOpDifferenceStairs(float a, float b, float r, float n) {
 // (and less so at 90 degrees). Useful when fudging around too much
 // by MediaMolecule, from Alex Evans' siggraph slides
 float fOpUnionSoft(float a, float b, float r) {
-	float e = max(r - abs(a - b), 0);
+	float e = max(r - abs(a - b), 0.);
 	return min(a, b) - e*e*0.25/r;
 }
 

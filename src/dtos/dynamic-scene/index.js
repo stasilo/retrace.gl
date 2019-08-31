@@ -35,6 +35,17 @@ import CoatedEmissiveMaterial from '../../materials/coated-emissive';
 import IsotropicVolumeMaterial from '../../materials/isotropic-volume';
 import AnisotropicVolumeMaterial from '../../materials/anisotropic-volume';
 
+import SdfSphere from '../../models/sdf-sphere';
+import SdfBox from '../../models/sdf-box';
+
+import  {
+    sdf as _sdf,
+    sdfOpUnion,
+    sdfOpUnionRound,
+    sdfOpSubtract,
+    sdfOpIntersect
+} from '../../models/sdf-model';
+
 import {
     random as _random,
     randomIdx as _randomIdx,
@@ -105,6 +116,17 @@ const diamond = (o) =>
     new Diamond(o);
 const volume = (o) =>
     new Volume(o);
+
+const sdfSphere = (o) =>
+    new SdfSphere(o).geometryData();
+const sdfBox = (o) =>
+    new SdfBox(o).geometryData();
+
+const sdf = _sdf;
+const opUnion = sdfOpUnion;
+const opUnionRound = sdfOpUnionRound;
+const opSubtract = sdfOpSubtract;
+const opIntersect = sdfOpIntersect;
 
 const texture = (o) =>
     new Texture(o);
