@@ -1,7 +1,7 @@
-import ObjLoader from 'obj-mtl-loader';
+// import ObjLoader from 'obj-mtl-loader';
 import {vec3} from 'gl-matrix';
 
-import {encodeObjModelTriangleVertexData} from '../../model-encoders/obj';
+// import {encodeObjModelTriangleVertexData} from '../../model-encoders/obj';
 
 import {
     range,
@@ -42,7 +42,6 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
 
     let oppedGeos = geometries.reduce((geoAcc, geoData, index) => {
         if(index === geometries.length - 1) {
-            // console.log('LAST ELEM - ABORT!');
             return [...geoAcc, geoData];
         }
 
@@ -112,9 +111,13 @@ const sdf = (...args) => {
     ];
 
     console.log('sdf header: ', csgHeader);
+
     return {
         isSdfGeometry: true,
-        data: dataArray
+        data: [
+            ...csgHeader,
+            ...dataArray
+        ]
     };
 };
 
@@ -128,7 +131,7 @@ class SdfModel {
         this.material = material;
         this.geoType = geoType;
 
-        this.opType = -1;
+        this.opType = sdfOperators.noOp;
         this.opRadius = -1;
 
         this.position = {
@@ -154,13 +157,18 @@ class SdfModel {
         return [
             this.geoType,
             this.opType,
-            -13, //this.opRadius,
+            -1, //this.opRadius,
 
             this.material
-                ? this.material.materialId
+                ? {materialName: this.material}
                 : 0,
             -1,
             -1,
+            // this.material
+            //     ? this.material.materialId
+            //     : 0,
+            // -1,
+            // -1,
 
             this.dimensions.x,
             this.dimensions.y,

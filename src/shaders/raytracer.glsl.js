@@ -17,21 +17,31 @@ const getSource = ({options, Scene}) =>
     precision highp sampler3D;
     // precision lowp sampler3D;
 
+    ${options.realTime
+        ? '#define REALTIME'
+        : ''
+    }
+
+    ${options.glslCamera
+        ? '#define GLSL_CAMERA'
+        : ''
+    }
+
     #define FLT_MAX 3.402823466e+38
 
-    #define T_MIN 0.0001
-    #define T_MAX 100000.0 //10000.0
+    #define T_MIN 0.00001 //0.00001
+    #define T_MAX 1000000.0 //100000.0 //10000.0
 
-    #define MAX_HIT_DEPTH 4
+
+    #ifdef REALTIME
+        #define MAX_HIT_DEPTH 2
+    #endif
+    #ifndef REALTIME
+        #define MAX_HIT_DEPTH 4
+    #endif
     #define NUM_SAMPLES ${options.numSamples}
 
-    // working
-    // #define MAX_MARCHING_STEPS  255
-    // #define MIN_DIST 0.0
-    // #define MAX_DIST 100000000.
-    // #define EPSILON 0.0001
-
-    #define MAX_MARCHING_STEPS 100 //255
+    #define MAX_MARCHING_STEPS 255 //255 //100
     #define MIN_DIST 0.0
     #define MAX_DIST T_MAX
     #define EPSILON 0.0001
@@ -46,16 +56,6 @@ const getSource = ({options, Scene}) =>
 
     #define DEG_TO_RAD(deg) deg * PI / 180.;
     #define RAD_TO_DEG(rad) rad * 180. / PI;
-
-    ${options.realTime
-        ? '#define REALTIME'
-        : ''
-    }
-
-    ${options.glslCamera
-        ? '#define GLSL_CAMERA'
-        : ''
-    }
 
     uniform float uTime;
     #ifndef REALTIME
@@ -154,7 +154,7 @@ const getSource = ({options, Scene}) =>
     #endif
 
     /*
-     * utils
+     * Utils
      */
 
     vec3 deNan(vec3 v) {
@@ -221,6 +221,34 @@ const getSource = ({options, Scene}) =>
         float z = r * cos(theta);
 
         return vec3(x, y, z);
+    }
+
+    /**
+     * Maximum/minumum elements of a vector
+     */
+
+    float vmax(vec2 v) {
+        return max(v.x, v.y);
+    }
+
+    float vmax(vec3 v) {
+        return max(max(v.x, v.y), v.z);
+    }
+
+    float vmax(vec4 v) {
+        return max(max(v.x, v.y), max(v.z, v.w));
+    }
+
+    float vmin(vec2 v) {
+        return min(v.x, v.y);
+    }
+
+    float vmin(vec3 v) {
+        return min(min(v.x, v.y), v.z);
+    }
+
+    float vmin(vec4 v) {
+        return min(min(v.x, v.y), min(v.z, v.w));
     }
 
     // better algo from: https://karthikkaranth.me/blog/generating-random-points-in-a-hitable/
@@ -429,7 +457,7 @@ const getSource = ({options, Scene}) =>
         return r0 + (1.-r0)*pow((1. - cosine), 5.);
     }
 
-    /*
+    /**
      * Ray handling
      */
 
@@ -978,17 +1006,32 @@ const getSource = ({options, Scene}) =>
         float size;
     };
 
+    SdfCsgHeader getPackedSdfCsgHeader(int csgIndex, int geoIndex) {
+        float offset = float(csgIndex) + float(geoIndex) * 4.;
+
+        float xOffset = mod(offset, DATA_TEX_SIZE);
+        float yOffset = floor(offset * DATA_TEX_INV_SIZE);
+        vec3 csgHeaderData = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        return SdfCsgHeader(
+            int(csgHeaderData.x), //opType
+            int(csgHeaderData.y), //axis
+            csgHeaderData.z //size
+        );
+    }
+
     struct SdfGeometry {
         int geoType;
-        int opType; // if -1, no union next
+        int opType;
         float opRadius;
         int materialId;
         vec3 dimensions;
         vec3 position;
     };
 
-    SdfGeometry getPackedSdf(int index) {
-        float offset = float(index) * 4.;
+    SdfGeometry getPackedSdf(int csgIndex, int geoIndex) {
+        // 1 + float(csgIndex) skips csg header
+        float offset = 1. + float(csgIndex) + float(geoIndex) * 4.;
 
         float xOffset = mod(offset, DATA_TEX_SIZE);
         float yOffset = floor(offset * DATA_TEX_INV_SIZE);
@@ -1016,32 +1059,9 @@ const getSource = ({options, Scene}) =>
         );
     }
 
-    // Maximum/minumum elements of a vector
-    float vmax(vec2 v) {
-    	return max(v.x, v.y);
-    }
-
-    float vmax(vec3 v) {
-    	return max(max(v.x, v.y), v.z);
-    }
-
-    float vmax(vec4 v) {
-    	return max(max(v.x, v.y), max(v.z, v.w));
-    }
-
-    float vmin(vec2 v) {
-    	return min(v.x, v.y);
-    }
-
-    float vmin(vec3 v) {
-    	return min(min(v.x, v.y), v.z);
-    }
-
-    float vmin(vec4 v) {
-    	return min(min(v.x, v.y), min(v.z, v.w));
-    }
-
-    // sdf operations
+    /**
+     * SDF CSG operations
+     */
 
     #define SDF_NOOP_OP 0
 
@@ -1066,10 +1086,13 @@ const getSource = ({options, Scene}) =>
         return max(d1,d2);
     }
 
-    // sdf domain operations
+    /**
+     * SDF domain operations
+     */
 
     // Repeat space along one axis. Use like this to repeat along the x axis:
     // <float cell = pMod1(p.x,5);> - using the return value is optional.
+
     #define SDF_PMOD1 1
     float pMod1(inout float p, float size) {
     	float halfsize = size*0.5;
@@ -1079,118 +1102,148 @@ const getSource = ({options, Scene}) =>
     }
 
     /**
-     * Signed distance function for a sphere centered at the origin with radius 1.0;
+     * Signed distance functions
      */
 
     #define SDF_SPHERE 1
     float sphereSdf(vec3 samplePoint, float radius) {
         return length(samplePoint) - radius;
-        // return length(samplePoint) - 0.1;
     }
 
-    // Box: correct distance to corners
+    // box: correct distance to corners
     #define SDF_BOX 2
     float boxSdf(vec3 p, vec3 b) {
     	vec3 d = abs(p) - b;
     	return length(max(d, vec3(0))) + vmax(min(d, vec3(0)));
     }
 
-
     /**
-     * Signed distance function describing the scene.
-     *
-     * Absolute value of the return value indicates the distance to the surface.
-     * Sign indicates whether the point is inside or outside the surface,
-     * negative indicating inside.
+     * Dynamic signed distance function parsing ("the scene sdf")
      */
-    // float sceneSdf(vec3 samplePoint) {
-    //     vec3 p1 = samplePoint - vec3(0., 19./2., 0.);
-    //     vec3 p2 = samplePoint - vec3(10., 19./2., 0.) + sin(uv.x*100.);
-    //
-    //     float d1 = sphereSdf(20., p1);
-    //     float d2 = sphereSdf(25., p2);
-    //
-    //     float d = opSubtraction(d1, d2);
-    //
-    //     d1 = sphereSdf(10., p1 - vec3(0., 15., 0.));
-    //
-    //     d = opUnionRound(d, d1, 0.1);
-    //
-    //     return d;
-    // }
 
-    float sceneSdf(vec3 samplePoint) {
-        int idx = 0;
+    void applySdfDomainOperation(SdfCsgHeader opHeader, inout vec3 p) {
+        switch(opHeader.opType) {
+            case SDF_NOOP_OP:
+                break;
+
+            case SDF_PMOD1: {
+                switch(opHeader.axis) {
+                    case SDF_X_AXIS:
+                        pMod1(/* => out */ p.x, opHeader.size);
+                        break;
+
+                    case SDF_Y_AXIS:
+                        pMod1(/* => out */ p.y, opHeader.size);
+                        break;
+
+                    case SDF_Z_AXIS:
+                        pMod1(/* => out */ p.z, opHeader.size);
+                        break;
+
+                    default:
+                        break;
+                }
+            }
+
+            default:
+                break;
+        }
+    }
+
+    void sdfGeometryDistance(SdfGeometry sdfData, vec3 p, inout float d) {
+        switch(sdfData.geoType) {
+            case SDF_SPHERE: {
+                float radius = sdfData.dimensions.x;
+                d = sphereSdf(p, radius);
+
+                break;
+            }
+
+            case SDF_BOX: {
+                d = boxSdf(p, sdfData.dimensions);
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+
+    // good info on materials:
+    // https://github.com/ajweeks/RaymarchingWorkshop
+
+    float sceneSdf(vec3 samplePoint, out int materialId) {
+        int csgIndex = 0;
+        int geoIndex = 0;
+
+        bool encounteredNewCsg = false;
 
         float d1 = 0.;
         float d2 = 0.;
 
+        materialId = 0;
+
         SdfGeometry sdfData;
+        SdfCsgHeader csgHeader;
 
         int opType = SDF_NOOP_OP;
         float opRadius = -1.;
 
+        csgHeader = getPackedSdfCsgHeader(csgIndex, geoIndex);
+
         while(true) {
-            sdfData = getPackedSdf(idx);
+            sdfData = getPackedSdf(csgIndex, geoIndex);
             if(sdfData.geoType == -1) {
                 break;
             }
 
             vec3 p = samplePoint - sdfData.position;
-            // pMod1(p.x, 5.);
-            // pMod1(p.z, 15.);
 
-            if(idx == 0) {
+            if(encounteredNewCsg) {
+                opType = SDF_UNION;
+                // materialId = sdfData.materialId;
+                csgHeader = getPackedSdfCsgHeader(csgIndex, geoIndex);
+                encounteredNewCsg = false;
+            }
+
+            applySdfDomainOperation(csgHeader, /* => out */ p);
+
+            if(geoIndex == 0) {
                 opType = sdfData.opType;
                 opRadius = sdfData.opRadius;
 
-                switch(sdfData.geoType) {
-                    case SDF_SPHERE: {
-                        float radius = sdfData.dimensions.x;
-                        d1 = sphereSdf(p, radius);
+                sdfGeometryDistance(sdfData, p, /* => out */ d1);
+                materialId = sdfData.materialId;
 
-                        break;
-                    }
+                // single sdf geo, no csg operation, or,
+                // the end of the current csg
 
-                    case SDF_BOX: {
-                        d1 = boxSdf(p, sdfData.dimensions);
-                        break;
-                    }
+                if(opType == SDF_NOOP_OP) {
+                    sdfData.opType = SDF_UNION;
+                    encounteredNewCsg = true;
 
-                    default:
-                        break;
+                    csgIndex += 1;
+                    geoIndex += 1;
                 }
             } else {
-                switch(sdfData.geoType) {
-                    case SDF_SPHERE: {
-                        float radius = sdfData.dimensions.x;
-                        d2 = sphereSdf(p, radius);
-
-                        break;
-                    }
-
-                    case SDF_BOX: {
-                        d2 = boxSdf(p, sdfData.dimensions);
-
-                        break;
-                    }
-
-                    default:
-                        break;
-                }
+                sdfGeometryDistance(sdfData, p, /* => out */ d2);
+                float prevDist = d1;
 
                 switch(opType) {
-                    case -1: {
-                        return d1;
-                    }
-
                     case SDF_UNION: {
                         d1 = opUnion(d1, d2);
+                        if(prevDist > d1) {
+                            materialId = sdfData.materialId;
+                        }
+
                         break;
                     }
 
                     case SDF_UNION_ROUND: {
                         d1 = opUnionRound(d1, d2, opRadius);
+                        if(prevDist > d2 && prevDist > d1) {
+                            materialId = sdfData.materialId;
+                        }
                         break;
                     }
 
@@ -1199,19 +1252,34 @@ const getSource = ({options, Scene}) =>
                         break;
                     }
 
+                    // a no op means we have no more
+                    // SDF's in this csg or have encountered a new csg "object"
+
                     case SDF_NOOP_OP:
+                        encounteredNewCsg = true;
+                        csgIndex += 1;
+
+                        break;
+
                     default:
                         break;
                 }
             }
 
-            opType = sdfData.opType;
-            opRadius = sdfData.opRadius ;
-
-            idx+=1;
+            if(!encounteredNewCsg) {
+                opType = sdfData.opType;
+                opRadius = sdfData.opRadius;
+                geoIndex += 1;
+            }
         }
 
+
         return d1;
+    }
+
+    float sceneSdf(vec3 p) {
+        int materialId;
+        return sceneSdf(p, materialId);
     }
 
     /**
@@ -1225,14 +1293,14 @@ const getSource = ({options, Scene}) =>
         ));
     }
 
-    float raymarchDistance(vec3 eye, vec3 marchingDirection, float start, float end) {
+    float raymarchDistance(Ray ray, float start, float end, out int materialId) {
         float depth = start;
 
         for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
-            float dist = sceneSdf(eye + depth * marchingDirection);
+            float dist = sceneSdf(ray.origin + depth * ray.dir, /* => out */ materialId);
 
             if (dist < EPSILON) {
-    			return depth;
+                return depth;
             }
 
             depth += dist;
@@ -1240,6 +1308,7 @@ const getSource = ({options, Scene}) =>
                 return end;
             }
         }
+
         return end;
     }
 
@@ -1813,22 +1882,28 @@ const getSource = ({options, Scene}) =>
 
         // https://www.sebastiansylvan.com/post/ray-tracing-signed-distance-functions/
 
-        float dist = raymarchDistance(ray.origin, ray.dir, 0., T_MAX);
-        if(dist < record.hitT && dist < T_MAX - EPSILON && dist > T_MIN) {
+        int sdfMaterialId;
+
+        float dist = raymarchDistance(ray, 0., T_MAX, /* => out */ sdfMaterialId);
+        if(dist < record.hitT &&
+            dist < (T_MAX - EPSILON) && dist > T_MIN)
+        {
             record.hasHit = true;
             record.hitT = dist;
-            record.hitPoint = pointOnRay(ray, dist);
-            record.material = getPackedMaterial(2);
 
+            record.hitPoint = pointOnRay(ray, record.hitT);
             record.normal = estimateSdfNormal(record.hitPoint);
-            record.color = vec3(0.99); //record.material.color;
+            record.material = getPackedMaterial(sdfMaterialId);
+
+            if(record.material.type != DIALECTRIC_MATERIAL_TYPE) {
+                record.hitPoint = record.hitPoint + EPSILON * record.normal;
+                // record.hitPoint = record.hitPoint + 1.00000001 * record.normal;
+            }
+
+
+            record.color = record.material.color;
         }
 
-        // if (dist > MAX_DIST - EPSILON) {
-        //     // Didn't hit anything
-        //     fragColor = vec4(0.0, 0.0, 0.0, 0.0);
-    	// 	return;
-        // }
 
         hitRecord = record;
     }

@@ -7,6 +7,7 @@ import {
     flatten,
     normedColor,
     isArray,
+    isObj,
     isHexColor,
     isFn
 } from '../../utils';
@@ -27,9 +28,36 @@ class Scene {
         return (async () => {
             this.textures = await new TextureList(textures);
             this.geometries = await this.finalizeGeometries(geometries);
-            //TODO: support multiple sdf "geos"
-            this.sdfGeometry = geometries
-                .filter(g => g.isSdfGeometry)[0];
+
+            this.sdfGeometry = flatten(
+                geometries
+                    .filter(g => g.isSdfGeometry)
+                    .map(g => g.data)
+                    .map(data => {
+                        data = data.map(sdfDataItem => {
+                            if(isObj(sdfDataItem) && 'materialName' in sdfDataItem) {
+                                const material = this.materials.elements
+                                    .find(material => 
+                                        material.name === sdfDataItem.materialName
+                                    );
+
+                                return material ? material.id : 0;
+                            }
+
+                            return sdfDataItem;
+                        });
+
+                        return data;
+                    })
+            );
+
+
+            console.log('constructed this.sdfGeometry: ', this.sdfGeometry);
+
+
+            // this.sdfGeometry = flatten(
+            //     geometries.filter(g => g.isSdfGeometry)
+            // );
 
             return this;
         })();

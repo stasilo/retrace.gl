@@ -59,7 +59,8 @@ async function raytraceApp({
 
     const materialData = scene.materials.getMaterialData();
     const sceneTextures = scene.textures.getTextures();
-    const sdfData = scene.sdfGeometry.data;
+    const sdfData = scene.sdfGeometry; //.data;
+
     const {bvhData, geometryData} = buildSceneBvh(scene);
 
     // https://webglfundamentals.org/webgl/lessons/webgl-data-textures.html
@@ -124,7 +125,7 @@ async function raytraceApp({
     let geometryDataPadded = new Float32Array(dataTextureSize * dataTextureSize * 3);
     let bvhDataPadded = new Float32Array(dataTextureSize * dataTextureSize * 3);
     let materialDataPadded = new Float32Array(dataTextureSize * dataTextureSize * 3);
-    let sdfDataPadded = new Float32Array(dataTextureSize * dataTextureSize * 3)//.fill(-1);
+    let sdfDataPadded = new Float32Array(dataTextureSize * dataTextureSize * 3).fill(-1);
 
     sdfData.forEach((v, n) =>
         sdfDataPadded[n] = v

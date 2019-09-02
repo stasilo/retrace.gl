@@ -2,35 +2,75 @@ scene({
     background: ['#000', '#010101'],
     // background: '#000',
     camera: camera({
-        lookFrom: {x: -2.291, y: 19.252, z: -71.281},
-        lookAt: {x: -1.873, y: 18.948, z: -66.792},
+        lookFrom: {x: 54.514, y: 16.116, z: -29.407},
+        lookAt: {x: 51.166, y: 16.268, z: -26.376},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1,
     }),
     geometries: [
-        sdf({
-                domainOp: 'mod1d',
-                axis: 'z',
-                size: 5
-            },
+        sdf(
+            // {
+            //     domainOp: 'mod1d',
+            //     axis: 'z',
+            //     size: 15
+            // },
             opUnionRound({radius: 6.0},
                 opSubtract(
                     sdfSphere({
+                        material: 'clearcoat-test',
                         radius: 10,
-                        position: {x: 9, y: 5, z: 0}
+                        position: {x: 9, y: 5+4, z: 0}
                     }),
                     sdfSphere({
+                        material: 'clearcoat-test',
                         radius: 10,
-                        position: {x: 0, y: 5, z: 0}
+                        position: {x: 0, y: 5+4, z: 0}
                     })
                 ),
                 sdfBox({
+                    // material: 'dialectric-test',
+                    material: `lambert-red`,
+                    // material: 'ceil-light',
                     dimensions: {x: 7, y: 7, z: 7},
-                    position: {x: 10, y: 25, z: 0}
+                    position: {x: 10, y: 25+4, z: 0}
                 })
             )
         ),
+        sdf(
+            // {
+            //     domainOp: 'mod1d',
+            //     axis: 'z',
+            //     size: 20
+            // },
+            sdfSphere({
+                material: 'dialectric-test',
+                // material: 'metal-fuzz-test',
+                radius: 10,
+                position: {x: 40, y: 25, z: 10}
+            })
+        ),
+        // WORKS:
+        // sdf({
+        //         domainOp: 'mod1d',
+        //         axis: 'z',
+        //         size: 5
+        //     },
+        //     sdfSphere({
+        //         radius: 10,
+        //         position: {x: 30, y: 5, z: 10}
+        //     })
+        // ),
+        // sdf({
+        //         domainOp: 'mod1d',
+        //         axis: 'z',
+        //         size: 5
+        //     },
+        //     sdfSphere({
+        //         radius: 10,
+        //         position: {x: 10, y: 25, z: 10}
+        //     })
+        // ),
         plane({
             material: 'floor-white',
             texture: {
@@ -73,26 +113,32 @@ scene({
             color: '#ffffff',
             albedo: [0.8, 0.8, 0.8]
         }),
+        lambertMaterial({
+            name: `lambert-red`,
+            color: '#ff0000',
+            albedo: [0.8, 0.8, 0.8]
+        }),
         emissiveMaterial({
             name: `ceil-light`,
             color: '#ffffff',
             intensity: 10
         }),
-        // dialectricMaterial({
-        //     name: 'dialectric-test',
-        //     color: '#cccccc',
-        //     refIdx: 1.8,
-        // }),
+        dialectricMaterial({
+            name: 'dialectric-test',
+            color: '#cccccc',
+            refIdx: 1.8,
+        }),
         clearcoatMaterial({
             name: 'clearcoat-test',
-            color: '#ff0000',
+            //color: '#ffffff',
+            color: '#101010',
             refIdx: 1.8,
         }),
         metalMaterial({
             name: 'metal-fuzz-test',
-            color: '#ffffff',
-            fuzz: 0.0,
-            albedo: [0.9, 0.9, 0.9]
+            color: '#aaaaaa',
+            fuzz: 0.5,
+            albedo: [1.0, 1.0, 1.0]
         }),
     ]
 });
