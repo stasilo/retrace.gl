@@ -28,10 +28,8 @@ const getSource = ({options, Scene}) =>
     }
 
     #define FLT_MAX 3.402823466e+38
-
-    #define T_MIN 0.00001 //0.00001
-    #define T_MAX 1000000.0 //100000.0 //10000.0
-
+    #define T_MIN 0.0001
+    #define T_MAX 10000.0
 
     #ifdef REALTIME
         #define MAX_HIT_DEPTH 2
@@ -39,6 +37,8 @@ const getSource = ({options, Scene}) =>
     #ifndef REALTIME
         #define MAX_HIT_DEPTH 4
     #endif
+
+    // #define MAX_HIT_DEPTH 4
     #define NUM_SAMPLES ${options.numSamples}
 
     #define MAX_MARCHING_STEPS 255 //255 //100
@@ -481,8 +481,12 @@ const getSource = ({options, Scene}) =>
         vec3 offset = camera.u * rd.x + camera.v * rd.y;
 
         if(camera.lensRadius > 0.) { // camera with aperture
+
+
             // vec3 dir = camera.lowerLeft + uv.x * camera.horizontal
             //     + uv.y * camera.vertical - camera.origin - offset;
+
+            // OBS: this normalize causes issues (the white corona on spheres in the demo scene!)
 
             vec3 dir = normalize(
                     camera.lowerLeft + uv.x * camera.horizontal
@@ -541,7 +545,7 @@ const getSource = ({options, Scene}) =>
 
         if(hitRecord.material.type == LAMBERT_MATERIAL_TYPE) {
             // get lambertian random reflection direction
-            ray.dir = hitRecord.normal + randomPointInUnitSphere();
+            ray.dir = normalize(hitRecord.normal + randomPointInUnitSphere());
             ray.invDir = 1./ray.dir;
             ray.origin = hitRecord.hitPoint;
 
@@ -552,8 +556,10 @@ const getSource = ({options, Scene}) =>
         // REFLECTIVE / METAL
 
         if(hitRecord.material.type == METAL_MATERIAL_TYPE) {
-            vec3 reflected = reflect(normalize(ray.dir), hitRecord.normal);
-            vec3 dir = reflected + hitRecord.material.fuzz * randomPointInUnitSphere();
+            // vec3 reflected = reflect(normalize(ray.dir), hitRecord.normal);
+            vec3 reflected = reflect(ray.dir, hitRecord.normal);
+
+            vec3 dir = normalize(reflected + hitRecord.material.fuzz * randomPointInUnitSphere());
 
             // dot(a, b) > 0 if a and b are pointing "in the same direction"
             if(dot(dir, hitRecord.normal) > 0.) {
@@ -587,7 +593,7 @@ const getSource = ({options, Scene}) =>
                 cosine = -dot(ray.dir, hitRecord.normal) / length(ray.dir);
             }
 
-            vec3 refracted = refract(normalize(ray.dir), normalize(outwardNormal), niOverNt);
+            vec3 refracted = refract(ray.dir, normalize(outwardNormal), niOverNt);
             if(refracted.x != 0.0 && refracted.y != 0.0 && refracted.z != 0.0) {
                 reflectProb = schlick(cosine, hitRecord.material.refIdx);
             } else {
@@ -596,11 +602,22 @@ const getSource = ({options, Scene}) =>
 
             if(rand() < reflectProb) {
                 vec3 reflected = reflect(ray.dir, hitRecord.normal);
-                ray.dir = reflected;
+                // ray.dir = reflected;
+                ray.dir = normalize(reflected);
                 ray.invDir = 1./ray.dir;
+
+                // TODO: add check for sphere tracing here!
+                // should only be done if sphere tracing !
+                hitRecord.hitPoint = hitRecord.hitPoint + (EPSILON*2. * outwardNormal);
+
             } else {
-                ray.dir = refracted;
+                // ray.dir = refracted;
+                ray.dir = normalize(refracted);
                 ray.invDir = 1./ray.dir;
+
+                // TODO: add check for sphere tracing here!
+                // should only be done if sphere tracing !
+                hitRecord.hitPoint = hitRecord.hitPoint + (EPSILON*2. * -outwardNormal);
             }
 
             ray.origin = hitRecord.hitPoint;
@@ -628,7 +645,9 @@ const getSource = ({options, Scene}) =>
                 cosine = -dot(ray.dir, hitRecord.normal) / length(ray.dir);
             }
 
-            vec3 refracted = refract(normalize(ray.dir), normalize(outwardNormal), niOverNt);
+            // vec3 refracted = refract(normalize(ray.dir), normalize(outwardNormal), niOverNt);
+            vec3 refracted = normalize(refract(ray.dir, normalize(outwardNormal), niOverNt));
+
             if(refracted.x != 0.0 && refracted.y != 0.0 && refracted.z != 0.0) {
                 reflectProb = schlick(cosine, hitRecord.material.refIdx);
             } else {
@@ -637,13 +656,15 @@ const getSource = ({options, Scene}) =>
 
             if(rand() < reflectProb) {
                 vec3 reflected = reflect(ray.dir, hitRecord.normal);
-                ray.dir = reflected;
+                // ray.dir = reflected;
+                ray.dir = normalize(reflected);
                 ray.invDir = 1./ray.dir;
                 color *= hitRecord.material.albedo; // * hitRecord.color;
 
             } else {
                 // get lambertian random reflection direction
-                ray.dir = hitRecord.normal + randomPointInUnitSphere();
+                // ray.dir = hitRecord.normal + randomPointInUnitSphere();
+                ray.dir = normalize(hitRecord.normal + randomPointInUnitSphere());
                 ray.invDir = 1./ray.dir;
                 color *= hitRecord.material.albedo * hitRecord.color;
             }
@@ -671,7 +692,7 @@ const getSource = ({options, Scene}) =>
                 cosine = -dot(ray.dir, hitRecord.normal) / length(ray.dir);
             }
 
-            vec3 refracted = refract(normalize(ray.dir), normalize(outwardNormal), niOverNt);
+            vec3 refracted = normalize(refract(ray.dir, normalize(outwardNormal), niOverNt));
             if(refracted.x != 0.0 && refracted.y != 0.0 && refracted.z != 0.0) {
                 reflectProb = schlick(cosine, hitRecord.material.refIdx);
             } else {
@@ -680,7 +701,7 @@ const getSource = ({options, Scene}) =>
 
             if(rand() < reflectProb) {
                 vec3 reflected = reflect(ray.dir, hitRecord.normal);
-                ray.dir = reflected;
+                ray.dir = normalize(reflected);
                 ray.invDir = 1./ray.dir;
 
                 ray.origin = hitRecord.hitPoint;
@@ -1063,7 +1084,7 @@ const getSource = ({options, Scene}) =>
      * SDF CSG operations
      */
 
-    #define SDF_NOOP_OP 0
+    #define SDF_NOOP 0
 
     #define SDF_UNION 1
     float opUnion(float d1, float d2) {
@@ -1114,8 +1135,16 @@ const getSource = ({options, Scene}) =>
     #define SDF_BOX 2
     float boxSdf(vec3 p, vec3 b) {
     	vec3 d = abs(p) - b;
+
     	return length(max(d, vec3(0))) + vmax(min(d, vec3(0)));
     }
+
+    // float roundedBoxSdf(vec3 p, vec3 b) {
+    //     float r = 0.5;
+    //     vec3 d = abs(p) - b;
+    //     return length(max(d,0.0)) - r
+    //     + min(max(d.x,max(d.y,d.z)),0.0); // remove this line for an only partially signed sdf
+    // }
 
     /**
      * Dynamic signed distance function parsing ("the scene sdf")
@@ -1123,7 +1152,7 @@ const getSource = ({options, Scene}) =>
 
     void applySdfDomainOperation(SdfCsgHeader opHeader, inout vec3 p) {
         switch(opHeader.opType) {
-            case SDF_NOOP_OP:
+            case SDF_NOOP:
                 break;
 
             case SDF_PMOD1: {
@@ -1186,7 +1215,7 @@ const getSource = ({options, Scene}) =>
         SdfGeometry sdfData;
         SdfCsgHeader csgHeader;
 
-        int opType = SDF_NOOP_OP;
+        int opType = SDF_NOOP;
         float opRadius = -1.;
 
         csgHeader = getPackedSdfCsgHeader(csgIndex, geoIndex);
@@ -1218,7 +1247,7 @@ const getSource = ({options, Scene}) =>
                 // single sdf geo, no csg operation, or,
                 // the end of the current csg
 
-                if(opType == SDF_NOOP_OP) {
+                if(opType == SDF_NOOP) {
                     sdfData.opType = SDF_UNION;
                     encounteredNewCsg = true;
 
@@ -1252,10 +1281,15 @@ const getSource = ({options, Scene}) =>
                         break;
                     }
 
+                    case SDF_INTERSECT: {
+                        d1 = opIntersection(d1, d2);
+                        break;
+                    }
+
                     // a no op means we have no more
                     // SDF's in this csg or have encountered a new csg "object"
 
-                    case SDF_NOOP_OP:
+                    case SDF_NOOP:
                         encounteredNewCsg = true;
                         csgIndex += 1;
 
@@ -1293,11 +1327,14 @@ const getSource = ({options, Scene}) =>
         ));
     }
 
-    float raymarchDistance(Ray ray, float start, float end, out int materialId) {
+    float sphereTraceDistance(Ray ray, float start, float end, out int materialId) {
         float depth = start;
 
         for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
             float dist = sceneSdf(ray.origin + depth * ray.dir, /* => out */ materialId);
+            if(materialId == DIALECTRIC_MATERIAL_TYPE) {
+                dist = abs(dist);
+            }
 
             if (dist < EPSILON) {
                 return depth;
@@ -1882,9 +1919,47 @@ const getSource = ({options, Scene}) =>
 
         // https://www.sebastiansylvan.com/post/ray-tracing-signed-distance-functions/
 
+        // float hitBvhBBox( vec3 minCorner, vec3 maxCorner, Ray r) {
+
+        // if(
+        //     hitBvhBBox(
+        //         vec3(9.-10., 9.-10., 0.-10.),
+        //         vec3(9.+10., 9.+25., 0.+10.),
+        //         ray
+        //     ) < record.hitT
+        //     ||
+        //     hitBvhBBox(
+        //         vec3(10. - 10., 10. - 10., 20. - 10.),
+        //         vec3(10. + 10., 10. + 10., 20. + 10.),
+        //         ray
+        //     ) < record.hitT
+        // ) {
+        //     int sdfMaterialId;
+        //
+        //     float dist = sphereTraceDistance(ray, 0., T_MAX, /* => out */ sdfMaterialId);
+        //     if(dist < record.hitT &&
+        //         dist < (T_MAX - EPSILON) && dist > T_MIN)
+        //     {
+        //         record.hasHit = true;
+        //         record.hitT = dist;
+        //
+        //         record.hitPoint = pointOnRay(ray, record.hitT);
+        //         record.normal = estimateSdfNormal(record.hitPoint);
+        //         record.material = getPackedMaterial(sdfMaterialId);
+        //
+        //         if(record.material.type != DIALECTRIC_MATERIAL_TYPE) {
+        //             record.hitPoint = record.hitPoint + EPSILON * record.normal;
+        //         }
+        //
+        //         // record.hitPoint = record.hitPoint + EPSILON * record.normal;
+        //
+        //         record.color = record.material.color;
+        //     }
+        // }
+
         int sdfMaterialId;
 
-        float dist = raymarchDistance(ray, 0., T_MAX, /* => out */ sdfMaterialId);
+        float dist = sphereTraceDistance(ray, 0., T_MAX, /* => out */ sdfMaterialId);
         if(dist < record.hitT &&
             dist < (T_MAX - EPSILON) && dist > T_MIN)
         {
@@ -1897,9 +1972,9 @@ const getSource = ({options, Scene}) =>
 
             if(record.material.type != DIALECTRIC_MATERIAL_TYPE) {
                 record.hitPoint = record.hitPoint + EPSILON * record.normal;
-                // record.hitPoint = record.hitPoint + 1.00000001 * record.normal;
             }
 
+            // record.hitPoint = record.hitPoint + EPSILON * record.normal;
 
             record.color = record.material.color;
         }
@@ -1933,7 +2008,7 @@ const getSource = ({options, Scene}) =>
                     break;
                 }
 
-                if(!shadeAndScatter(hitRecord, /* out => */ color, /* out => */ ray)) {
+                if(!shadeAndScatter(/* out => */ hitRecord, /* out => */ color, /* out => */ ray)) {
                     break;
                 }
             } else {
@@ -1941,7 +2016,10 @@ const getSource = ({options, Scene}) =>
                 break;
             }
 
-            if(dot(color, color) < 0.0001) return color; // optimization
+            // // optimization?
+            // if(dot(color, color) < 0.0001) {
+            //     return color;
+            // }
         }
 
         return color;

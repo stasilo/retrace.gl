@@ -1,0 +1,117 @@
+scene({
+    background: ['#000', '#010101'],
+    // background: '#ccc',
+    camera: camera({
+        lookFrom: {x: 38.675, y: 58.313, z: 36.589},
+        lookAt: {x: 36.114, y: 56.007, z: 33.659},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1,
+    }),
+    geometries: [
+        //TODO: make sdf accept functions
+        sdf((() => {
+            const bigBox = sdfBox({
+                // material: 'dialectric-test',
+                material: `lambert-red`,
+                // material: 'ceil-light',
+                dimensions: {x: 7, y: 15, z: 15},
+                position: {x: 10, y: 29, z: 0}
+            });
+
+            const smallBoxes = range2d(4)
+                |> takeRandom
+                |> #.map(([yi, zi]) => {
+                    return sdfBox({
+                        material: `lambert-red`,
+                        dimensions: {x: 10.5, y: 1.1, z: 2.1},
+                        position: {
+                            x: 18,
+                            y: 29 + 14.1 - yi*4,
+                            z: 14.1 - zi*4//2
+                            // y: 29 + 14.1 - yi*2,
+                            // z: 14.1 - zi*2
+                        }
+                    });
+                });
+
+            return opSubtract(bigBox, ...smallBoxes);
+        })()),
+        plane({
+            material: 'floor-white',
+            texture: {
+                name: 'check',
+                uvScale: 20
+            },
+            scale: 1000,
+            position: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: 30,
+                y: 80.0,
+                z: 0
+            },
+        })
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.3, 0.0, 0.0, 1.);
+                }
+            `
+        })
+    ],
+    materials: [
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        // lambertMaterial({
+        //     name: `lambert-red`,
+        //     color: '#ff0000',
+        //     albedo: [0.8, 0.8, 0.8]
+        // }),
+        clearcoatMaterial({
+            name: 'lambert-red',
+            color: '#ffffff',
+            // color: '#101010',
+            refIdx: 1.8,
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        }),
+        dialectricMaterial({
+            name: 'dialectric-test',
+            // color: '#cccccc',
+            color: '#ffffff',
+            refIdx: 1.8,
+        }),
+        clearcoatMaterial({
+            name: 'clearcoat-test',
+            // color: '#ffffff',
+            color: '#101010',
+            refIdx: 1.8,
+        }),
+        metalMaterial({
+            name: 'metal-fuzz-test',
+            color: '#aaaaaa',
+            fuzz: 0.1,
+            albedo: [1.0, 1.0, 1.0]
+        }),
+    ]
+});

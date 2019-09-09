@@ -37,7 +37,7 @@ const standardSdfDataArrayLength = 12;
 
 const sdfOperation = (opCode, opArguments, ...geometries) => {
     if(geometries.length < 2) {
-        throw 'Error: union operation requires at least 2 arguments';
+        throw 'Error: sdf operation requires at least 2 arguments';
     }
 
     let oppedGeos = geometries.reduce((geoAcc, geoData, index) => {
