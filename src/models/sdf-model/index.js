@@ -55,11 +55,11 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
         switch(opCode) {
             case sdfOperators.unionRound:
                 if('radius' in opArguments) {
-                    console.log('SETTING RADIUS TO: ', opArguments.radius);
-                    console.log('RADIUS bef: ', geoData[offset + 1]);
-                    console.log('before: ', geoData);
+                    // console.log('SETTING RADIUS TO: ', opArguments.radius);
+                    // console.log('RADIUS bef: ', geoData[offset + 1]);
+                    // console.log('before: ', geoData);
                     geoData[offset + 1] = opArguments.radius;
-                    console.log('after: ', geoData);
+                    // console.log('after: ', geoData);
                 }
 
                 break;
@@ -71,7 +71,7 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
         return [...geoAcc, geoData];
     }, []);
 
-    console.dir(flatten(oppedGeos));
+    console.log('oppenGeos: ', flatten(oppedGeos));
     return flatten(oppedGeos);
 };
 
@@ -107,12 +107,130 @@ const sdf = (...args) => {
 
         opts.size
             ? opts.size
-            : 1
+            : 1,
     ];
 
+    const noOfSdfsInCsg = dataArray.length / standardSdfDataArrayLength;
+
     console.log('sdf header: ', csgHeader);
+    console.log('NO OF SDFS IN THIS CSG: ', noOfSdfsInCsg);
+
+    // let minCoords = vec3.create();
+    // let maxCoords = vec3.create();
+
+    const constructCsgBoundingBox = (geoType, dataArray, offset) => {
+        let minCoords = vec3.create();
+        let maxCoords = vec3.create();
+
+        let position, dimensions;
+
+        // let padding = vec3.fromValues(1, 1, 1);
+        switch(geoType) {
+            case sdfGeometryTypes.sphere:
+                // const radius = dataArray[offset + 6];
+
+                position = vec3.fromValues(
+                    dataArray[offset + 9],
+                    dataArray[offset + 10],
+                    dataArray[offset + 11]
+                );
+
+                // radius
+                dimensions = vec3.fromValues(
+                    dataArray[offset + 6],
+                    dataArray[offset + 7],
+                    dataArray[offset + 8]
+                );
+
+
+                vec3.sub(minCoords, position, dimensions);
+                // vec3.sub(minCoords, minCoords, padding);
+
+                vec3.add(maxCoords, position, dimensions);
+                // vec3.add(maxCoords, maxCoords, padding);
+
+                break;
+
+            case sdfGeometryTypes.box:
+                // const radius = dataArray[offset + 6];
+
+                position = vec3.fromValues(
+                    dataArray[offset + 9],
+                    dataArray[offset + 10],
+                    dataArray[offset + 11]
+                );
+
+                // radius
+                dimensions = vec3.fromValues(
+                    dataArray[offset + 6],
+                    dataArray[offset + 7],
+                    dataArray[offset + 8]
+                );
+
+
+                vec3.sub(minCoords, position, dimensions);
+                // vec3.sub(minCoords, minCoords, padding);
+
+                vec3.add(maxCoords, position, dimensions);
+                // vec3.add(maxCoords, maxCoords, padding);
+
+                break;
+
+            default:
+                break;
+        }
+
+        return {
+            minCoords,
+            maxCoords
+        };
+    };
+
+    let finalBounds;
+    if(noOfSdfsInCsg == 1) {
+        const geoType = dataArray[0];
+        finalBounds = constructCsgBoundingBox(geoType, dataArray, 0);
+
+    } else {
+        let boundingBoxes = [];
+        range(0, noOfSdfsInCsg).forEach(i => {
+            const offset = standardSdfDataArrayLength * i;
+            const prevOffset = standardSdfDataArrayLength * (i - 1);
+            const prevOp = i > 0 ?
+                dataArray[prevOffset + 1]
+                : -1;
+            const geoType = dataArray[offset];
+
+            finalBounds = constructCsgBoundingBox(geoType, dataArray, offset);
+
+            console.log('prevOp: ', prevOp);
+            if(prevOp != sdfOperators.subtract) {
+                boundingBoxes.push(finalBounds);
+            } else {
+                console.log('SKIPPING (subtract): ', finalBounds);
+            }
+        });
+
+        console.log('!!!!!!!!!!!boundingBoxes: ', boundingBoxes);
+
+        const minBounds = boundingBoxes.map(bb => bb.minCoords);
+        const maxBounds = boundingBoxes.map(bb => bb.maxCoords);
+
+        minBounds.forEach(mb =>
+            vec3.min(finalBounds.minCoords, finalBounds.minCoords, mb)
+        );
+
+        maxBounds.forEach(mb =>
+            vec3.max(finalBounds.maxCoords, finalBounds.maxCoords, mb)
+        );
+
+        console.log('FOUND MIN BOUNDS FOR BB: ', finalBounds.minCoords);
+        console.log('FOUND MAX BOUNDS FOR BB: ', finalBounds.maxCoords);
+    }
 
     return {
+        boundingBox: finalBounds,
+        includeInBvh: !defined(opts.domainOp),
         isSdfGeometry: true,
         data: [
             ...csgHeader,
@@ -155,28 +273,23 @@ class SdfModel {
 
     geometryData() {
         return [
-            this.geoType,
-            this.opType,
-            -1, //this.opRadius,
+            this.geoType, // 0
+            this.opType, // 1
+            -1, //this.opRadius, // 2
 
-            this.material
+            this.material // 3
                 ? {materialName: this.material}
                 : 0,
-            -1,
-            -1,
-            // this.material
-            //     ? this.material.materialId
-            //     : 0,
-            // -1,
-            // -1,
+            -1, // 4
+            -1, // 5
 
-            this.dimensions.x,
-            this.dimensions.y,
-            this.dimensions.z,
+            this.dimensions.x, // 6
+            this.dimensions.y, // 7
+            this.dimensions.z, // 8
 
-            this.position.x,
-            this.position.y,
-            this.position.z,
+            this.position.x, // 9
+            this.position.y, // 10
+            this.position.z, // 11
         ];
     }
 }

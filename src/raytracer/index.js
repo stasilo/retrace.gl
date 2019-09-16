@@ -59,7 +59,7 @@ async function raytraceApp({
 
     const materialData = scene.materials.getMaterialData();
     const sceneTextures = scene.textures.getTextures();
-    const sdfData = scene.sdfGeometry; //.data;
+    const sdfData = scene.sdfGeometryData; //.data;
 
     const {bvhData, geometryData} = buildSceneBvh(scene);
 

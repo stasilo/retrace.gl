@@ -25,16 +25,17 @@ class Scene {
 
         this.materials = new MaterialList(materials);
 
+        console.log('raw bvh sdfs: ', geometries.filter(g => g.isSdfGeometry && g.includeInBvh).slice(0));
+
         return (async () => {
             this.textures = await new TextureList(textures);
             this.geometries = await this.finalizeGeometries(geometries);
 
-            this.sdfGeometry = flatten(
+            this.sdfGeometryData = flatten(
                 geometries
                     .filter(g => g.isSdfGeometry)
-                    .map(g => g.data)
-                    .map(data => {
-                        data = data.map(sdfDataItem => {
+                    .map(g => {
+                        const data = g.data = g.data.map(sdfDataItem => {
                             if(isObj(sdfDataItem) && 'materialName' in sdfDataItem) {
                                 const material = this.materials.elements
                                     .find(material => 
@@ -51,9 +52,11 @@ class Scene {
                     })
             );
 
+            this.sdfGeometries = geometries
+                .filter(g => g.isSdfGeometry && g.includeInBvh);
 
-            console.log('constructed this.sdfGeometry: ', this.sdfGeometry);
-
+            console.log('constructed this.sdfGeometryData: ', this.sdfGeometryData);
+            console.log('constructed this.sdfGeometries: ', this.sdfGeometries);
 
             // this.sdfGeometry = flatten(
             //     geometries.filter(g => g.isSdfGeometry)
@@ -71,7 +74,7 @@ class Scene {
 
         return geometries
             .filter(hitable =>
-                hitable && hitable.includeInBvh
+                hitable && hitable.includeInBvh && !hitable.isSdfGeometry
             ).map(hitable => {
                 // replace material name with name + id
                 if(defined(hitable.material)) {

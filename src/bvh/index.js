@@ -6,7 +6,8 @@ import {range, hashCode} from '../utils';
 const geometryTypes = {
     triangle: 1,
     sphere: 2,
-    volumeAabb: 3
+    volumeAabb: 3,
+    sdf: 4,
 };
 
 // 3 * vec3() vertices + 3 * vec3() normal + 3 * vec3() texture data + 5 * vec3() meta data
@@ -18,20 +19,25 @@ function buildSceneBvh(scene) {
             geos.concat(geometry.geometryData)
         , []);
 
+    console.log('buildSceneBvh() - scene.sdfGeometries: ', scene.sdfGeometries);
+
     // let geometries = scene.geometries
     //     .reduce((geos, geometry) => {
     //         geos.push(...geometry.geometryData);
     //         return geos;
     //     }, []);
 
-    return {
-        bvhData: buildBvh(geometries),
-        geometryData: geometries
-    }
+    // return {
+    //     bvhData: buildBvh(geometries, scene.sdfGeometries),
+    //     geometryData: geometries
+    // }
+
+    return buildBvh(geometries, scene.sdfGeometries);
 }
 
-function buildBvh(geometryData) {
+function buildBvh(geometryData, sdfGeometries) {
     let totalGeoCount = (geometryData.length / geoTexturePackedBlockDataSize);
+    let totalSdfCount = sdfGeometries.length;
 
     let vp0 = vec3.create();
     let vp1 = vec3.create();
@@ -41,8 +47,10 @@ function buildBvh(geometryData) {
     let geoBoundBoxMax = vec3.create();
     let geoBoundBoxCentroid = vec3.create();
 
-    let totalWork = new Uint32Array(totalGeoCount);
+    let totalWork = new Uint32Array(totalGeoCount + totalSdfCount);
     let aabbArray = [];
+
+    console.log('totalGeoCount: ', totalGeoCount);
 
     range(0, totalGeoCount)
         .forEach(i => {
@@ -131,6 +139,7 @@ function buildBvh(geometryData) {
                     break;
             }
 
+            console.log('geometryData PRE: ', geometryData);
 
             aabbArray[9 * i + 0] = geoBoundBoxMin[0];
             aabbArray[9 * i + 1] = geoBoundBoxMin[1];
@@ -145,7 +154,124 @@ function buildBvh(geometryData) {
             aabbArray[9 * i + 8] = geoBoundBoxCentroid[2];
 
             totalWork[i] = i;
+
+            console.log(`totalWork[${i}] = ${i}`);
         });
+
+    let sdfOffset = 0;
+    range(0, totalSdfCount)
+        .forEach(i => {
+            const geometry = sdfGeometries[i];
+            const j = totalGeoCount + i;
+
+            const dummySdf = [
+                // vec3 v0
+                -1, //this.position.x,
+                -1, //this.position.y,
+                -1, //this.position.z,
+
+                // vec3 v1
+                -1, //this.radius,
+                -1,
+                -1,
+
+                // vec3 v2
+                -1,
+                -1,
+                -1,
+
+                // vec3 n0
+                -1,
+                -1,
+                -1,
+
+                // vec3 n1
+                -1,
+                -1,
+                -1,
+
+                // vec3 n2
+                -1,
+                -1,
+                -1,
+
+                // vec3 t0
+                -1,
+                -1,
+                -1,
+
+                // vec3 t1
+                -1,
+                -1,
+                -1,
+
+                // vec3 t2
+                -1,
+                -1,
+                -1,
+
+                // vec3 meta1
+                0, //this.material.materialId,
+                sdfOffset, // smooth shading
+                geometryTypes.sdf, //geometryTypes.sphere,
+
+                // vec3 meta2
+                -1,
+                -1,
+                -1,
+
+                // vec3 meta3
+                -1,
+                -1, //this.normalMapScale.x,
+                -1, //this.normalMapScale.y,
+
+                // vec3 meta4
+                -1, //this.textureUvScale.x,
+                -1, //this.textureUvScale.y,
+                -1,
+
+                // vec3 meta5
+                -1, //this.normalUvScale.x,
+                -1, //this.normalUvScale.y,
+                -1
+            ];
+
+            console.log('Adding sdf dummy geo: ', dummySdf);
+
+            geometryData = geometryData.concat(dummySdf);
+
+            console.log('geometry.boundingBox.minCoords: ', geometry.boundingBox.minCoords);
+
+            geoBoundBoxMin = vec3.fromValues(...geometry.boundingBox.minCoords);
+            geoBoundBoxMax = vec3.fromValues(...geometry.boundingBox.maxCoords);
+            vec3.lerp(geoBoundBoxCentroid, geoBoundBoxMin, geoBoundBoxMax, 0.5);
+
+            console.log('Sdf bounding boxes: ');
+            console.log('geoBoundBoxMin: ', geoBoundBoxMin);
+            console.log('geoBoundBoxMax: ', geoBoundBoxMax);
+            console.log('geoBoundBoxCentroid: ', geoBoundBoxCentroid);
+
+
+            aabbArray[9 * j + 0] = geoBoundBoxMin[0];
+            aabbArray[9 * j + 1] = geoBoundBoxMin[1];
+            aabbArray[9 * j + 2] = geoBoundBoxMin[2];
+
+            aabbArray[9 * j + 3] = geoBoundBoxMax[0];
+            aabbArray[9 * j + 4] = geoBoundBoxMax[1];
+            aabbArray[9 * j + 5] = geoBoundBoxMax[2];
+
+            aabbArray[9 * j + 6] = geoBoundBoxCentroid[0];
+            aabbArray[9 * j + 7] = geoBoundBoxCentroid[1];
+            aabbArray[9 * j + 8] = geoBoundBoxCentroid[2];
+
+            totalWork[j] = j;
+            console.log(`totalWork[${j}] = ${j}`);
+
+            console.log('geometry: ', geometry);
+
+            sdfOffset += geometry.data.length / 3;
+        });
+
 
     // build the bvh
     let buildNodes = bvhBuildIterative(totalWork, aabbArray);
@@ -168,7 +294,13 @@ function buildBvh(geometryData) {
             return bvh;
         }, []);
 
-    return flatBvh;
+    console.log('geometryData: ', geometryData);
+
+    // return flatBvh;
+    return {
+        bvhData: flatBvh,
+        geometryData
+    }
 }
 
 export {
