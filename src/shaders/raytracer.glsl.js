@@ -1,13 +1,18 @@
 import {definedNotNull, glslFloat} from '../utils';
 import {geometryTypes, geoTexturePackedBlockDataSize} from '../bvh';
 
+import {
+    sdfGeometryTypes,
+    sdfOperators,
+    sdfDomainOperations,
+    standardSdfDataArrayLength,
+    sdfHeaderOffsetSize
+} from '../models/sdf-model';
+
 import Texture from '../textures/texture';
 import VolumeTexture from '../textures/volume-texture';
 
 import simplexNoise from './lib/noise/simplex.glsl';
-
-// TODO: maybe port this to glsl es?
-// import hgSdf from './lib/sdf/hg_sdf.glsl';
 
 const getSource = ({options, Scene}) =>
 `   #version 300 es
@@ -38,7 +43,6 @@ const getSource = ({options, Scene}) =>
         #define MAX_HIT_DEPTH 4
     #endif
 
-    // #define MAX_HIT_DEPTH 4
     #define NUM_SAMPLES ${options.numSamples}
 
     #define MAX_MARCHING_STEPS 255 //255 //100
@@ -46,10 +50,8 @@ const getSource = ({options, Scene}) =>
     #define MAX_DIST T_MAX
     #define EPSILON 0.0001
 
-
     #define DATA_TEX_SIZE ${glslFloat(options.dataTexSize)}
     #define DATA_TEX_INV_SIZE ${glslFloat(1/options.dataTexSize)}
-
     #define DATA_TEX_OFFSET_SIZE ${glslFloat(geoTexturePackedBlockDataSize/3)}
 
     #define PI 3.141592653589793
@@ -113,10 +115,10 @@ const getSource = ({options, Scene}) =>
 
         switch(textureId) {
             ${Scene.textures.getTextures().filter(texture => texture instanceof VolumeTexture).map(texture => `
-                    case ${texture.id}:
-                        color = texture(uSceneTex${texture.id}, uv);
-                        break;
-                `).join('\n')}
+                case ${texture.id}:
+                    color = texture(uSceneTex${texture.id}, uv);
+                    break;
+            `).join('\n')}
 
             default:
                 break;
@@ -221,6 +223,14 @@ const getSource = ({options, Scene}) =>
         float z = r * cos(theta);
 
         return vec3(x, y, z);
+    }
+
+    // polynomial smooth min (k = 0.1);
+    // from: https://github.com/ajweeks/RaymarchingWorkshop
+
+    float sminCubic(float a, float b, float k) {
+        float h = max(k-abs(a-b), 0.0);
+        return min(a, b) - h*h*h/(6.0*k*k);
     }
 
     /**
@@ -1018,6 +1028,9 @@ const getSource = ({options, Scene}) =>
      * SDF handling
      */
 
+    #define SDF_DATA_TEX_OFFSET_SIZE ${glslFloat(standardSdfDataArrayLength/3)}
+    #define SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE ${glslFloat(sdfHeaderOffsetSize/3)}
+
     #define SDF_X_AXIS 0
     #define SDF_Y_AXIS 1
     #define SDF_Z_AXIS 2
@@ -1029,7 +1042,6 @@ const getSource = ({options, Scene}) =>
     };
 
     SdfCsgHeader getPackedSdfCsgHeader(float offset) {
-
         float xOffset = mod(offset, DATA_TEX_SIZE);
         float yOffset = floor(offset * DATA_TEX_INV_SIZE);
         vec3 csgHeaderData = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
@@ -1042,27 +1054,16 @@ const getSource = ({options, Scene}) =>
     }
 
     SdfCsgHeader getPackedSdfCsgHeader(int csgIndex, int geoIndex) {
-        float offset = float(csgIndex) + float(geoIndex) * 4.;
+        float offset = float(csgIndex) * SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE
+            + float(geoIndex) * SDF_DATA_TEX_OFFSET_SIZE;
         return getPackedSdfCsgHeader(offset);
-
-        // float offset = float(csgIndex) + float(geoIndex) * 4.;
-        //
-        // float xOffset = mod(offset, DATA_TEX_SIZE);
-        // float yOffset = floor(offset * DATA_TEX_INV_SIZE);
-        // vec3 csgHeaderData = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-        //
-        // return SdfCsgHeader(
-        //     int(csgHeaderData.x), //opType
-        //     int(csgHeaderData.y), //axis
-        //     csgHeaderData.z //size
-        // );
     }
-
 
     struct SdfGeometry {
         int geoType;
         int opType;
         float opRadius;
+        float colorBlendAmount;
         int materialId;
         vec3 dimensions;
         vec3 position;
@@ -1085,10 +1086,15 @@ const getSource = ({options, Scene}) =>
         yOffset = floor((offset + 3.) * DATA_TEX_INV_SIZE);
         vec3 sdfData4 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
+        xOffset = mod(offset + 4., DATA_TEX_SIZE);
+        yOffset = floor((offset + 4.) * DATA_TEX_INV_SIZE);
+        vec3 sdfData5 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
         return SdfGeometry(
             int(sdfData1.x), // geo type
             int(sdfData1.y), // op type
             float(sdfData1.z), //  op radius
+            float(sdfData5.x), // color blend amount
             int(sdfData2.x), // material id
             sdfData3, // dimensions
             sdfData4 // position
@@ -1096,8 +1102,9 @@ const getSource = ({options, Scene}) =>
     }
 
     SdfGeometry getPackedSdf(int csgIndex, int geoIndex) {
-        // 1 + float(csgIndex) skips csg header
-        float offset = 1. + float(csgIndex) + float(geoIndex) * 4.;
+        float offset = SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE
+            + float(csgIndex) * SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE
+            + float(geoIndex) * SDF_DATA_TEX_OFFSET_SIZE;
         return getPackedSdf(offset);
     }
 
@@ -1105,25 +1112,25 @@ const getSource = ({options, Scene}) =>
      * SDF CSG operations
      */
 
-    #define SDF_NOOP 0
+    #define SDF_NOOP ${sdfOperators.noOp}
 
-    #define SDF_UNION 1
+    #define SDF_UNION ${sdfOperators.union}
     float opUnion(float d1, float d2) {
         return min(d1,d2);
     }
 
-    #define SDF_UNION_ROUND 2
+    #define SDF_UNION_ROUND ${sdfOperators.unionRound}
     float opUnionRound(float a, float b, float r) {
         vec2 u = max(vec2(r - a,r - b), vec2(0));
         return max(r, min (a, b)) - length(u);
     }
 
-    #define SDF_SUBSTRACT 3
+    #define SDF_SUBTRACT ${sdfOperators.subtract}
     float opSubtraction( float d1, float d2) {
         return max(-d1,d2);
     }
 
-    #define SDF_INTERSECT 4
+    #define SDF_INTERSECT ${sdfOperators.intersect}
     float opIntersection(float d1, float d2) {
         return max(d1,d2);
     }
@@ -1134,8 +1141,7 @@ const getSource = ({options, Scene}) =>
 
     // Repeat space along one axis. Use like this to repeat along the x axis:
     // <float cell = pMod1(p.x,5);> - using the return value is optional.
-
-    #define SDF_PMOD1 1
+    #define SDF_PMOD1 ${sdfDomainOperations.mod1d}
     float pMod1(inout float p, float size) {
     	float halfsize = size*0.5;
     	float c = floor((p + halfsize)/size);
@@ -1147,13 +1153,13 @@ const getSource = ({options, Scene}) =>
      * Signed distance functions
      */
 
-    #define SDF_SPHERE 1
+    #define SDF_SPHERE ${sdfGeometryTypes.sphere}
     float sphereSdf(vec3 samplePoint, float radius) {
         return length(samplePoint) - radius;
     }
 
     // box: correct distance to corners
-    #define SDF_BOX 2
+    #define SDF_BOX ${sdfGeometryTypes.box}
     float boxSdf(vec3 p, vec3 b) {
     	vec3 d = abs(p) - b;
 
@@ -1297,7 +1303,7 @@ const getSource = ({options, Scene}) =>
                         break;
                     }
 
-                    case SDF_SUBSTRACT: {
+                    case SDF_SUBTRACT: {
                         d1 = opSubtraction(d2, d1);
                         break;
                     }
@@ -1319,7 +1325,12 @@ const getSource = ({options, Scene}) =>
                     default:
                         break;
                 }
+
             }
+
+            // if(d1 > T_MAX) {
+            //     return d1;
+            // }
 
             if(!encounteredNewCsg) {
                 opType = sdfData.opType;
@@ -1337,8 +1348,15 @@ const getSource = ({options, Scene}) =>
         return sceneSdf(p, materialId);
     }
 
-    float bvhSceneSdf(vec3 samplePoint, out int materialId, float sdfDataTexOffset) {
-        // int csgIndex = 0;
+    float bvhSceneSdf(
+        vec3 samplePoint,
+        float sdfDataTexOffset,
+        out int materialId,
+        out vec3 color
+    ) {
+        color = vec3(-1.);
+        float prevColor;
+
         int geoIndex = 0;
 
         bool finished = false;
@@ -1353,11 +1371,12 @@ const getSource = ({options, Scene}) =>
 
         int opType = SDF_NOOP;
         float opRadius = -1.;
+        float colorBlendAmount = 1.;
 
         csgHeader = getPackedSdfCsgHeader(sdfDataTexOffset);
 
         while(true) {
-            sdfData = getPackedSdf(sdfDataTexOffset + 1.);
+            sdfData = getPackedSdf(sdfDataTexOffset + SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE);
             vec3 p = samplePoint - sdfData.position;
 
             if(geoIndex == 0) {
@@ -1367,6 +1386,8 @@ const getSource = ({options, Scene}) =>
 
                 sdfGeometryDistance(sdfData, p, /* => out */ d1);
                 materialId = sdfData.materialId;
+                Material sdfMaterial = getPackedMaterial(materialId);
+                color = sdfMaterial.color;
 
                 // single sdf geo, no csg operation, or,
                 // the end of the current csg
@@ -1383,6 +1404,8 @@ const getSource = ({options, Scene}) =>
                         d1 = opUnion(d1, d2);
                         if(prevDist > d1) {
                             materialId = sdfData.materialId;
+                            Material sdfMaterial = getPackedMaterial(sdfData.materialId);
+                            color = sdfMaterial.color;
                         }
 
                         break;
@@ -1390,13 +1413,32 @@ const getSource = ({options, Scene}) =>
 
                     case SDF_UNION_ROUND: {
                         d1 = opUnionRound(d1, d2, opRadius);
+
+                        Material sdfMaterial = getPackedMaterial(sdfData.materialId);
+                        vec3 newColor = sdfMaterial.color;
+
+                        // float colorBlendAmount = 1./5.;
+
+                        color = mix(
+                            color,
+                            newColor,
+                            clamp(
+                                (prevDist - d1 - d2) * colorBlendAmount,
+                                0.0,
+                                1.0
+                            )
+                        );
+
+                        // incorrect but cool blend?
+                        // color = mix(color, newColor, clamp(prevDist - d1, 0.0, 1.0));
+
                         if(prevDist > d2 && prevDist > d1) {
                             materialId = sdfData.materialId;
                         }
                         break;
                     }
 
-                    case SDF_SUBSTRACT: {
+                    case SDF_SUBTRACT: {
                         d1 = opSubtraction(d2, d1);
                         break;
                     }
@@ -1407,7 +1449,7 @@ const getSource = ({options, Scene}) =>
                     }
 
                     // a no op means we have no more
-                    // SDF's in this csg or will encounter a new csg header struct
+                    // SDF's in this csg
 
                     case SDF_NOOP:
                         finished = true;
@@ -1418,14 +1460,19 @@ const getSource = ({options, Scene}) =>
                 }
             }
 
+            if(d1 > T_MAX) {
+                break;
+            }
+
             if(finished) {
                 break;
             }
 
             opType = sdfData.opType;
             opRadius = sdfData.opRadius;
+            colorBlendAmount = sdfData.colorBlendAmount;
 
-            sdfDataTexOffset += 4.;
+            sdfDataTexOffset += SDF_DATA_TEX_OFFSET_SIZE;
             geoIndex += 1;
         }
 
@@ -1435,7 +1482,9 @@ const getSource = ({options, Scene}) =>
 
     float bvhSceneSdf(vec3 p, float sdfDataTexOffset) {
         int materialId;
-        return bvhSceneSdf(p, materialId, sdfDataTexOffset);
+        vec3 c;
+
+        return bvhSceneSdf(p, sdfDataTexOffset, materialId, c);
     }
 
     /**
@@ -1479,12 +1528,24 @@ const getSource = ({options, Scene}) =>
         return end;
     }
 
-    float bvhSphereTraceDistance(Ray ray, float start, float end, out int materialId, float sdfTexOffset) {
+    float bvhSphereTraceDistance(
+        Ray ray,
+        float start,
+        float end,
+        float sdfTexOffset,
+        out int materialId,
+        out vec3 color
+    ) {
         float depth = start;
 
         for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
-            // float dist = sceneSdf(ray.origin + depth * ray.dir, /* => out */ materialId);
-            float dist = bvhSceneSdf(ray.origin + depth * ray.dir, /* => out */ materialId, sdfTexOffset);
+            float dist = bvhSceneSdf(
+                ray.origin + depth * ray.dir,
+                sdfTexOffset,
+                /* => out */ materialId,
+                /* => out */ color
+            );
+
             if(materialId == DIALECTRIC_MATERIAL_TYPE) {
                 dist = abs(dist);
             }
@@ -1535,6 +1596,8 @@ const getSource = ({options, Scene}) =>
         int loopCounter = 0;
 
         float sdfOffset = 0.;
+
+        vec3 sdfBlendedColor;
         int sdfMaterialId = 0;
 
         while (true) {
@@ -1776,7 +1839,15 @@ const getSource = ({options, Scene}) =>
                         }
 
                         case BVH_SDF_GEOMETRY: {
-                            float dist = bvhSphereTraceDistance(ray, 0., T_MAX, /* => out */ sdfMaterialId, sdfOffset);
+                            float dist = bvhSphereTraceDistance(
+                                ray,
+                                0.,
+                                T_MAX,
+                                sdfOffset,
+                                /* => out */ sdfMaterialId,
+                                /* => out */ sdfBlendedColor
+                            );
+
                             if(dist < tMax &&
                                 dist < (T_MAX - EPSILON) && dist > T_MIN)
                             {
@@ -2097,7 +2168,7 @@ const getSource = ({options, Scene}) =>
                     record.hitPoint = record.hitPoint + EPSILON * record.normal;
                 }
 
-                record.color = record.material.color;
+                record.color = sdfBlendedColor;
             }
 
             default:

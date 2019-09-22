@@ -1,7 +1,4 @@
-// import ObjLoader from 'obj-mtl-loader';
 import {vec3} from 'gl-matrix';
-
-// import {encodeObjModelTriangleVertexData} from '../../model-encoders/obj';
 
 import {
     range,
@@ -33,7 +30,8 @@ const sdfGeometryTypes = {
 };
 
 const standardSdfOpArrayDataOffset = 1;
-const standardSdfDataArrayLength = 12;
+const standardSdfDataArrayLength = 15; //12;
+const sdfHeaderOffsetSize = 3;
 
 const sdfOperation = (opCode, opArguments, ...geometries) => {
     if(geometries.length < 2) {
@@ -58,7 +56,14 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
                     // console.log('SETTING RADIUS TO: ', opArguments.radius);
                     // console.log('RADIUS bef: ', geoData[offset + 1]);
                     // console.log('before: ', geoData);
-                    geoData[offset + 1] = opArguments.radius;
+                    geoData[offset + 1] = defined(opArguments.radius)
+                        ? opArguments.radius
+                        : 1;
+
+                    geoData[offset + 11] = defined(opArguments.colorBlendAmount)
+                        ? 1/(opArguments.colorBlendAmount*10)
+                        : 1;
+
                     // console.log('after: ', geoData);
                 }
 
@@ -78,8 +83,8 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
 const sdfOpUnion = (...geometries) =>
     sdfOperation(sdfOperators.union, {}, ...geometries);
 
-const sdfOpUnionRound = ({radius}, ...geometries) =>
-    sdfOperation(sdfOperators.unionRound, {radius}, ...geometries);
+const sdfOpUnionRound = ({radius, colorBlendAmount}, ...geometries) =>
+    sdfOperation(sdfOperators.unionRound, {radius, colorBlendAmount}, ...geometries);
 
 const sdfOpSubtract = (...geometries) =>
     sdfOperation(sdfOperators.subtract, {}, ...geometries);
@@ -115,20 +120,14 @@ const sdf = (...args) => {
     console.log('sdf header: ', csgHeader);
     console.log('NO OF SDFS IN THIS CSG: ', noOfSdfsInCsg);
 
-    // let minCoords = vec3.create();
-    // let maxCoords = vec3.create();
-
     const constructCsgBoundingBox = (geoType, dataArray, offset) => {
         let minCoords = vec3.create();
         let maxCoords = vec3.create();
 
         let position, dimensions;
 
-        // let padding = vec3.fromValues(1, 1, 1);
         switch(geoType) {
             case sdfGeometryTypes.sphere:
-                // const radius = dataArray[offset + 6];
-
                 position = vec3.fromValues(
                     dataArray[offset + 9],
                     dataArray[offset + 10],
@@ -142,25 +141,18 @@ const sdf = (...args) => {
                     dataArray[offset + 8]
                 );
 
-
                 vec3.sub(minCoords, position, dimensions);
-                // vec3.sub(minCoords, minCoords, padding);
-
                 vec3.add(maxCoords, position, dimensions);
-                // vec3.add(maxCoords, maxCoords, padding);
 
                 break;
 
             case sdfGeometryTypes.box:
-                // const radius = dataArray[offset + 6];
-
                 position = vec3.fromValues(
                     dataArray[offset + 9],
                     dataArray[offset + 10],
                     dataArray[offset + 11]
                 );
 
-                // radius
                 dimensions = vec3.fromValues(
                     dataArray[offset + 6],
                     dataArray[offset + 7],
@@ -169,10 +161,7 @@ const sdf = (...args) => {
 
 
                 vec3.sub(minCoords, position, dimensions);
-                // vec3.sub(minCoords, minCoords, padding);
-
                 vec3.add(maxCoords, position, dimensions);
-                // vec3.add(maxCoords, maxCoords, padding);
 
                 break;
 
@@ -250,7 +239,7 @@ class SdfModel {
         this.geoType = geoType;
 
         this.opType = sdfOperators.noOp;
-        this.opRadius = -1;
+        // this.opRadius = -1;
 
         this.position = {
             x: 0,
@@ -274,8 +263,8 @@ class SdfModel {
     geometryData() {
         return [
             this.geoType, // 0
-            this.opType, // 1
-            -1, //this.opRadius, // 2
+            this.opType, // 1, mutated by operation calls
+            -1, // 2, opRadius, mutated by operation calls
 
             this.material // 3
                 ? {materialName: this.material}
@@ -290,6 +279,10 @@ class SdfModel {
             this.position.x, // 9
             this.position.y, // 10
             this.position.z, // 11
+
+            -1, // 12, color blend amount (op union round color blending amount)
+            -1, // 13
+            -1, // 14
         ];
     }
 }
@@ -299,7 +292,12 @@ export default SdfModel;
 export {
     sdf,
     sdfOperators,
+    sdfDomainOperations,
     sdfGeometryTypes,
+
+    standardSdfOpArrayDataOffset,
+    standardSdfDataArrayLength,
+    sdfHeaderOffsetSize,
 
     sdfOpUnion,
     sdfOpUnionRound,

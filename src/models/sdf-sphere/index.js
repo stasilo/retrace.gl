@@ -2,15 +2,15 @@ import SdfModel, {
     sdfGeometryTypes
 } from '../sdf-model';
 
-class SdfSphere {
+class SdfSphere extends SdfModel {
     constructor({material, radius, position}) {
-        return new SdfModel({
+        super({
             material,
             position,
             geoType: sdfGeometryTypes.sphere,
             dimensions: {
                 x: radius,
-                y: radius, 
+                y: radius,
                 z: radius
             },
         });
@@ -18,3 +18,25 @@ class SdfSphere {
 }
 
 export default SdfSphere;
+
+
+// import SdfModel, {
+//     sdfGeometryTypes
+// } from '../sdf-model';
+//
+// class SdfSphere {
+//     constructor({material, radius, position}) {
+//         return new SdfModel({
+//             material,
+//             position,
+//             geoType: sdfGeometryTypes.sphere,
+//             dimensions: {
+//                 x: radius,
+//                 y: radius,
+//                 z: radius
+//             },
+//         });
+//     }
+// }
+//
+// export default SdfSphere;
