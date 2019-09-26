@@ -296,7 +296,6 @@ function buildBvh(geometryData, sdfGeometries) {
 
     console.log('geometryData: ', geometryData);
 
-    // return flatBvh;
     return {
         bvhData: flatBvh,
         geometryData

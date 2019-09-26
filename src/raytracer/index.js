@@ -25,22 +25,10 @@ import {
 
 import getStore from '../store';
 
-const defaultMaxSampleCount = 4;
+// const defaultMaxSampleCount = 4;
 const dataTextureSize = 2048;
 
 const {glCanvas, glImgCanvas, gl, glApp} = getGlInstances();
-
-//// TEMP
-import SdfSphere from '../models/sdf-sphere';
-import SdfBox from '../models/sdf-box';
-
-import {
-    sdfOpUnion,
-    sdfOpUnionRound,
-    sdfOpSubtract,
-    sdfOpIntersect
-} from '../models/sdf-model';
-///////////
 
 async function raytraceApp({
     scene,
@@ -59,8 +47,8 @@ async function raytraceApp({
 
     const materialData = scene.materials.getMaterialData();
     const sceneTextures = scene.textures.getTextures();
-    const sdfData = scene.sdfGeometryData; //.data;
 
+    const sdfData = scene.sdfGeometryData;
     const {bvhData, geometryData} = buildSceneBvh(scene);
 
     // https://webglfundamentals.org/webgl/lessons/webgl-data-textures.html

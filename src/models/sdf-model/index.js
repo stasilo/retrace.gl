@@ -30,7 +30,7 @@ const sdfGeometryTypes = {
 };
 
 const standardSdfOpArrayDataOffset = 1;
-const standardSdfDataArrayLength = 15; //12;
+const standardSdfDataArrayLength = 18; //15;  //12;
 const sdfHeaderOffsetSize = 3;
 
 const sdfOperation = (opCode, opArguments, ...geometries) => {
@@ -56,6 +56,7 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
                     // console.log('SETTING RADIUS TO: ', opArguments.radius);
                     // console.log('RADIUS bef: ', geoData[offset + 1]);
                     // console.log('before: ', geoData);
+
                     geoData[offset + 1] = defined(opArguments.radius)
                         ? opArguments.radius
                         : 1;
@@ -73,7 +74,11 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
                 break;
         }
 
-        return [...geoAcc, geoData];
+        return [
+            ...geoAcc,
+            geoData
+        ];
+
     }, []);
 
     console.log('oppenGeos: ', flatten(oppedGeos));
@@ -230,11 +235,23 @@ const sdf = (...args) => {
 
 class SdfModel {
     constructor({
+        domain,
         material,
         geoType,
         position,
         dimensions,
     }) {
+        // this.domain = !defined(domain)
+        //     ? {
+        //         domainOp: sdfDomainOperations.noOp,
+        //         axis: 'x',
+        //         size: 1
+        //     }
+        //     : domain;
+        this.domain = defined(domain)
+            ? domain
+            : {};
+
         this.material = material;
         this.geoType = geoType;
 
@@ -283,6 +300,16 @@ class SdfModel {
             -1, // 12, color blend amount (op union round color blending amount)
             -1, // 13
             -1, // 14
+
+            this.domain.domainOp
+                ? sdfDomainOperations[this.domain.domainOp]
+                : sdfDomainOperations.noOp,
+            this.domain.axis
+                ? {x: 0, y: 1, z: 2}[this.domain.axis]
+                : 0,
+            this.domain.size
+                ? this.domain.size
+                : 1,
         ];
     }
 }

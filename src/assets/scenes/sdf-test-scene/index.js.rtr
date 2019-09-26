@@ -2,68 +2,110 @@ scene({
     background: ['#000', '#010101'],
     // background: '#000',
     camera: camera({
-        lookFrom: {x: -48.590, y: 25.570, z: 9.501},
-        lookAt: {x: -44.153, y: 24.711, z: 9.370},
+        lookFrom: {x: -11.871, y: 31.372, z: -42.405},
+        lookAt: {x: -10.873, y: 29.275, z: -38.530},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1,
     }),
     geometries: [
+        // sdf(
+        //     // {
+        //     //     // domainOp: 'mod1d',
+        //     //     // axis: 'z',
+        //     //     // size: 15
+        //     // },
+        //     opUnionRound({radius: 6.0, colorBlendAmount: 0.5},
+        //         opSubtract(
+        //             sdfSphere({
+        //                 // material: `lambert-red`,
+        //                 material: 'clearcoat-test',
+        //                 radius: 10,
+        //                 position: {x: 9, y: 5+4, z: 0}
+        //             }),
+        //             sdfSphere({
+        //                 material: 'clearcoat-test',
+        //                 radius: 10,
+        //                 position: {x: 0, y: 5+4, z: 0}
+        //             })
+        //         ),
+        //         sdfBox({
+        //             // material: 'dialectric-test',
+        //             material: `lambert-red`,
+        //             // material: 'ceil-light',
+        //             dimensions: {x: 7, y: 7, z: 7},
+        //             position: {x: 11, y: 27, z: 9.5}
+        //         }),
+        //         sdfSphere({
+        //             // material: 'clearcoat-test',
+        //             material: 'floor-white',
+        //             // material: 'dialectric-test',
+        //             // material: 'metal-fuzz-test',
+        //             radius: 10,
+        //             position: {x: 10, y: 10, z: 20}
+        //         })
+        //     )
+        // ),
+
+
+
         sdf(
             // {
-            //     // domainOp: 'mod1d',
-            //     // axis: 'z',
-            //     // size: 15
             //     boundingBox: {
-            //         minCoords: [-2, -2, -11],
-            //         maxCoords: [19, 35, 10]
+            //         minCoords: [0, 0, 10],
+            //         maxCoords: [20, 20, 30]
             //     }
             // },
-            opUnionRound({radius: 6.0, colorBlendAmount: 0.5},
-                opSubtract(
-                    sdfSphere({
-                        // material: `lambert-red`,
-                        material: 'clearcoat-test',
-                        radius: 10,
-                        position: {x: 9, y: 5+4, z: 0}
-                    }),
-                    sdfSphere({
-                        material: 'clearcoat-test',
-                        radius: 10,
-                        position: {x: 0, y: 5+4, z: 0}
-                    })
-                ),
-                sdfBox({
+            opSubtract(
+                sdfSphere({
+                    material: 'dialectric-test',
+                    // material: 'lambert-red',
+                    // material: 'metal-fuzz-test',
+                    radius: 10,
+                    position: {x: 0, y: 10, z: 0}
+                }),
+                sdfSphere({
+                    domain: {
+                        domainOp: 'mod1d',
+                        axis: 'y',
+                        size: 5
+                    },
                     // material: 'dialectric-test',
                     material: `lambert-red`,
                     // material: 'ceil-light',
-                    dimensions: {x: 7, y: 7, z: 7},
-                    position: {x: 11, y: 27, z: 9.5}
+                    // dimensions: {x: 20, y: 2, z: 2},
+                    radius: 2,
+                    position: {x: 0, y: 0, z: 0}
                 }),
-                sdfSphere({
-                    // material: 'clearcoat-test',
-                    material: 'floor-white',
-                    // material: 'dialectric-test',
-                    // material: 'metal-fuzz-test',
-                    radius: 10,
-                    position: {x: 10, y: 10, z: 20}
-                })
+                // sdfBox({
+                //     domain: {
+                //         domainOp: 'mod1d',
+                //         axis: 'y',
+                //         size: 5
+                //     },
+                //     // material: 'dialectric-test',
+                //     material: `lambert-red`,
+                //     // material: 'ceil-light',
+                //     dimensions: {x: 20, y: 2, z: 2},
+                //     position: {x: 0, y: 0, z: 0}
+                // }),
+                // sdfBox({
+                //     domain: {
+                //         domainOp: 'mod1d',
+                //         axis: 'z',
+                //         size: 6
+                //     },
+                //     // material: 'dialectric-test',
+                //     material: `lambert-red`,
+                //     // material: 'ceil-light',
+                //     dimensions: {x: 20, y: 2, z: 2},
+                //     position: {x: 0, y: 8, z: 5}
+                // }),
             )
         ),
-        // sdf(
-        //     {
-        //         boundingBox: {
-        //             minCoords: [0, 0, 10],
-        //             maxCoords: [20, 20, 30]
-        //         }
-        //     },
-        //     sdfSphere({
-        //         material: 'dialectric-test',
-        //         // material: 'metal-fuzz-test',
-        //         radius: 10,
-        //         position: {x: 10, y: 10, z: 20}
-        //     })
-        // ),
+
+
+
         // sphere({
         //     material: 'dialectric-test',
         //     // material: 'metal-fuzz-test',
@@ -87,7 +129,7 @@ scene({
             material: 'ceil-light',
             scale: 30,
             position: {
-                x: 0,
+                x: 50,
                 y: 80.0,
                 z: 0
             },

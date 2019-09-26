@@ -3,8 +3,9 @@ import SdfModel, {
 } from '../sdf-model';
 
 class SdfSphere extends SdfModel {
-    constructor({material, radius, position}) {
+    constructor({domain, material, radius, position}) {
         super({
+            domain, 
             material,
             position,
             geoType: sdfGeometryTypes.sphere,

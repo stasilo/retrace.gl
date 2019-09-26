@@ -16,11 +16,11 @@ import simplexNoise from './lib/noise/simplex.glsl';
 
 const getSource = ({options, Scene}) =>
 `   #version 300 es
+
     precision highp float;
     precision highp int;
     precision highp sampler2D;
     precision highp sampler3D;
-    // precision lowp sampler3D;
 
     ${options.realTime
         ? '#define REALTIME'
@@ -34,18 +34,20 @@ const getSource = ({options, Scene}) =>
 
     #define FLT_MAX 3.402823466e+38
     #define T_MIN 0.0001
-    #define T_MAX 10000.0
+    #define T_MAX 5000.0
 
     #ifdef REALTIME
         #define MAX_HIT_DEPTH 2
     #endif
     #ifndef REALTIME
-        #define MAX_HIT_DEPTH 4
+        // 4 - rendering: 100 / 100, time: 8.61s
+        // 12 - rendering: 100 / 100, time: 13.42s
+        #define MAX_HIT_DEPTH 12 //16
     #endif
 
     #define NUM_SAMPLES ${options.numSamples}
 
-    #define MAX_MARCHING_STEPS 255 //255 //100
+    #define MAX_MARCHING_STEPS 355 //255 //255 //100
     #define MIN_DIST 0.0
     #define MAX_DIST T_MAX
     #define EPSILON 0.0001
@@ -227,11 +229,10 @@ const getSource = ({options, Scene}) =>
 
     // polynomial smooth min (k = 0.1);
     // from: https://github.com/ajweeks/RaymarchingWorkshop
-
-    float sminCubic(float a, float b, float k) {
-        float h = max(k-abs(a-b), 0.0);
-        return min(a, b) - h*h*h/(6.0*k*k);
-    }
+    // float sminCubic(float a, float b, float k) {
+    //     float h = max(k-abs(a-b), 0.0);
+    //     return min(a, b) - h*h*h/(6.0*k*k);
+    // }
 
     /**
      * Maximum/minumum elements of a vector
@@ -1035,28 +1036,28 @@ const getSource = ({options, Scene}) =>
     #define SDF_Y_AXIS 1
     #define SDF_Z_AXIS 2
 
-    struct SdfCsgHeader {
+    struct SdfCsgDomainOpHeader {
         int opType;
         int axis; // 0 = x, 1 = y, ...
         float size;
     };
 
-    SdfCsgHeader getPackedSdfCsgHeader(float offset) {
+    SdfCsgDomainOpHeader getPackedSdfCsgDomainOpHeader(float offset) {
         float xOffset = mod(offset, DATA_TEX_SIZE);
         float yOffset = floor(offset * DATA_TEX_INV_SIZE);
         vec3 csgHeaderData = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-        return SdfCsgHeader(
+        return SdfCsgDomainOpHeader(
             int(csgHeaderData.x), //opType
             int(csgHeaderData.y), //axis
             csgHeaderData.z //size
         );
     }
 
-    SdfCsgHeader getPackedSdfCsgHeader(int csgIndex, int geoIndex) {
+    SdfCsgDomainOpHeader getPackedSdfCsgDomainOpHeader(int csgIndex, int geoIndex) {
         float offset = float(csgIndex) * SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE
             + float(geoIndex) * SDF_DATA_TEX_OFFSET_SIZE;
-        return getPackedSdfCsgHeader(offset);
+        return getPackedSdfCsgDomainOpHeader(offset);
     }
 
     struct SdfGeometry {
@@ -1067,6 +1068,7 @@ const getSource = ({options, Scene}) =>
         int materialId;
         vec3 dimensions;
         vec3 position;
+        SdfCsgDomainOpHeader domainOp;
     };
 
     SdfGeometry getPackedSdf(float offset) {
@@ -1090,6 +1092,16 @@ const getSource = ({options, Scene}) =>
         yOffset = floor((offset + 4.) * DATA_TEX_INV_SIZE);
         vec3 sdfData5 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
+        xOffset = mod(offset + 5., DATA_TEX_SIZE);
+        yOffset = floor((offset + 5.) * DATA_TEX_INV_SIZE);
+        vec3 sdfData6 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        SdfCsgDomainOpHeader domainOp = SdfCsgDomainOpHeader(
+            int(sdfData6.x),
+            int(sdfData6.y),
+            float(sdfData6.z)
+        );
+
         return SdfGeometry(
             int(sdfData1.x), // geo type
             int(sdfData1.y), // op type
@@ -1097,7 +1109,8 @@ const getSource = ({options, Scene}) =>
             float(sdfData5.x), // color blend amount
             int(sdfData2.x), // material id
             sdfData3, // dimensions
-            sdfData4 // position
+            sdfData4, // position
+            domainOp
         );
     }
 
@@ -1177,7 +1190,7 @@ const getSource = ({options, Scene}) =>
      * Dynamic signed distance function parsing ("the scene sdf")
      */
 
-    void applySdfDomainOperation(SdfCsgHeader opHeader, inout vec3 p) {
+    void applySdfDomainOperation(SdfCsgDomainOpHeader opHeader, inout vec3 p) {
         switch(opHeader.opType) {
             case SDF_NOOP:
                 break;
@@ -1240,12 +1253,12 @@ const getSource = ({options, Scene}) =>
         materialId = 0;
 
         SdfGeometry sdfData;
-        SdfCsgHeader csgHeader;
+        SdfCsgDomainOpHeader csgHeader;
 
         int opType = SDF_NOOP;
         float opRadius = -1.;
 
-        csgHeader = getPackedSdfCsgHeader(csgIndex, geoIndex);
+        csgHeader = getPackedSdfCsgDomainOpHeader(csgIndex, geoIndex);
 
         while(true) {
             sdfData = getPackedSdf(csgIndex, geoIndex);
@@ -1258,7 +1271,7 @@ const getSource = ({options, Scene}) =>
             if(encounteredNewCsg) {
                 opType = SDF_UNION;
                 // materialId = sdfData.materialId;
-                csgHeader = getPackedSdfCsgHeader(csgIndex, geoIndex);
+                csgHeader = getPackedSdfCsgDomainOpHeader(csgIndex, geoIndex);
                 encounteredNewCsg = false;
             }
 
@@ -1367,17 +1380,19 @@ const getSource = ({options, Scene}) =>
         materialId = 0;
 
         SdfGeometry sdfData;
-        SdfCsgHeader csgHeader;
+        // SdfCsgDomainOpHeader csgHeader;
 
         int opType = SDF_NOOP;
         float opRadius = -1.;
         float colorBlendAmount = 1.;
 
-        csgHeader = getPackedSdfCsgHeader(sdfDataTexOffset);
+        // csgHeader = getPackedSdfCsgDomainOpHeader(sdfDataTexOffset);
 
         while(true) {
             sdfData = getPackedSdf(sdfDataTexOffset + SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE);
             vec3 p = samplePoint - sdfData.position;
+
+            applySdfDomainOperation(sdfData.domainOp, /* => out */ p);
 
             if(geoIndex == 0) {
 
@@ -1417,7 +1432,7 @@ const getSource = ({options, Scene}) =>
                         Material sdfMaterial = getPackedMaterial(sdfData.materialId);
                         vec3 newColor = sdfMaterial.color;
 
-                        // float colorBlendAmount = 1./5.;
+                        // colorBlendAmount = 1./5.;
 
                         color = mix(
                             color,
@@ -1460,11 +1475,7 @@ const getSource = ({options, Scene}) =>
                 }
             }
 
-            if(d1 > T_MAX) {
-                break;
-            }
-
-            if(finished) {
+            if(finished || d1 > T_MAX) {
                 break;
             }
 
@@ -2217,15 +2228,29 @@ const getSource = ({options, Scene}) =>
         return (1. - t)*uBgGradientColors[0] + t*uBgGradientColors[1];
     }
 
+    vec3 applyFog(vec3 rgb, float dist, vec3 fogColor) {
+        //fogColor = vec3(0.0, 0.0, 0.0);
+        float startDist = 100.0;
+        float fogAmount = 1.0 - exp(-(dist-30.0) * (1.0/startDist));
+
+        return mix(rgb, fogColor, fogAmount);
+    }
+
     // colorize
     vec3 paint(Ray ray) {
         vec3 color = vec3(1.0);
         float tMax = T_MAX;
 
+        // float fogT = T_MAX;
+
         HitRecord hitRecord;
         for(int hitCounts = 0; hitCounts < MAX_HIT_DEPTH; hitCounts++) {
             hitWorld(ray, tMax, /* out => */ hitRecord);
             if(hitRecord.hasHit) {
+                // if(hitCounts == 0) {
+                //     fogT = hitRecord.hitT;
+                // }
+
                 if(emit(hitRecord, /* out => */ color)) {
                     break;
                 }
@@ -2244,6 +2269,7 @@ const getSource = ({options, Scene}) =>
             // }
         }
 
+        // color = applyFog(color, fogT, background(ray.dir));
         return color;
     }
 

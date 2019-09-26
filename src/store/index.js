@@ -12,7 +12,7 @@ import raytraceApp from '../raytracer';
 import dynamicScene from '../dtos/dynamic-scene';
 
 import {createCamera} from '../camera';
-import {getGlInstances} from '../gl';
+// import {getGlInstances} from '../gl';
 
 import {
     defined,

@@ -13,7 +13,13 @@ import {
 } from '../../utils';
 
 class Scene {
-    constructor({camera, background, geometries, materials, textures}) {
+    constructor({
+        camera,
+        background,
+        geometries,
+        materials,
+        textures
+    }) {
         if(!geometries.length) {
             return null;
         }
