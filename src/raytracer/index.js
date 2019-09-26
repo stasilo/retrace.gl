@@ -84,7 +84,11 @@ async function raytraceApp({
             realTime,
             glslCamera: false,
             numSamples: shaderSampleCount,
-            dataTexSize: dataTextureSize
+            dataTexSize: dataTextureSize,
+            hasSdfGeometries: scene.hasSdfGeometries,
+            hasTriangleGeometries: scene.hasTriangleGeometries,
+            hasSphereGeometries: scene.hasSphereGeometries,
+            hasVolumeGeometries: scene.hasVolumeGeometries
         },
         Scene: scene
     });
@@ -237,6 +241,7 @@ async function raytraceApp({
 
     const staticRender = () => {
         store.renderInProgress = true;
+        
         const frame = animationFrame(({time, frameCount}) => {
             store.currentFrameCount = frameCount;
             store.currentRenderTime = time;

@@ -1,6 +1,10 @@
 import MaterialList from '../../dtos/material-list';
 import TextureList from '../../dtos/texture-list';
 
+import ObjModel from '../../models/obj-model';
+import Sphere from '../../models/sphere';
+import Volume from '../../models/volume';
+
 import {
     defined,
     definedNotNull,
@@ -31,42 +35,31 @@ class Scene {
 
         this.materials = new MaterialList(materials);
 
-        console.log('raw bvh sdfs: ', geometries.filter(g => g.isSdfGeometry && g.includeInBvh).slice(0));
+        // console.log('raw bvh sdfs: ', geometries.filter(g => g.isSdfGeometry && g.includeInBvh).slice(0));
 
         return (async () => {
             this.textures = await new TextureList(textures);
             this.geometries = await this.finalizeGeometries(geometries);
 
-            this.sdfGeometryData = flatten(
-                geometries
-                    .filter(g => g.isSdfGeometry)
-                    .map(g => {
-                        const data = g.data = g.data.map(sdfDataItem => {
-                            if(isObj(sdfDataItem) && 'materialName' in sdfDataItem) {
-                                const material = this.materials.elements
-                                    .find(material => 
-                                        material.name === sdfDataItem.materialName
-                                    );
+            console.log('ALL GEOMETRIES: ', this.geometries);
 
-                                return material ? material.id : 0;
-                            }
+            let {sdfGeometries, sdfGeometryData} = this.finalizeSdfGeometries(geometries);
 
-                            return sdfDataItem;
-                        });
+            this.sdfGeometries = sdfGeometries;
+            this.sdfGeometryData = sdfGeometryData;
 
-                        return data;
-                    })
-            );
+            console.log('ALL SDFFFF GEOMETRIES: ', this.sdfGeometries);
 
-            this.sdfGeometries = geometries
-                .filter(g => g.isSdfGeometry && g.includeInBvh);
+            this.hasSdfGeometries = this.sdfGeometries.length > 0;
 
-            console.log('constructed this.sdfGeometryData: ', this.sdfGeometryData);
-            console.log('constructed this.sdfGeometries: ', this.sdfGeometries);
+            this.hasTriangleGeometries = this.geometries
+                .filter(g => g instanceof ObjModel).length > 0;
+            this.hasSphereGeometries = this.geometries
+                .filter(g => g instanceof Sphere).length > 0;
+            this.hasVolumeGeometries = this.geometries
+                .filter(g => g instanceof Volume).length > 0;
 
-            // this.sdfGeometry = flatten(
-            //     geometries.filter(g => g.isSdfGeometry)
-            // );
+            console.log('THIS!!!!!!!!!!!', this);
 
             return this;
         })();
@@ -146,6 +139,40 @@ class Scene {
 
                 return hitable;
             });
+    }
+
+    finalizeSdfGeometries(geometries) {
+        let sdfGeometryData = flatten(
+            geometries
+                .filter(g => g.isSdfGeometry)
+                .map(g => {
+                    const data = g.data = g.data.map(sdfDataItem => {
+                        if(isObj(sdfDataItem) && 'materialName' in sdfDataItem) {
+                            const material = this.materials.elements
+                                .find(material => 
+                                    material.name === sdfDataItem.materialName
+                                );
+
+                            return material ? material.id : 0;
+                        }
+
+                        return sdfDataItem;
+                    });
+
+                    return data;
+                })
+        );
+
+        let sdfGeometries = geometries
+            .filter(g => g.isSdfGeometry && g.includeInBvh);
+        //
+        // console.log('constructed this.sdfGeometryData: ', sdfGeometryData);
+        // console.log('constructed this.sdfGeometries: ', sdfGeometries);
+
+        return {
+            sdfGeometries,
+            sdfGeometryData
+        };
     }
 };
 
