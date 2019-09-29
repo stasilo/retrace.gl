@@ -19,9 +19,36 @@ const sdfOperators = {
     intersect: 4
 };
 
+const sdfAxes = {
+    x: 0,
+    xy: 1,
+    xz: 2,
+
+    y: 3,
+    yx: 4,
+    xy: 4,
+    yz: 5,
+    zy: 5,
+
+    z: 6,
+    zx: 7,
+    xz: 7,
+    zy: 8,
+    yz: 8,
+
+    xyz: 9,
+    xzy: 9,
+    yzx: 9,
+    yxz: 9,
+    zxy: 9,
+    zyx: 9
+};
+
 const sdfDomainOperations = {
     noOp: 0,
-    mod1d: 1
+    mod1d: 1,
+    twist: 2,
+    bend: 3
 };
 
 const sdfGeometryTypes = {
@@ -112,7 +139,7 @@ const sdf = (...args) => {
             : sdfDomainOperations.noOp,
 
         opts.axis
-            ? {x: 0, y: 1, z: 2}[opts.axis]
+            ? sdfAxes[opts.axis]
             : 0,
 
         opts.size
@@ -163,7 +190,6 @@ const sdf = (...args) => {
                     dataArray[offset + 7],
                     dataArray[offset + 8]
                 );
-
 
                 vec3.sub(minCoords, position, dimensions);
                 vec3.add(maxCoords, position, dimensions);
@@ -286,8 +312,8 @@ class SdfModel {
             this.material // 3
                 ? {materialName: this.material}
                 : 0,
-            -1, // 4
-            -1, // 5
+            -1, // 4, not used?
+            -1, // 5, not used?
 
             this.dimensions.x, // 6
             this.dimensions.y, // 7
@@ -297,15 +323,15 @@ class SdfModel {
             this.position.y, // 10
             this.position.z, // 11
 
-            -1, // 12, color blend amount (op union round color blending amount)
-            -1, // 13
-            -1, // 14
+            -1, // 12, color blend amount (op union round color blending amount - mutated by op call)
+            -1, // 13, not used
+            -1, // 14, not used
 
             this.domain.domainOp
                 ? sdfDomainOperations[this.domain.domainOp]
                 : sdfDomainOperations.noOp,
             this.domain.axis
-                ? {x: 0, y: 1, z: 2}[this.domain.axis]
+                ? sdfAxes[this.domain.axis]
                 : 0,
             this.domain.size
                 ? this.domain.size
@@ -320,6 +346,7 @@ export {
     sdf,
     sdfOperators,
     sdfDomainOperations,
+    sdfAxes,
     sdfGeometryTypes,
 
     standardSdfOpArrayDataOffset,

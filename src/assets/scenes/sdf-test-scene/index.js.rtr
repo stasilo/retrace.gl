@@ -2,8 +2,8 @@ scene({
     background: ['#000', '#010101'],
     // background: '#000',
     camera: camera({
-        lookFrom: {x: -11.871, y: 31.372, z: -42.405},
-        lookAt: {x: -10.873, y: 29.275, z: -38.530},
+        lookFrom: {x: 47.107, y: 32.038, z: 30.448},
+        lookAt: {x: 43.694, y: 30.303, z: 28.049},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1,
@@ -57,26 +57,42 @@ scene({
             //     }
             // },
             opSubtract(
-                sdfSphere({
-                    material: 'dialectric-test',
-                    // material: 'lambert-red',
+                // sdfSphere({
+                //     material: 'dialectric-test',
+                //     // material: 'lambert-red',
+                //     // material: 'metal-fuzz-test',
+                //     radius: 10,
+                //     position: {x: 0, y: 10, z: 0}
+                // }),
+                sdfBox({
+                    domain: {
+                        domainOp: 'twist',
+                        // axis: 'y',
+                        size: 0.1,
+                    },
+                    // material: 'dialectric-test',
+                    material: 'lambert-red',
                     // material: 'metal-fuzz-test',
-                    radius: 10,
+                    dimensions: {x: 10, y: 10, z: 10},
                     position: {x: 0, y: 10, z: 0}
                 }),
                 sdfSphere({
                     domain: {
                         domainOp: 'mod1d',
-                        axis: 'y',
+                        axis: 'xyz',
                         size: 5
                     },
                     // material: 'dialectric-test',
                     material: `lambert-red`,
                     // material: 'ceil-light',
                     // dimensions: {x: 20, y: 2, z: 2},
-                    radius: 2,
+                    radius: 3,
                     position: {x: 0, y: 0, z: 0}
                 }),
+
+
+
+
                 // sdfBox({
                 //     domain: {
                 //         domainOp: 'mod1d',

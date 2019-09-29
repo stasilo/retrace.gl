@@ -5,6 +5,7 @@ import {
     sdfGeometryTypes,
     sdfOperators,
     sdfDomainOperations,
+    sdfAxes,
     standardSdfDataArrayLength,
     sdfHeaderOffsetSize
 } from '../models/sdf-model';
@@ -1039,13 +1040,23 @@ const getSource = ({options, Scene}) =>
     #define SDF_DATA_TEX_OFFSET_SIZE ${glslFloat(standardSdfDataArrayLength/3)}
     #define SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE ${glslFloat(sdfHeaderOffsetSize/3)}
 
-    #define SDF_X_AXIS 0
-    #define SDF_Y_AXIS 1
-    #define SDF_Z_AXIS 2
+    #define SDF_X_AXIS ${sdfAxes.x}
+    #define SDF_XY_AXIS ${sdfAxes.xy}
+    #define SDF_XZ_AXIS ${sdfAxes.xz}
+
+    #define SDF_Y_AXIS ${sdfAxes.y}
+    #define SDF_YX_AXIS ${sdfAxes.yx}
+    #define SDF_YZ_AXIS ${sdfAxes.yz}
+
+    #define SDF_Z_AXIS ${sdfAxes.z}
+    #define SDF_ZX_AXIS ${sdfAxes.zx}
+    #define SDF_ZY_AXIS ${sdfAxes.zy}
+
+    #define SDF_XYZ_AXIS ${sdfAxes.xyz}
 
     struct SdfCsgDomainOpHeader {
         int opType;
-        int axis; // 0 = x, 1 = y, ...
+        int axis; // SDF_AXIS_X, ...
         float size;
     };
 
@@ -1130,6 +1141,12 @@ const getSource = ({options, Scene}) =>
 
     /**
      * SDF CSG operations
+     *
+     * Most of these are from the webgl port of the Mercury hg_sdf library by jcowles:
+     * https://github.com/jcowles/hg_sdf
+     *
+     * A few are (of course :)) by iq:
+     * http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
      */
 
     #define SDF_NOOP ${sdfOperators.noOp}
@@ -1159,14 +1176,33 @@ const getSource = ({options, Scene}) =>
      * SDF domain operations
      */
 
-    // Repeat space along one axis. Use like this to repeat along the x axis:
+    // repeat space along one axis. Use like this to repeat along the x axis:
     // <float cell = pMod1(p.x,5);> - using the return value is optional.
-    #define SDF_PMOD1 ${sdfDomainOperations.mod1d}
+    #define SDF_DOM_OP_PMOD1 ${sdfDomainOperations.mod1d}
     float pMod1(inout float p, float size) {
     	float halfsize = size*0.5;
     	float c = floor((p + halfsize)/size);
     	p = mod(p + halfsize, size) - halfsize;
     	return c;
+    }
+
+    #define SDF_DOM_OP_BEND ${sdfDomainOperations.bend}
+    void pCheapBend(inout vec3 p, float k) {
+        float c = cos(k*p.x);
+        float s = sin(k*p.x);
+        mat2  m = mat2(c,-s,s,c);
+        vec3  q = vec3(m*p.xy,p.z);
+        p = q;
+    }
+
+    #define SDF_DOM_OP_TWIST ${sdfDomainOperations.twist}
+    void pTwist(inout vec3 p, float k) {
+        // const float k = 0.05; // or some other amount
+        float c = cos(k*p.y);
+        float s = sin(k*p.y);
+        mat2  m = mat2(c,-s,s,c);
+        vec3  q = vec3(m*p.xz,p.y);
+        p = q;
     }
 
     /**
@@ -1202,27 +1238,43 @@ const getSource = ({options, Scene}) =>
             case SDF_NOOP:
                 break;
 
-            case SDF_PMOD1: {
-                switch(opHeader.axis) {
-                    case SDF_X_AXIS:
-                        pMod1(/* => out */ p.x, opHeader.size);
-                        break;
-
-                    case SDF_Y_AXIS:
-                        pMod1(/* => out */ p.y, opHeader.size);
-                        break;
-
-                    case SDF_Z_AXIS:
-                        pMod1(/* => out */ p.z, opHeader.size);
-                        break;
-
-                    default:
-                        break;
-                }
+            case SDF_DOM_OP_TWIST: {
+                pTwist(/* => out */ p, opHeader.size);
+                break;
             }
 
-            default:
+            case SDF_DOM_OP_BEND: {
+                pCheapBend(/* => out */ p, opHeader.size);
                 break;
+            }
+
+            case SDF_DOM_OP_PMOD1: {
+                if(opHeader.axis == SDF_XYZ_AXIS
+                    || opHeader.axis == SDF_XY_AXIS
+                    || opHeader.axis == SDF_ZY_AXIS
+                    || opHeader.axis == SDF_X_AXIS)
+                {
+                    pMod1(/* => out */ p.x, opHeader.size);
+                }
+
+                if(opHeader.axis == SDF_XYZ_AXIS
+                    || opHeader.axis == SDF_XY_AXIS
+                    || opHeader.axis == SDF_ZY_AXIS
+                    || opHeader.axis == SDF_Y_AXIS)
+                {
+                    pMod1(/* => out */ p.y, opHeader.size);
+                }
+
+                if(opHeader.axis == SDF_XYZ_AXIS
+                    ||opHeader.axis == SDF_YZ_AXIS
+                    ||opHeader.axis == SDF_XZ_AXIS
+                    ||opHeader.axis == SDF_Z_AXIS)
+                {
+                    pMod1(/* => out */ p.z, opHeader.size);
+                }
+
+                break;
+            }
         }
     }
 
@@ -1398,6 +1450,9 @@ const getSource = ({options, Scene}) =>
         while(true) {
             sdfData = getPackedSdf(sdfDataTexOffset + SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE);
             vec3 p = samplePoint - sdfData.position;
+
+            // opCheapBend(p);
+            // opTwist(p);
 
             applySdfDomainOperation(sdfData.domainOp, /* => out */ p);
 
