@@ -53,7 +53,8 @@ const sdfDomainOperations = {
 
 const sdfGeometryTypes = {
     sphere: 1,
-    box: 2
+    box: 2,
+    cylinder: 3
 };
 
 const standardSdfOpArrayDataOffset = 1;
@@ -189,6 +190,24 @@ const sdf = (...args) => {
                     dataArray[offset + 6],
                     dataArray[offset + 7],
                     dataArray[offset + 8]
+                );
+
+                vec3.sub(minCoords, position, dimensions);
+                vec3.add(maxCoords, position, dimensions);
+
+                break;
+
+            case sdfGeometryTypes.cylinder:
+                position = vec3.fromValues(
+                    dataArray[offset + 9],
+                    dataArray[offset + 10],
+                    dataArray[offset + 11]
+                );
+
+                dimensions = vec3.fromValues(
+                    dataArray[offset + 6], // radius
+                    dataArray[offset + 7], // height
+                    dataArray[offset + 6 ] // radius
                 );
 
                 vec3.sub(minCoords, position, dimensions);

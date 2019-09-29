@@ -1222,6 +1222,18 @@ const getSource = ({options, Scene}) =>
     	return length(max(d, vec3(0))) + vmax(min(d, vec3(0)));
     }
 
+    // Cylinder standing upright on the xz plane
+    #define SDF_CYLINDER ${sdfGeometryTypes.cylinder}
+    float cylinderSdf(vec3 p, vec3 b) {
+        float r = b.x;
+        float height = b.y;
+
+    	float d = length(p.xz) - r;
+    	d = max(d, abs(p.y) - height);
+
+    	return d;
+    }
+
     // float roundedBoxSdf(vec3 p, vec3 b) {
     //     float r = 0.5;
     //     vec3 d = abs(p) - b;
@@ -1289,6 +1301,11 @@ const getSource = ({options, Scene}) =>
 
             case SDF_BOX: {
                 d = boxSdf(p, sdfData.dimensions);
+                break;
+            }
+
+            case SDF_CYLINDER: {
+                d = cylinderSdf(p, sdfData.dimensions);
                 break;
             }
 
@@ -1450,9 +1467,6 @@ const getSource = ({options, Scene}) =>
         while(true) {
             sdfData = getPackedSdf(sdfDataTexOffset + SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE);
             vec3 p = samplePoint - sdfData.position;
-
-            // opCheapBend(p);
-            // opTwist(p);
 
             applySdfDomainOperation(sdfData.domainOp, /* => out */ p);
 
@@ -1670,8 +1684,8 @@ const getSource = ({options, Scene}) =>
 
         float sdfOffset = 0.;
 
-        vec3 sdfBlendedColor;
-        int sdfMaterialId = 0;
+        vec3 lookupSdfBlendedColor;
+        int lookupSdfMaterialId = -1;
 
         while (true) {
             if (currentStackData.rayT < tMax) {
@@ -1918,6 +1932,9 @@ const getSource = ({options, Scene}) =>
 
                         #ifdef HAS_SDF_GEOS
                             case BVH_SDF_GEOMETRY: {
+                                int sdfMaterialId;
+                                vec3 sdfBlendedColor;
+
                                 float dist = bvhSphereTraceDistance(
                                     ray,
                                     0.,
@@ -1934,6 +1951,8 @@ const getSource = ({options, Scene}) =>
 
                                     lookupGeometryType = BVH_SDF_GEOMETRY;
                                     lookupOffset = sdfOffset;
+                                    lookupSdfBlendedColor = sdfBlendedColor;
+                                    lookupSdfMaterialId = sdfMaterialId;
                                 }
 
                                 break;
@@ -2249,13 +2268,13 @@ const getSource = ({options, Scene}) =>
                     record.hitT = tMax;
                     record.hitPoint = pointOnRay(ray, record.hitT);
                     record.normal = estimateBvhSdfNormal(record.hitPoint, lookupOffset);
-                    record.material = getPackedMaterial(sdfMaterialId);
+                    record.material = getPackedMaterial(lookupSdfMaterialId);
 
                     if(record.material.type != DIALECTRIC_MATERIAL_TYPE) {
                         record.hitPoint = record.hitPoint + EPSILON * record.normal;
                     }
 
-                    record.color = sdfBlendedColor;
+                    record.color = lookupSdfBlendedColor;
                 }
             #endif
 
@@ -2264,10 +2283,10 @@ const getSource = ({options, Scene}) =>
         }
 
         // https://www.sebastiansylvan.com/post/ray-tracing-signed-distance-functions/
-        // int sdfMaterialId;
+        // int lookupSdfMaterialId;
 
-        // // float dist = sphereTraceDistance(ray, 0., T_MAX, /* => out */ sdfMaterialId);
-        // float dist = bvhSphereTraceDistance(ray, 0., T_MAX, /* => out */ sdfMaterialId, 0.);
+        // // float dist = sphereTraceDistance(ray, 0., T_MAX, /* => out */ lookupSdfMaterialId);
+        // float dist = bvhSphereTraceDistance(ray, 0., T_MAX, /* => out */ lookupSdfMaterialId, 0.);
         // if(dist < record.hitT &&
         //     dist < (T_MAX - EPSILON) && dist > T_MIN)
         // {
@@ -2278,7 +2297,7 @@ const getSource = ({options, Scene}) =>
         //     // record.normal = estimateSdfNormal(record.hitPoint);
         //     record.normal = estimateBvhSdfNormal(record.hitPoint, 0.);
         //
-        //     record.material = getPackedMaterial(sdfMaterialId);
+        //     record.material = getPackedMaterial(lookupSdfMaterialId);
         //
         //     if(record.material.type != DIALECTRIC_MATERIAL_TYPE) {
         //         record.hitPoint = record.hitPoint + EPSILON * record.normal;

@@ -37,6 +37,8 @@ import AnisotropicVolumeMaterial from '../../materials/anisotropic-volume';
 
 import SdfSphere from '../../models/sdf-sphere';
 import SdfBox from '../../models/sdf-box';
+import SdfCylinder from '../../models/sdf-cylinder';
+
 
 import  {
     sdf as _sdf,
@@ -121,6 +123,8 @@ const sdfSphere = (o) =>
     new SdfSphere(o).geometryData();
 const sdfBox = (o) =>
     new SdfBox(o).geometryData();
+const sdfCylinder = (o) =>
+    new SdfCylinder(o).geometryData();
 
 const sdf = _sdf;
 const opUnion = sdfOpUnion;
