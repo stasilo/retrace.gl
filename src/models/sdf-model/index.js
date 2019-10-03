@@ -46,9 +46,10 @@ const sdfAxes = {
 
 const sdfDomainOperations = {
     noOp: 0,
-    mod1d: 1,
+    repeat: 1,
     twist: 2,
-    bend: 3
+    bend: 3,
+    repeatBounded: 4
 };
 
 const sdfGeometryTypes = {
@@ -58,7 +59,7 @@ const sdfGeometryTypes = {
 };
 
 const standardSdfOpArrayDataOffset = 1;
-const standardSdfDataArrayLength = 18; //15;  //12;
+const standardSdfDataArrayLength = 21; //18; //15;  //12;
 const sdfHeaderOffsetSize = 3;
 
 const sdfOperation = (opCode, opArguments, ...geometries) => {
@@ -157,6 +158,16 @@ const sdf = (...args) => {
         let minCoords = vec3.create();
         let maxCoords = vec3.create();
 
+        const angleX = dataArray[offset + 18];
+        const angleY = dataArray[offset + 19];
+        const angleZ = dataArray[offset + 20];
+
+        const domainOp = dataArray[offset + 15];
+
+        const hasRotation = angleX != 0 || angleY != 0 || angleZ != 0;
+        const hasDomainWarp = domainOp != sdfDomainOperations.noOp
+            && domainOp != sdfDomainOperations.repeat;
+
         let position, dimensions;
 
         switch(geoType) {
@@ -187,9 +198,12 @@ const sdf = (...args) => {
                 );
 
                 dimensions = vec3.fromValues(
-                    dataArray[offset + 6],
-                    dataArray[offset + 7],
-                    dataArray[offset + 8]
+                    dataArray[offset + 6] // radius
+                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
+                    dataArray[offset + 7] // height
+                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
+                    dataArray[offset + 6] // radius
+                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1)
                 );
 
                 vec3.sub(minCoords, position, dimensions);
@@ -205,9 +219,12 @@ const sdf = (...args) => {
                 );
 
                 dimensions = vec3.fromValues(
-                    dataArray[offset + 6], // radius
-                    dataArray[offset + 7], // height
-                    dataArray[offset + 6 ] // radius
+                    dataArray[offset + 6] // radius
+                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
+                    dataArray[offset + 7] // height
+                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
+                    dataArray[offset + 6] // radius
+                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1)
                 );
 
                 vec3.sub(minCoords, position, dimensions);
@@ -226,45 +243,56 @@ const sdf = (...args) => {
     };
 
     let finalBounds;
-    if(noOfSdfsInCsg == 1) {
-        const geoType = dataArray[0];
-        finalBounds = constructCsgBoundingBox(geoType, dataArray, 0);
 
+    if(defined(opts.boundingBox)) {
+        finalBounds = {
+            minCoords: vec3.fromValues(opts.boundingBox.minCoords.x, opts.boundingBox.minCoords.y, opts.boundingBox.minCoords.z),
+            maxCoords: vec3.fromValues(opts.boundingBox.maxCoords.x, opts.boundingBox.maxCoords.y, opts.boundingBox.maxCoords.z)
+        };
     } else {
-        let boundingBoxes = [];
-        range(0, noOfSdfsInCsg).forEach(i => {
-            const offset = standardSdfDataArrayLength * i;
-            const prevOffset = standardSdfDataArrayLength * (i - 1);
-            const prevOp = i > 0 ?
-                dataArray[prevOffset + 1]
-                : -1;
-            const geoType = dataArray[offset];
+        if(noOfSdfsInCsg == 1) {
+            const geoType = dataArray[0];
+            finalBounds = constructCsgBoundingBox(geoType, dataArray, 0);
+        } else {
+            let boundingBoxes = [];
 
-            finalBounds = constructCsgBoundingBox(geoType, dataArray, offset);
+            // find the smallest minCoords & largest maxCoords amongst all the sdf's aabb's
+            range(0, noOfSdfsInCsg).forEach(i => {
+                const offset = standardSdfDataArrayLength * i;
+                const prevOffset = standardSdfDataArrayLength * (i - 1);
+                const prevOp = i > 0 ?
+                    dataArray[prevOffset + 1]
+                    : -1;
+                const geoType = dataArray[offset];
 
-            console.log('prevOp: ', prevOp);
-            if(prevOp != sdfOperators.subtract) {
-                boundingBoxes.push(finalBounds);
-            } else {
-                console.log('SKIPPING (subtract): ', finalBounds);
-            }
-        });
+                finalBounds = constructCsgBoundingBox(geoType, dataArray, offset);
 
-        console.log('!!!!!!!!!!!boundingBoxes: ', boundingBoxes);
+                console.log('prevOp: ', prevOp);
+                if(prevOp != sdfOperators.subtract) {
+                    boundingBoxes.push(finalBounds);
+                } else {
+                    console.log('SKIPPING (subtract): ', finalBounds);
+                }
+            });
 
-        const minBounds = boundingBoxes.map(bb => bb.minCoords);
-        const maxBounds = boundingBoxes.map(bb => bb.maxCoords);
+            console.log('!!!!!!!!!!!boundingBoxes: ', boundingBoxes);
 
-        minBounds.forEach(mb =>
-            vec3.min(finalBounds.minCoords, finalBounds.minCoords, mb)
-        );
+            const minBounds = boundingBoxes
+                .map(bb => bb.minCoords);
+            const maxBounds = boundingBoxes
+                .map(bb => bb.maxCoords);
 
-        maxBounds.forEach(mb =>
-            vec3.max(finalBounds.maxCoords, finalBounds.maxCoords, mb)
-        );
+            minBounds.forEach(mb =>
+                vec3.min(finalBounds.minCoords, finalBounds.minCoords, mb)
+            );
 
-        console.log('FOUND MIN BOUNDS FOR BB: ', finalBounds.minCoords);
-        console.log('FOUND MAX BOUNDS FOR BB: ', finalBounds.maxCoords);
+            maxBounds.forEach(mb =>
+                vec3.max(finalBounds.maxCoords, finalBounds.maxCoords, mb)
+            );
+
+            console.log('FOUND MIN BOUNDS FOR BB: ', finalBounds.minCoords);
+            console.log('FOUND MAX BOUNDS FOR BB: ', finalBounds.maxCoords);
+        }
     }
 
     return {
@@ -281,18 +309,12 @@ const sdf = (...args) => {
 class SdfModel {
     constructor({
         domain,
-        material,
-        geoType,
         position,
         dimensions,
+        rotation,
+        material,
+        geoType
     }) {
-        // this.domain = !defined(domain)
-        //     ? {
-        //         domainOp: sdfDomainOperations.noOp,
-        //         axis: 'x',
-        //         size: 1
-        //     }
-        //     : domain;
         this.domain = defined(domain)
             ? domain
             : {};
@@ -320,9 +342,19 @@ class SdfModel {
                 ? dimensions
                 : [])
         };
+
+        this.rotation = {
+            x: 0,
+            y: 0,
+            z: 0,
+            ...(defined(rotation)
+                ? rotation
+                : [])
+        };
     }
 
     geometryData() {
+        console.log('ROTATIOON IS: ', this.rotation);
         return [
             this.geoType, // 0
             this.opType, // 1, mutated by operation calls
@@ -346,15 +378,19 @@ class SdfModel {
             -1, // 13, not used
             -1, // 14, not used
 
-            this.domain.domainOp
+            this.domain.domainOp // 15
                 ? sdfDomainOperations[this.domain.domainOp]
                 : sdfDomainOperations.noOp,
-            this.domain.axis
+            this.domain.axis // 16
                 ? sdfAxes[this.domain.axis]
                 : 0,
-            this.domain.size
+            this.domain.size // 17
                 ? this.domain.size
                 : 1,
+
+            this.rotation.x, // 18
+            this.rotation.y, // 19
+            this.rotation.z, // 20
         ];
     }
 }

@@ -161,6 +161,44 @@ const getSource = ({options, Scene}) =>
         uniform Camera camera;
     #endif
 
+
+    /*
+     * Rotations
+     */
+
+    mat3 rotateX(float rad) {
+        float c = cos(rad);
+        float s = sin(rad);
+
+        return mat3(
+            1.0, 0.0, 0.0,
+            0.0, c, s,
+            0.0, -s, c
+        );
+    }
+
+    mat3 rotateY(float rad) {
+        float c = cos(rad);
+        float s = sin(rad);
+
+        return mat3(
+            c, 0.0, -s,
+            0.0, 1.0, 0.0,
+            s, 0.0, c
+        );
+    }
+
+    mat3 rotateZ(float rad) {
+        float c = cos(rad);
+        float s = sin(rad);
+
+        return mat3(
+            c, s, 0.0,
+            -s, c, 0.0,
+            0.0, 0.0, 1.0
+        );
+    }
+
     /*
      * Utils
      */
@@ -1086,6 +1124,7 @@ const getSource = ({options, Scene}) =>
         int materialId;
         vec3 dimensions;
         vec3 position;
+        vec3 rotation;
         SdfCsgDomainOpHeader domainOp;
     };
 
@@ -1114,6 +1153,10 @@ const getSource = ({options, Scene}) =>
         yOffset = floor((offset + 5.) * DATA_TEX_INV_SIZE);
         vec3 sdfData6 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
+        xOffset = mod(offset + 6., DATA_TEX_SIZE);
+        yOffset = floor((offset + 6.) * DATA_TEX_INV_SIZE);
+        vec3 sdfData7 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
         SdfCsgDomainOpHeader domainOp = SdfCsgDomainOpHeader(
             int(sdfData6.x),
             int(sdfData6.y),
@@ -1128,6 +1171,7 @@ const getSource = ({options, Scene}) =>
             int(sdfData2.x), // material id
             sdfData3, // dimensions
             sdfData4, // position
+            sdfData7, // rotation
             domainOp
         );
     }
@@ -1178,7 +1222,8 @@ const getSource = ({options, Scene}) =>
 
     // repeat space along one axis. Use like this to repeat along the x axis:
     // <float cell = pMod1(p.x,5);> - using the return value is optional.
-    #define SDF_DOM_OP_PMOD1 ${sdfDomainOperations.mod1d}
+
+    #define SDF_DOM_OP_PMOD1 ${sdfDomainOperations.repeat}
     float pMod1(inout float p, float size) {
     	float halfsize = size*0.5;
     	float c = floor((p + halfsize)/size);
@@ -1186,22 +1231,30 @@ const getSource = ({options, Scene}) =>
     	return c;
     }
 
+    #define SDF_DOM_OP_PMOD3_BOUNDED ${sdfDomainOperations.repeatBounded}
+    void pMod3Bounded(inout vec3 p, in float size, in vec3 bounds) {
+        vec3 q = p - bounds * clamp(round(p/size), -bounds, bounds);
+        p = q;
+    }
+
+    // repeat space along 3 axes
+    // see: http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
+
     #define SDF_DOM_OP_BEND ${sdfDomainOperations.bend}
     void pCheapBend(inout vec3 p, float k) {
         float c = cos(k*p.x);
         float s = sin(k*p.x);
-        mat2  m = mat2(c,-s,s,c);
-        vec3  q = vec3(m*p.xy,p.z);
+        mat2 m = mat2(c,-s,s,c);
+        vec3 q = vec3(m*p.xy,p.z);
         p = q;
     }
 
     #define SDF_DOM_OP_TWIST ${sdfDomainOperations.twist}
     void pTwist(inout vec3 p, float k) {
-        // const float k = 0.05; // or some other amount
         float c = cos(k*p.y);
         float s = sin(k*p.y);
-        mat2  m = mat2(c,-s,s,c);
-        vec3  q = vec3(m*p.xz,p.y);
+        mat2 m = mat2(c,-s,s,c);
+        vec3 q = vec3(m*p.xz,p.y);
         p = q;
     }
 
@@ -1260,6 +1313,12 @@ const getSource = ({options, Scene}) =>
                 break;
             }
 
+            case SDF_DOM_OP_PMOD3_BOUNDED: {
+                vec3 bounds = vec3(2., 1., 2.);
+                pMod3Bounded(/* => out */ p, opHeader.size, bounds);
+                break;
+            }
+
             case SDF_DOM_OP_PMOD1: {
                 if(opHeader.axis == SDF_XYZ_AXIS
                     || opHeader.axis == SDF_XY_AXIS
@@ -1287,6 +1346,20 @@ const getSource = ({options, Scene}) =>
 
                 break;
             }
+        }
+    }
+
+    void applySdfRotation(vec3 rotation, inout vec3 p) {
+        if(rotation.x != 0.) {
+            p *= rotateX(rotation.x);
+        }
+
+        if(rotation.y != 0.) {
+            p *= rotateY(rotation.y);
+        }
+
+        if(rotation.z != 0.) {
+            p *= rotateZ(rotation.z);
         }
     }
 
@@ -1469,6 +1542,7 @@ const getSource = ({options, Scene}) =>
             vec3 p = samplePoint - sdfData.position;
 
             applySdfDomainOperation(sdfData.domainOp, /* => out */ p);
+            applySdfRotation(sdfData.rotation, /* => out */ p);
 
             if(geoIndex == 0) {
 

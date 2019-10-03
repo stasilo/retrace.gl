@@ -3,16 +3,17 @@ import SdfModel, {
 } from '../sdf-model';
 
 class SdfCylinder extends SdfModel {
-    constructor({domain, material, height, radius, position}) {
+    constructor({domain, radius, height, position, rotation, material}) {
         super({
             domain,
-            material,
             position,
             dimensions: {
                 x: radius,
                 y: height,
                 z: -1
             },
+            rotation,
+            material,
             geoType: sdfGeometryTypes.cylinder,
         });
     }

@@ -3,7 +3,7 @@ import SdfModel, {
 } from '../sdf-model';
 
 class SdfBox extends SdfModel {
-    constructor({domain, material, dimensions, position}) {
+    constructor({domain, dimensions, position, rotation, material}) {
         super({
             domain,
             material,
