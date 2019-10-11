@@ -18,6 +18,8 @@ let cachedVolumes = {};
 
 class VolumeTexture {
     constructor(props) {
+        console.log('Volume texture getting gl instances!');
+        
         const {glCanvas, gl, glApp} = getGlInstances();
         const {name, size, data, options, cache} = props;
 

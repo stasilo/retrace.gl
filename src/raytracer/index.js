@@ -25,10 +25,7 @@ import {
 
 import getStore from '../store';
 
-// const defaultMaxSampleCount = 4;
 const dataTextureSize = 2048;
-
-const {glCanvas, glImgCanvas, gl, glApp} = getGlInstances();
 
 async function raytraceApp({
     scene,
@@ -38,6 +35,9 @@ async function raytraceApp({
     realTime,
     debug
 }) {
+    console.log('raytracer getting gl instances!');
+
+    const {glCanvas, glImgCanvas, gl, glApp} = getGlInstances();
     let store = getStore();
 
     if(debug) {
@@ -85,10 +85,6 @@ async function raytraceApp({
             glslCamera: false,
             numSamples: shaderSampleCount,
             dataTexSize: dataTextureSize,
-            hasSdfGeometries: scene.hasSdfGeometries,
-            hasTriangleGeometries: scene.hasTriangleGeometries,
-            hasSphereGeometries: scene.hasSphereGeometries,
-            hasVolumeGeometries: scene.hasVolumeGeometries
         },
         Scene: scene
     });
@@ -194,6 +190,10 @@ async function raytraceApp({
         : [ ...normedColor('#eeeeee'),
             ...normedColor('#ffffff') ];
 
+
+    console.log('glApp.width, glApp.height: ');
+    console.log(glApp.width, glApp.height);
+
     const rayTraceDrawCall = glApp
         .createDrawCall(rayTraceGlProgram, fullScreenQuadVertArray)
         .texture('uGeometryDataTexture', geoDataTexture)
@@ -241,7 +241,7 @@ async function raytraceApp({
 
     const staticRender = () => {
         store.renderInProgress = true;
-        
+
         const frame = animationFrame(({time, frameCount}) => {
             store.currentFrameCount = frameCount;
             store.currentRenderTime = time;

@@ -28,31 +28,31 @@ const getSource = ({options, Scene}) =>
     ${options.glslCamera
         ? '#define GLSL_CAMERA' : '' }
 
-    ${options.hasTriangleGeometries
+    ${Scene.hasTriangleGeometries
         ? '#define HAS_TRIANGLE_GEOS' : ''}
-    ${options.hasSphereGeometries
+    ${Scene.hasSphereGeometries
         ? '#define HAS_SPHERE_GEOS' : ''}
-    ${options.hasVolumeGeometries
+    ${Scene.hasVolumeGeometries
         ? '#define HAS_VOLUME_GEOS' : ''}
-    ${options.hasSdfGeometries
+    ${Scene.hasSdfGeometries
         ? '#define HAS_SDF_GEOS' : ''}
 
     #define FLT_MAX 3.402823466e+38
 
     #define T_MIN 0.0001
-    #define T_MAX 5000.0
+    #define T_MAX ${glslFloat(Scene.renderSettings.tMax)} //5000.0
 
     #ifdef REALTIME
-        #define MAX_HIT_DEPTH 2
+        #define MAX_HIT_DEPTH ${Scene.renderSettings.realtimeHitDepth} //2
     #endif
 
     #ifndef REALTIME
-        #define MAX_HIT_DEPTH 12 //4
+        #define MAX_HIT_DEPTH ${Scene.renderSettings.hitDepth} //12 //4
     #endif
 
     #define NUM_SAMPLES ${options.numSamples}
 
-    #define MAX_MARCHING_STEPS 355 //255
+    #define MAX_MARCHING_STEPS ${Scene.renderSettings.maxSphereTracingSteps} //355 //255
     #define MIN_DIST 0.0
     #define MAX_DIST T_MAX
     #define EPSILON 0.0001
@@ -107,7 +107,7 @@ const getSource = ({options, Scene}) =>
                 case ${texture.id}:
                     color = texture(uSceneTex${texture.id}, uv);
                     break;
-            `).join('\n')};
+            `).join('\n')}
 
             default:
                 break;
@@ -1096,17 +1096,23 @@ const getSource = ({options, Scene}) =>
         int opType;
         int axis; // SDF_AXIS_X, ...
         float size;
+        vec3 bounds;
     };
 
     SdfCsgDomainOpHeader getPackedSdfCsgDomainOpHeader(float offset) {
         float xOffset = mod(offset, DATA_TEX_SIZE);
         float yOffset = floor(offset * DATA_TEX_INV_SIZE);
-        vec3 csgHeaderData = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+        vec3 csgHeaderData1 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+        xOffset = mod(offset + 1., DATA_TEX_SIZE);
+        yOffset = floor((offset + 1.) * DATA_TEX_INV_SIZE);
+        vec3 csgHeaderData2 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
         return SdfCsgDomainOpHeader(
-            int(csgHeaderData.x), //opType
-            int(csgHeaderData.y), //axis
-            csgHeaderData.z //size
+            int(csgHeaderData1.x), //opType
+            int(csgHeaderData1.y), //axis
+            csgHeaderData1.z, //size
+            csgHeaderData2 // bounds
         );
     }
 
@@ -1157,10 +1163,16 @@ const getSource = ({options, Scene}) =>
         yOffset = floor((offset + 6.) * DATA_TEX_INV_SIZE);
         vec3 sdfData7 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
+        xOffset = mod(offset + 7., DATA_TEX_SIZE);
+        yOffset = floor((offset + 7.) * DATA_TEX_INV_SIZE);
+        vec3 sdfData8 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+
         SdfCsgDomainOpHeader domainOp = SdfCsgDomainOpHeader(
             int(sdfData6.x),
             int(sdfData6.y),
-            float(sdfData6.z)
+            float(sdfData6.z),
+            sdfData8
         );
 
         return SdfGeometry(
@@ -1314,8 +1326,8 @@ const getSource = ({options, Scene}) =>
             }
 
             case SDF_DOM_OP_PMOD3_BOUNDED: {
-                vec3 bounds = vec3(2., 1., 2.);
-                pMod3Bounded(/* => out */ p, opHeader.size, bounds);
+                // vec3 bounds = vec3(2., 1., 2.);
+                pMod3Bounded(/* => out */ p, opHeader.size, opHeader.bounds);
                 break;
             }
 
@@ -1529,18 +1541,19 @@ const getSource = ({options, Scene}) =>
         materialId = 0;
 
         SdfGeometry sdfData;
-        // SdfCsgDomainOpHeader csgHeader;
+        SdfCsgDomainOpHeader csgHeader;
 
         int opType = SDF_NOOP;
         float opRadius = -1.;
         float colorBlendAmount = 1.;
 
-        // csgHeader = getPackedSdfCsgDomainOpHeader(sdfDataTexOffset);
+        csgHeader = getPackedSdfCsgDomainOpHeader(sdfDataTexOffset);
 
         while(true) {
             sdfData = getPackedSdf(sdfDataTexOffset + SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE);
             vec3 p = samplePoint - sdfData.position;
 
+            applySdfDomainOperation(csgHeader, /* => out */ p);
             applySdfDomainOperation(sdfData.domainOp, /* => out */ p);
             applySdfRotation(sdfData.rotation, /* => out */ p);
 

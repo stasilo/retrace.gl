@@ -58,9 +58,9 @@ const sdfGeometryTypes = {
     cylinder: 3
 };
 
-const standardSdfOpArrayDataOffset = 1;
-const standardSdfDataArrayLength = 21; //18; //15;  //12;
-const sdfHeaderOffsetSize = 3;
+const standardSdfOpArrayDataOffset = 1; //1;
+const standardSdfDataArrayLength = 24; //21; //18; //15;  //12;
+const sdfHeaderOffsetSize = 6; //3;
 
 const sdfOperation = (opCode, opArguments, ...geometries) => {
     if(geometries.length < 2) {
@@ -82,10 +82,6 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
         switch(opCode) {
             case sdfOperators.unionRound:
                 if('radius' in opArguments) {
-                    // console.log('SETTING RADIUS TO: ', opArguments.radius);
-                    // console.log('RADIUS bef: ', geoData[offset + 1]);
-                    // console.log('before: ', geoData);
-
                     geoData[offset + 1] = defined(opArguments.radius)
                         ? opArguments.radius
                         : 1;
@@ -93,8 +89,6 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
                     geoData[offset + 11] = defined(opArguments.colorBlendAmount)
                         ? 1/(opArguments.colorBlendAmount*10)
                         : 1;
-
-                    // console.log('after: ', geoData);
                 }
 
                 break;
@@ -136,23 +130,24 @@ const sdf = (...args) => {
         : args[1];
 
     const csgHeader = [
-        opts.domainOp
-            ? sdfDomainOperations[opts.domainOp]
+        opts.domain && opts.domain.domainOp // 15
+            ? sdfDomainOperations[opts.domain.domainOp]
             : sdfDomainOperations.noOp,
-
-        opts.axis
-            ? sdfAxes[opts.axis]
+        opts.domain && opts.domain.axis // 16
+            ? sdfAxes[opts.domain.axis]
             : 0,
-
-        opts.size
-            ? opts.size
+        opts.domain && opts.domain.size // 17
+            ? opts.domain.size
             : 1,
+        ...(opts.domain && opts.domain.repetitions
+            ? [
+                opts.domain.repetitions.x,
+                opts.domain.repetitions.y,
+                opts.domain.repetitions.z
+            ]
+            : [0, 0, 0]
+        )
     ];
-
-    const noOfSdfsInCsg = dataArray.length / standardSdfDataArrayLength;
-
-    console.log('sdf header: ', csgHeader);
-    console.log('NO OF SDFS IN THIS CSG: ', noOfSdfsInCsg);
 
     const constructCsgBoundingBox = (geoType, dataArray, offset) => {
         let minCoords = vec3.create();
@@ -250,7 +245,9 @@ const sdf = (...args) => {
             maxCoords: vec3.fromValues(opts.boundingBox.maxCoords.x, opts.boundingBox.maxCoords.y, opts.boundingBox.maxCoords.z)
         };
     } else {
-        if(noOfSdfsInCsg == 1) {
+        const noOfSdfsInCsg = dataArray.length / standardSdfDataArrayLength;
+
+        if(noOfSdfsInCsg === 1) {
             const geoType = dataArray[0];
             finalBounds = constructCsgBoundingBox(geoType, dataArray, 0);
         } else {
@@ -267,15 +264,10 @@ const sdf = (...args) => {
 
                 finalBounds = constructCsgBoundingBox(geoType, dataArray, offset);
 
-                console.log('prevOp: ', prevOp);
                 if(prevOp != sdfOperators.subtract) {
                     boundingBoxes.push(finalBounds);
-                } else {
-                    console.log('SKIPPING (subtract): ', finalBounds);
                 }
             });
-
-            console.log('!!!!!!!!!!!boundingBoxes: ', boundingBoxes);
 
             const minBounds = boundingBoxes
                 .map(bb => bb.minCoords);
@@ -289,15 +281,12 @@ const sdf = (...args) => {
             maxBounds.forEach(mb =>
                 vec3.max(finalBounds.maxCoords, finalBounds.maxCoords, mb)
             );
-
-            console.log('FOUND MIN BOUNDS FOR BB: ', finalBounds.minCoords);
-            console.log('FOUND MAX BOUNDS FOR BB: ', finalBounds.maxCoords);
         }
     }
 
     return {
         boundingBox: finalBounds,
-        includeInBvh: !defined(opts.domainOp),
+        includeInBvh: true,
         isSdfGeometry: true,
         data: [
             ...csgHeader,
@@ -351,10 +340,23 @@ class SdfModel {
                 ? rotation
                 : [])
         };
+
+        this.domainOpBounds = {
+            x: 0,
+            y: 0,
+            z: 0,
+            ...(defined(domain) && defined(domain.repetitions)
+                ? domain.repetitions
+                : [])
+        };
+
+        console.log('CONSTRUCTED SDF BOUNDS;: ')
     }
 
     geometryData() {
         console.log('ROTATIOON IS: ', this.rotation);
+        // console.log('OP BOUNDS ARE: '. this.domainOpBounds);
+
         return [
             this.geoType, // 0
             this.opType, // 1, mutated by operation calls
@@ -390,7 +392,11 @@ class SdfModel {
 
             this.rotation.x, // 18
             this.rotation.y, // 19
-            this.rotation.z, // 20
+            this.rotation.z, // 20,
+
+            this.domainOpBounds.x, // 21
+            this.domainOpBounds.y, // 22
+            this.domainOpBounds.z // 23
         ];
     }
 }

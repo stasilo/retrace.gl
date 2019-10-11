@@ -16,8 +16,16 @@ import {
     isFn
 } from '../../utils';
 
+const defaultSceneRenderSettings = {
+    realtimeHitDepth: 2,
+    hitDepth: 4,
+    tMax: 5000,
+    maxSphereTracingSteps: 255
+};
+
 class Scene {
     constructor({
+        renderSettings,
         camera,
         background,
         geometries,
@@ -28,6 +36,11 @@ class Scene {
             return null;
         }
 
+        this.renderSettings = {
+            ...defaultSceneRenderSettings,
+            ...renderSettings
+        };
+
         this.camera = camera;
         this.background = isArray(background)
             ? background
@@ -35,20 +48,14 @@ class Scene {
 
         this.materials = new MaterialList(materials);
 
-        // console.log('raw bvh sdfs: ', geometries.filter(g => g.isSdfGeometry && g.includeInBvh).slice(0));
-
         return (async () => {
             this.textures = await new TextureList(textures);
             this.geometries = await this.finalizeGeometries(geometries);
-
-            console.log('ALL GEOMETRIES: ', this.geometries);
 
             let {sdfGeometries, sdfGeometryData} = this.finalizeSdfGeometries(geometries);
 
             this.sdfGeometries = sdfGeometries;
             this.sdfGeometryData = sdfGeometryData;
-
-            console.log('ALL SDFFFF GEOMETRIES: ', this.sdfGeometries);
 
             this.hasSdfGeometries = this.sdfGeometries.length > 0;
 
@@ -58,8 +65,6 @@ class Scene {
                 .filter(g => g instanceof Sphere).length > 0;
             this.hasVolumeGeometries = this.geometries
                 .filter(g => g instanceof Volume).length > 0;
-
-            console.log('THIS!!!!!!!!!!!', this);
 
             return this;
         })();

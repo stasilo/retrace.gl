@@ -4,13 +4,16 @@ import {vec3, vec2} from 'gl-matrix';
 import {getGlInstances} from '../../gl';
 import {defined, loadImage} from '../../utils';
 
-const {glCanvas, gl, glApp} = getGlInstances();
 
 import vertShader from '../../shaders/vert.glsl';
 import createTexRenderShader from '../../shaders/dynamicTexRender.glsl.js';
 
 class Texture {
     constructor({name, url, src, options}) {
+        console.log('Texture constructor getting gl instances');
+
+        const {glCanvas, gl, glApp} = getGlInstances();
+
         this.name = name;
         this.url = url;
         this.src = src;
@@ -40,6 +43,8 @@ class Texture {
     }
 
     renderDynamicTexture(src, options) {
+        const {glCanvas, gl, glApp} = getGlInstances();
+
         const {width, height, ...opts} = defined(options)
             && defined(options.width)
             && defined(options.height)

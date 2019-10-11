@@ -63,6 +63,7 @@ class Camera {
     // https://github.com/Erkaman/gl-movable-camera/blob/master/index.js
 
     listen = () => {
+        console.log('camera listen() getting gl instances');
         const {glCanvas} = getGlInstances();
 
         // TODO:
@@ -153,9 +154,10 @@ class Camera {
     }
 
     updateCamera = () => {
+        console.log('camera updateCamera() getting gl instances!');
         const {glCanvas} = getGlInstances();
 
-        this.aspect = glCanvas.width/glCanvas.height;
+        this.aspect = (glCanvas.width/glCanvas.height).toFixed(2);
 
         this.lensRadius = this.aperture/2;
         this.focusDist = !defined(this.focusDist)

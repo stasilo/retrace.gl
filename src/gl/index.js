@@ -11,17 +11,39 @@ function getGlInstances() {
         glCanvas.setAttribute('id', 'gl-canvas');
         glImgCanvas.setAttribute('id', 'gl-img-canvas');
 
-        glCanvas.setAttribute('width', window.innerWidth / 2);
-        glCanvas.setAttribute('height', window.innerHeight / 2);
+        // https://webgl2fundamentals.org/webgl/lessons/webgl-anti-patterns.html
 
-        glImgCanvas.setAttribute('width', window.innerWidth / 2);
-        glImgCanvas.setAttribute('height', window.innerHeight / 2);
-        glImgCanvas.style.display = 'none';
+        const resRatio = 0.9; //0.73;
+        const scale = 1/resRatio;
+
+        const canvasWidth = Math.ceil(window.innerWidth / scale);
+        const canvasHeight = Math.floor(window.innerHeight / scale);
+
+        console.log('canvasWidth: ', canvasWidth);
+        console.log('canvasHeight: ', canvasHeight);
+
+        glCanvas.setAttribute('width', canvasWidth);
+        glCanvas.setAttribute('height', canvasHeight);
+
+        glCanvas.style.top = `50%`;
+        glCanvas.style.left = `50%`;
+
+        glCanvas.style.transform = `translate3d(-50%, -50%, 0) scale(${scale})`;
+
+
+        // glCanvas.style.top = `50%`;
+        // glCanvas.style.left = `50%`;
+        //
+        // glCanvas.style.transform = `translate3d(-50%, -50%, 0) scale(${scale})`;
+
+        glImgCanvas.setAttribute('width', canvasWidth);
+        glImgCanvas.setAttribute('height', canvasHeight);
+        // glImgCanvas.style.display = 'none';
+        glImgCanvas.style.visibility = 'hidden';
+        glImgCanvas.style.pointerEvents = 'none';
 
         document.body.appendChild(glCanvas);
         document.body.appendChild(glImgCanvas);
-
-        gl = glCanvas.getContext('webgl2');
 
         glApp = PicoGL.createApp(glCanvas)
             .noDepthTest()
@@ -33,6 +55,8 @@ function getGlInstances() {
             .clearColor(0, 0, 0, 1);
             // .scissorTest()
             // .scissor(0, 0, canvas.width, canvas.height)
+
+        gl = glCanvas.getContext('webgl2');
     }
 
     return {glCanvas, glImgCanvas, gl, glApp};
