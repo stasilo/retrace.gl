@@ -11,16 +11,12 @@ import {
 } from '../../utils';
 
 
-import vertShader from '../../shaders/vert.glsl';
-import createTexRenderShader from '../../shaders/dynamicTexRender.glsl.js';
-
 let cachedVolumes = {};
 
 class VolumeTexture {
+    isVolumeTexture = true;
+
     constructor(props) {
-        console.log('Volume texture getting gl instances!');
-        
-        const {glCanvas, gl, glApp} = getGlInstances();
         const {name, size, data, options, cache} = props;
 
         if(!definedNotNull(size)) {
@@ -34,6 +30,8 @@ class VolumeTexture {
         this.name = name;
         this.size = size;
 
+        this.options = options;
+
         const propsHash = hashCode(props);
 
         if(propsHash in cachedVolumes && cache) {
@@ -45,8 +43,12 @@ class VolumeTexture {
 
             cachedVolumes[hashCode(props)] = this.data;
         }
+    }
 
-        this.texture = glApp.createTexture3D(new Float32Array(this.data), size, size, size, {
+    createVolumeTexture() {
+        const {gl, glApp} = getGlInstances();
+
+        this.texture = glApp.createTexture3D(new Float32Array(this.data), this.size, this.size, this.size, {
             type: gl.FLOAT,
             internalFormat: gl.R32F,
             format: gl.RED,
@@ -59,9 +61,8 @@ class VolumeTexture {
             // wrapS: gl.CLAMP_TO_EDGE,
             // wrapT: gl.CLAMP_TO_EDGE,
             // wrapR: gl.CLAMP_TO_EDGE,
-            ...options
+            ...this.options
         });
-
     }
 }
 

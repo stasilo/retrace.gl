@@ -35,8 +35,6 @@ async function raytraceApp({
     realTime,
     debug
 }) {
-    console.log('raytracer getting gl instances!');
-
     const {glCanvas, glImgCanvas, gl, glApp} = getGlInstances();
     let store = getStore();
 
@@ -190,10 +188,6 @@ async function raytraceApp({
         : [ ...normedColor('#eeeeee'),
             ...normedColor('#ffffff') ];
 
-
-    console.log('glApp.width, glApp.height: ');
-    console.log(glApp.width, glApp.height);
-
     const rayTraceDrawCall = glApp
         .createDrawCall(rayTraceGlProgram, fullScreenQuadVertArray)
         .texture('uGeometryDataTexture', geoDataTexture)
@@ -206,9 +200,17 @@ async function raytraceApp({
         .uniform('uTime', 0);
 
     if(sceneTextures.length > 0) {
-        sceneTextures.forEach(texture =>
+        sceneTextures.forEach(texture => {
+            if(texture.src) {
+                texture.renderDynamicTexture();
+            } else if(texture.image) {
+                texture.createImageTexture();
+            } else if(texture.isVolumeTexture) {
+                texture.createVolumeTexture();
+            }
+
             rayTraceDrawCall.texture(`uSceneTex${texture.id}`, texture.texture)
-        );
+        });
     }
 
     if(!realTime) {

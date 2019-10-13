@@ -1,15 +1,18 @@
 scene({
+    rendererSettings: {
+        resolution: 0.7
+    },
     background: '#000000',
-    camera: camera({
+    camera: {
         lookFrom: {x: 2.533, y: 16.575, z: 67.897},
         lookAt: {x: 2.539, y: 16.067, z: 63.407},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1,
-    }),
+    },
     geometries: [
         plane({
-            material: 'floor-white',
+            material: 'floor-material',
             texture: {
                 name: 'check',
                 uvScale: 35
@@ -22,7 +25,7 @@ scene({
             },
         }),
         plane({
-            material: 'ceil-light',
+            material: 'light-material',
             scale: 20,
             position: {
                 x: 0,
@@ -33,7 +36,7 @@ scene({
         sphere({
             material: 'obj-material',
             normalMap: {
-                name: 'normal-map',
+                name: 'obj-normal-map',
                 uvScale: {
                     x: 3,
                     y: 3
@@ -49,7 +52,7 @@ scene({
         cube({
             material: 'obj-material',
             normalMap: {
-                name: 'normal-map',
+                name: 'obj-normal-map',
                 scale: 1,
                 uvScale: {
                     x: 1,
@@ -77,13 +80,13 @@ scene({
             `
         }),
         texture({
-            name: 'normal-map',
+            name: 'obj-normal-map',
             url: 'assets/images/aluminumNormalMap.jpg'
         }),
     ],
     materials: [
         lambertMaterial({
-            name: `floor-white`,
+            name: `floor-material`,
             color: '#ffffff',
             albedo: [0.8, 0.8, 0.8]
         }),
@@ -93,7 +96,7 @@ scene({
             albedo: [0.8, 0.8, 0.8]
         }),
         emissiveMaterial({
-            name: `ceil-light`,
+            name: `light-material`,
             color: '#ffffff',
             intensity: 5
         }),

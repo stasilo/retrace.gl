@@ -1,17 +1,18 @@
 scene({
-    renderSettings: {
+    rendererSettings: {
         realtimeHitDepth: 2,
         hitDepth: 8,
         tMax: 5000,
-        maxSphereTracingSteps: 255
+        maxSphereTracingSteps: 255,
+        resolution: 0.4
     },
-    camera: camera({
-        lookFrom: {x: -3.865, y: 18.478, z: 95.985},
-        lookAt: {x: -3.628, y: 17.717, z: 91.534},
+    camera: {
+        lookFrom: {x: 55.687, y: 6.122, z: -27.910},
+        lookAt: {x: 51.631, y: 5.844, z: -25.932},
         vfov: 45,
         aperture: 1e-8,
-        velocity: 1,
-    }),
+        velocity: 1
+    },
     background: ['#000', '#010101'],
     geometries: [
         // sdf(
@@ -222,10 +223,10 @@ scene({
 
         plane({
             material: 'floor-white',
-            // texture: {
-            //     name: 'check',
-            //     uvScale: 20
-            // },
+            texture: {
+                name: 'check',
+                uvScale: 20
+            },
             scale: 1000,
             position: {
                 x: 0,
@@ -253,17 +254,17 @@ scene({
         })
     ],
     textures: [
-        // texture({
-        //     name: 'check',
-        //     src: `
-        //         float s = sin(50.*uv.x)*sin(50.*uv.y);
-        //         if(s < 0.) {
-        //             tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
-        //         } else {
-        //             tColor = vec4(0.3, 0.0, 0.0, 1.);
-        //         }
-        //     `
-        // })
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.3, 0.0, 0.0, 1.);
+                }
+            `
+        })
     ],
     materials: [
         lambertMaterial({

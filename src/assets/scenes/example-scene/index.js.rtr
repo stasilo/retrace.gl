@@ -29,13 +29,13 @@ scene({
         '#000000',
         '#050505'
     ],
-    camera: camera({
+    camera: {
         lookFrom: {x: 3.017, y: 0.645, z: 0.278},
         lookAt: {x: -0.214, y: 1.114, z: -1.535},
         vfov: 45,
         aperture: 0.09,
         velocity: 0.25,
-    }),
+    },
     geometries: [
         plane({
             material: 'floor-white',

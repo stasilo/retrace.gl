@@ -12,7 +12,7 @@ import raytraceApp from '../raytracer';
 import dynamicScene from '../dtos/dynamic-scene';
 
 import {createCamera} from '../camera';
-// import {getGlInstances} from '../gl';
+import {resetCanvas} from '../gl';
 
 import {
     defined,
@@ -36,6 +36,7 @@ const defaultMaxSampleCount = 10;
 // const defaultSceneUrl = 'assets/scenes/material-test-scene/index.js.rtr';
 
 // const defaultSceneUrl = 'assets/scenes/hollow-box-sdf-scene/index.js.rtr';
+
 const defaultSceneUrl = 'assets/scenes/sdf-test-scene/index.js.rtr';
 
 let instance = null;
@@ -67,6 +68,7 @@ class Store {
     _camera = null;
 
     fpsTicker = null;
+    currentrendererSettings = null;
 
     constructor() {
         this.appArgs = queryString.parse(window.location.search);
@@ -117,11 +119,15 @@ class Store {
         try {
             this._scene = await dynamicScene(this._sceneSrc);
 
+            this.currentrendererSettings = this._scene.rendererSettings;
+
+            resetCanvas();
+
             this.hasSceneEvalError = false;
             this.sceneSrcEvalError = null;
 
             if(this._scene.camera) {
-                this._camera = this._scene.camera;
+                this._camera = createCamera(this._scene.camera);
             } else {
                 this.setupDefaultCamera();
             }
@@ -215,7 +221,7 @@ class Store {
 
         this.sceneSrc = this.sceneSrc
             .replace(
-                /camera\({((\n|.)*?)}\)/,
+                /camera:\s*{((\n|.)*?\s+)}/,
                 this._camera.getCurrentSceneSrcDefinition({
                     cameraIndent: noOfSpacesBeforeCamera
                 })

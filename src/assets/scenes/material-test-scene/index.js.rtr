@@ -10,13 +10,13 @@ const testMaterials = [
 
 scene({
     background: '#000000',
-    camera: camera({
+    camera: {
         lookFrom: {x: 1.124, y: 13.997, z: -39.375},
         lookAt: {x: 0.986, y: 5.104, z: 4.410},
         vfov: 45,
         aperture: 1.3,
         velocity: 1,
-    }),
+    },
     geometries: [
         plane({
             material: 'floor-white',

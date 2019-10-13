@@ -19,8 +19,6 @@ function buildSceneBvh(scene) {
             geos.concat(geometry.geometryData)
         , []);
 
-    console.log('buildSceneBvh() - scene.sdfGeometries: ', scene.sdfGeometries);
-
     // let geometries = scene.geometries
     //     .reduce((geos, geometry) => {
     //         geos.push(...geometry.geometryData);
@@ -49,8 +47,6 @@ function buildBvh(geometryData, sdfGeometries) {
 
     let totalWork = new Uint32Array(totalGeoCount + totalSdfCount);
     let aabbArray = [];
-
-    console.log('totalGeoCount: ', totalGeoCount);
 
     range(0, totalGeoCount)
         .forEach(i => {
@@ -139,8 +135,6 @@ function buildBvh(geometryData, sdfGeometries) {
                     break;
             }
 
-            console.log('geometryData PRE: ', geometryData);
-
             aabbArray[9 * i + 0] = geoBoundBoxMin[0];
             aabbArray[9 * i + 1] = geoBoundBoxMin[1];
             aabbArray[9 * i + 2] = geoBoundBoxMin[2];
@@ -155,7 +149,6 @@ function buildBvh(geometryData, sdfGeometries) {
 
             totalWork[i] = i;
 
-            console.log(`totalWork[${i}] = ${i}`);
         });
 
     let sdfOffset = 0;
@@ -236,21 +229,11 @@ function buildBvh(geometryData, sdfGeometries) {
                 -1
             ];
 
-            console.log('Adding sdf dummy geo: ', dummySdf);
-
             geometryData = geometryData.concat(dummySdf);
-
-            console.log('geometry.boundingBox.minCoords: ', geometry.boundingBox.minCoords);
 
             geoBoundBoxMin = vec3.fromValues(...geometry.boundingBox.minCoords);
             geoBoundBoxMax = vec3.fromValues(...geometry.boundingBox.maxCoords);
             vec3.lerp(geoBoundBoxCentroid, geoBoundBoxMin, geoBoundBoxMax, 0.5);
-
-            console.log('Sdf bounding boxes: ');
-            console.log('geoBoundBoxMin: ', geoBoundBoxMin);
-            console.log('geoBoundBoxMax: ', geoBoundBoxMax);
-            console.log('geoBoundBoxCentroid: ', geoBoundBoxCentroid);
-
 
             aabbArray[9 * j + 0] = geoBoundBoxMin[0];
             aabbArray[9 * j + 1] = geoBoundBoxMin[1];
@@ -265,9 +248,6 @@ function buildBvh(geometryData, sdfGeometries) {
             aabbArray[9 * j + 8] = geoBoundBoxCentroid[2];
 
             totalWork[j] = j;
-            console.log(`totalWork[${j}] = ${j}`);
-
-            console.log('geometry: ', geometry);
 
             sdfOffset += geometry.data.length / 3;
         });
@@ -293,8 +273,6 @@ function buildBvh(geometryData, sdfGeometries) {
 
             return bvh;
         }, []);
-
-    console.log('geometryData: ', geometryData);
 
     return {
         bvhData: flatBvh,

@@ -1,14 +1,17 @@
-const volTexSize = 64;
+const volTexSize = 64*2;
 
 scene({
+    rendererSettings: {
+        resolution: 0.35
+    },
     background: '#000000',
-    camera: camera({
-        lookFrom: {x: -5.032, y: 17.563, z: 138.707},
-        lookAt: {x: -4.946, y: 17.673, z: 134.188},
+    camera: {
+        lookFrom: {x: 65.017, y: 5.963, z: 40.458},
+        lookAt: {x: 61.000, y: 6.409, z: 38.433},
         vfov: 45,
         aperture: 1e-8,
-        velocity: 1,
-    }),
+        velocity: 1
+    },
     geometries: [
         plane({
             material: 'floor-white',

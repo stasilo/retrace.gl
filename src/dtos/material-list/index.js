@@ -12,7 +12,6 @@ class MaterialList {
             ? flatten(materials)
                 .map((material, i) => {
                     material.id = i;
-                    console.log(`setting mat ${material.name} to id ${material.id}`);
                     return material;
                 })
             : [];

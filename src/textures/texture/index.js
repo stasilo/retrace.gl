@@ -10,10 +10,6 @@ import createTexRenderShader from '../../shaders/dynamicTexRender.glsl.js';
 
 class Texture {
     constructor({name, url, src, options}) {
-        console.log('Texture constructor getting gl instances');
-
-        const {glCanvas, gl, glApp} = getGlInstances();
-
         this.name = name;
         this.url = url;
         this.src = src;
@@ -21,38 +17,36 @@ class Texture {
         this.image = null;
         this.texture = null;
 
-        // image texture
+        this.options = options;
 
         if(defined(url)) {
             return (async () => {
                 this.image = await loadImage(url);
-                this.texture = glApp.createTexture2D(this.image, {
-                    flipY: true,
-                    ...options
-                });
-
                 return this;
             })();
         }
-
-        // dynamic texture
-
-        if(defined(src)) {
-            this.renderDynamicTexture(src, options);
-        }
     }
 
-    renderDynamicTexture(src, options) {
+    createImageTexture() {
+        const {glApp} = getGlInstances();
+
+        this.texture = glApp.createTexture2D(this.image, {
+            flipY: true,
+            ...this.options
+        });
+    }
+
+    renderDynamicTexture() {
         const {glCanvas, gl, glApp} = getGlInstances();
 
-        const {width, height, ...opts} = defined(options)
-            && defined(options.width)
-            && defined(options.height)
+        const {width, height, ...opts} = defined(this.options)
+            && defined(this.options.width)
+            && defined(this.options.height)
                 ? options
                 : {
-                    width: glApp.width,
-                    height: glApp.height,
-                    ...options
+                    width: glCanvas.width,
+                    height: glCanvas.height,
+                    ...this.options
                 };
 
         let fboColorTarget = glApp.createTexture2D(width, height, {
@@ -77,12 +71,11 @@ class Texture {
             .createVertexArray()
             .vertexAttributeBuffer(0, positions);
 
-        const textureShaderSrc = createTexRenderShader({src});
+        const textureShaderSrc = createTexRenderShader({src: this.src});
         const textureProgram = glApp.createProgram(vertShader, textureShaderSrc);
 
         const textureDrawCall = glApp
             .createDrawCall(textureProgram, fullScreenQuadVertArray)
-            // .uniform('uResolution', vec2.fromValues(glApp.width, glApp.height));
 
         glApp.drawFramebuffer(fbo)
             .clear();

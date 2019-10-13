@@ -1,10 +1,14 @@
 import PicoGL from 'picogl';
-import {defined} from '../utils';
+import {definedNotNull, roundEven} from '../utils';
+
+import getStore from '../store';
 
 let gl, glCanvas, glImgCanvas, glApp;
 
-function getGlInstances() {
-    if(!defined(glCanvas)) {
+const getGlInstances = () => {
+    const store = getStore();
+
+    if(!definedNotNull(glCanvas)) {
         glCanvas = document.createElement('canvas');
         glImgCanvas = document.createElement('canvas');
 
@@ -13,14 +17,11 @@ function getGlInstances() {
 
         // https://webgl2fundamentals.org/webgl/lessons/webgl-anti-patterns.html
 
-        const resRatio = 0.9; //0.73;
-        const scale = 1/resRatio;
+        const resRatio = store.currentrendererSettings.resolution; //0.73; //0.4; //0.73;
+        const scale = (1/resRatio).toFixed(2);
 
-        const canvasWidth = Math.ceil(window.innerWidth / scale);
-        const canvasHeight = Math.floor(window.innerHeight / scale);
-
-        console.log('canvasWidth: ', canvasWidth);
-        console.log('canvasHeight: ', canvasHeight);
+        const canvasWidth = roundEven(window.innerWidth / scale);
+        const canvasHeight = roundEven(window.innerHeight / scale);
 
         glCanvas.setAttribute('width', canvasWidth);
         glCanvas.setAttribute('height', canvasHeight);
@@ -30,14 +31,9 @@ function getGlInstances() {
 
         glCanvas.style.transform = `translate3d(-50%, -50%, 0) scale(${scale})`;
 
-
-        // glCanvas.style.top = `50%`;
-        // glCanvas.style.left = `50%`;
-        //
-        // glCanvas.style.transform = `translate3d(-50%, -50%, 0) scale(${scale})`;
-
         glImgCanvas.setAttribute('width', canvasWidth);
         glImgCanvas.setAttribute('height', canvasHeight);
+
         // glImgCanvas.style.display = 'none';
         glImgCanvas.style.visibility = 'hidden';
         glImgCanvas.style.pointerEvents = 'none';
@@ -62,4 +58,15 @@ function getGlInstances() {
     return {glCanvas, glImgCanvas, gl, glApp};
 }
 
-export {getGlInstances};
+
+const resetCanvas = () => {
+    if(glCanvas) {
+        glCanvas.remove();
+        glCanvas = null;
+    }
+};
+
+export {
+    getGlInstances,
+    resetCanvas
+};

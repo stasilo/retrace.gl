@@ -3,12 +3,7 @@ import {vec3} from 'gl-matrix';
 import {
     range,
     defined,
-    definedNotNull,
-    isObj,
-    flatten,
-    normedColor,
-    isHexColor,
-    glslFloat
+    flatten
 } from '../../utils';
 
 const sdfOperators = {
@@ -58,9 +53,9 @@ const sdfGeometryTypes = {
     cylinder: 3
 };
 
-const standardSdfOpArrayDataOffset = 1; //1;
-const standardSdfDataArrayLength = 24; //21; //18; //15;  //12;
-const sdfHeaderOffsetSize = 6; //3;
+const standardSdfOpArrayDataOffset = 1;
+const standardSdfDataArrayLength = 24;
+const sdfHeaderOffsetSize = 6;
 
 const sdfOperation = (opCode, opArguments, ...geometries) => {
     if(geometries.length < 2) {
@@ -74,7 +69,9 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
 
         let offset = standardSdfOpArrayDataOffset;
         if(geoData.length > standardSdfDataArrayLength) {
-            offset = geoData.length - standardSdfDataArrayLength + standardSdfOpArrayDataOffset;
+            offset = geoData.length
+                - standardSdfDataArrayLength
+                + standardSdfOpArrayDataOffset;
         }
 
         geoData[offset] = opCode;
@@ -104,7 +101,6 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
 
     }, []);
 
-    console.log('oppenGeos: ', flatten(oppedGeos));
     return flatten(oppedGeos);
 };
 
@@ -349,14 +345,9 @@ class SdfModel {
                 ? domain.repetitions
                 : [])
         };
-
-        console.log('CONSTRUCTED SDF BOUNDS;: ')
     }
 
     geometryData() {
-        console.log('ROTATIOON IS: ', this.rotation);
-        // console.log('OP BOUNDS ARE: '. this.domainOpBounds);
-
         return [
             this.geoType, // 0
             this.opType, // 1, mutated by operation calls

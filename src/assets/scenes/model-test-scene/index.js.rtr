@@ -1,12 +1,12 @@
 scene({
     background: '#000000',
-    camera: camera({
+    camera: {
         lookFrom: {x: -59.058, y: 21.489, z: 20.033},
         lookAt: {x: 3.335, y: 15.370, z: 0.167},
         vfov: 45,
         aperture: 0.5,
         velocity: 1,
-    }),
+    },
     geometries: [
         plane({
             material: 'floor-white',

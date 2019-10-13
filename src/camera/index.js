@@ -29,7 +29,7 @@ class Camera {
     mouseDown = false;
 
     velocity = 1;
-    moveVelocity = 1 * 0.75;// * 0.5;
+    moveVelocity = 1 * 0.75; // * 0.5;
     turningVelocity = 0.0125 * 0.5; // * 0.5; // 0.025
 
     constructor({
@@ -63,14 +63,7 @@ class Camera {
     // https://github.com/Erkaman/gl-movable-camera/blob/master/index.js
 
     listen = () => {
-        console.log('camera listen() getting gl instances');
         const {glCanvas} = getGlInstances();
-
-        // TODO:
-        // move event handling to store (or sep. controller class)
-        // make renderMode be set to realTime
-        // on mouse down or key press
-        // and to static on generate or render
 
         this.mouse = mousePosition(document.body);
 
@@ -154,8 +147,7 @@ class Camera {
     }
 
     updateCamera = () => {
-        console.log('camera updateCamera() getting gl instances!');
-        const {glCanvas} = getGlInstances();
+        const {glCanvas, gl} = getGlInstances();
 
         this.aspect = (glCanvas.width/glCanvas.height).toFixed(2);
 
@@ -239,19 +231,17 @@ class Camera {
 
         const lookFrom = Array.from(this.lookFrom)
             .map(v => v.toFixed(3));
-            // .join(', ');
 
         const lookAt = Array.from(this.lookAt)
             .map(v => v.toFixed(3));
-            // .join(', ');
 
-        return 'camera({\n' +
+        return 'camera: {\n' +
             `${innerIndentation}lookFrom: {x: ${lookFrom[0]}, y: ${lookFrom[1]}, z: ${lookFrom[2]}},\n` +
             `${innerIndentation}lookAt: {x: ${lookAt[0]}, y: ${lookAt[1]}, z: ${lookAt[2]}},\n` +
             `${innerIndentation}vfov: ${this.vfov},\n` +
             `${innerIndentation}aperture: ${this.aperture},\n` +
-            `${innerIndentation}velocity: ${this.velocity},\n` +
-        `${indentation}})`;
+            `${innerIndentation}velocity: ${this.velocity}\n` +
+        `${indentation}}`;
     }
 }
 
@@ -264,12 +254,7 @@ function createCamera({
     aspect,
     velocity
 }) {
-    // let lookFromVec = vec3.create();
-    // lookFromVec.set(lookFrom);
     let lookFromVec = vec3.fromValues(lookFrom.x, lookFrom.y, lookFrom.z);
-
-    // let lookAtVec = vec3.create();
-    // lookAtVec.set(lookAt);
     let lookAtVec = vec3.fromValues(lookAt.x, lookAt.y, lookAt.z);
 
     let vUpVec = vec3.create();

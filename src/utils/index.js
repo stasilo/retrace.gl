@@ -68,10 +68,6 @@ const subRange = (rangeA, rangeB) =>
 const takeRandom = (arr) =>
     arr.filter(randomBool);
 
-// console.dir(range2d(0, 4, 0, 4));
-// console.dir(subRange2d(range2d(0, 4, 0, 4), range2d(2, 4, 2, 4)));
-// console.dir(subRange2d(range(5, 10), range(5, 8)));
-
 // array manipulation
 
 const reverse = ([x, ...xs]) => typeof x !== 'undefined'
@@ -121,6 +117,9 @@ const maybe = (cb, p = 0.5) =>
         : null;
 
 // math stuff
+
+
+const roundEven = (n) => 2 * Math.round(n / 2);
 
 const degToRad = (d) => d * Math.PI / 180;
 const radToDeg = (r) => r * 180 / Math.PI;
@@ -298,6 +297,7 @@ export {
     maybe,
     pluckRandom,
     takeRandom,
+    roundEven,
     degToRad,
     radToDeg,
     clamp,

@@ -3,13 +3,13 @@ scene({
         '#ffffff',
         '#aaaaaa'
     ],
-    camera: camera({
+    camera: {
         lookFrom: {x: 47.708, y: 16.469, z: -31.896},
         lookAt: {x: 44.167, y: 16.662, z: -29.094},
         vfov: 45,
         aperture: 0.001,
         velocity: 1,
-    }),
+    },
     geometries: [
         plane({
             material: 'floor-white',

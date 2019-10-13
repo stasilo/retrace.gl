@@ -2,13 +2,13 @@ const volTexSize = 64;
 
 scene({
     background: '#000000',
-    camera: camera({
+    camera: {
         lookFrom: {x: 72.889, y: 12.656, z: 61.162},
         lookAt: {x: 2.399, y: 22.616, z: 2.480},
         vfov: 45,
         aperture: 3.5,
         velocity: 0.25,
-    }),
+    },
     geometries: [
         plane({
             material: 'floor-material',

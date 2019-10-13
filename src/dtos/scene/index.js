@@ -16,16 +16,17 @@ import {
     isFn
 } from '../../utils';
 
-const defaultSceneRenderSettings = {
+const defaultScenerendererSettings = {
     realtimeHitDepth: 2,
     hitDepth: 4,
     tMax: 5000,
-    maxSphereTracingSteps: 255
+    maxSphereTracingSteps: 255,
+    resolution: 0.5
 };
 
 class Scene {
     constructor({
-        renderSettings,
+        rendererSettings,
         camera,
         background,
         geometries,
@@ -36,9 +37,9 @@ class Scene {
             return null;
         }
 
-        this.renderSettings = {
-            ...defaultSceneRenderSettings,
-            ...renderSettings
+        this.rendererSettings = {
+            ...defaultScenerendererSettings,
+            ...rendererSettings
         };
 
         this.camera = camera;
@@ -170,9 +171,6 @@ class Scene {
 
         let sdfGeometries = geometries
             .filter(g => g.isSdfGeometry && g.includeInBvh);
-        //
-        // console.log('constructed this.sdfGeometryData: ', sdfGeometryData);
-        // console.log('constructed this.sdfGeometries: ', sdfGeometries);
 
         return {
             sdfGeometries,

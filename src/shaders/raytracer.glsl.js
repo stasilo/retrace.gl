@@ -40,19 +40,19 @@ const getSource = ({options, Scene}) =>
     #define FLT_MAX 3.402823466e+38
 
     #define T_MIN 0.0001
-    #define T_MAX ${glslFloat(Scene.renderSettings.tMax)} //5000.0
+    #define T_MAX ${glslFloat(Scene.rendererSettings.tMax)} //5000.0
 
     #ifdef REALTIME
-        #define MAX_HIT_DEPTH ${Scene.renderSettings.realtimeHitDepth} //2
+        #define MAX_HIT_DEPTH ${Scene.rendererSettings.realtimeHitDepth} //2
     #endif
 
     #ifndef REALTIME
-        #define MAX_HIT_DEPTH ${Scene.renderSettings.hitDepth} //12 //4
+        #define MAX_HIT_DEPTH ${Scene.rendererSettings.hitDepth} //12 //4
     #endif
 
     #define NUM_SAMPLES ${options.numSamples}
 
-    #define MAX_MARCHING_STEPS ${Scene.renderSettings.maxSphereTracingSteps} //355 //255
+    #define MAX_MARCHING_STEPS ${Scene.rendererSettings.maxSphereTracingSteps} //355 //255
     #define MIN_DIST 0.0
     #define MAX_DIST T_MAX
     #define EPSILON 0.0001
@@ -2058,7 +2058,7 @@ const getSource = ({options, Scene}) =>
                     slData0 = BvhStackData(
                         int(node0Offset),
                         hitBvhBBox(node0.minCoords, node0.maxCoords, ray)
-                    );
+                        );
 
                     slData1 = BvhStackData(
                         int(node1Offset),
@@ -2066,34 +2066,34 @@ const getSource = ({options, Scene}) =>
                     );
 
                     // first sort the branch node data so that 'a' is the smallest
-    				if(slData1.rayT < slData0.rayT) {
-    					tmp = slData1;
-    					slData1 = slData0;
-    					slData0 = tmp;
+                    if(slData1.rayT < slData0.rayT) {
+                        tmp = slData1;
+                        slData1 = slData0;
+                        slData0 = tmp;
 
-    					tnp = node1;
-    					node1 = node0;
-    					node0 = tnp;
-    				} // branch 'b' now has the larger rayT value of 'a' and 'b'
+                        tnp = node1;
+                        node1 = node0;
+                        node0 = tnp;
+                    } // branch 'b' now has the larger rayT value of 'a' and 'b'
 
-    				if(slData1.rayT < tMax) {// see if branch 'b' (the larger rayT) needs to be processed
-    					currentStackData = slData1;
-    					currentNode = node1;
-    					skip = true; // this will prevent the stackPtr from decreasing by 1
-    				}
+                    if(slData1.rayT < tMax) {// see if branch 'b' (the larger rayT) needs to be processed
+                        currentStackData = slData1;
+                        currentNode = node1;
+                        skip = true; // this will prevent the stackPtr from decreasing by 1
+                        }
 
-    				if(slData0.rayT < tMax) { // see if branch 'a' (the smaller rayT) needs to be processed
+                    if(slData0.rayT < tMax) { // see if branch 'a' (the smaller rayT) needs to be processed
                         // if larger branch 'b' needed to be processed also,
                         // cue larger branch 'b' for future round & increase stack pointer
 
                         if(skip == true) {
-    						stackLevels[stackPtr++] = slData1;
-    					}
+                            stackLevels[stackPtr++] = slData1;
+                        }
 
-    					currentStackData = slData0;
-    					currentNode = node0;
-    					skip = true; // this will prevent the stackPtr from decreasing by 1
-    				}
+                        currentStackData = slData0;
+                        currentNode = node0;
+                        skip = true; // this will prevent the stackPtr from decreasing by 1
+                    }
                 }
             }
 
