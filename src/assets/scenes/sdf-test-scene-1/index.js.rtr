@@ -1,0 +1,139 @@
+scene({
+    rendererSettings: {
+        realtimeHitDepth: 2,
+        hitDepth: 12,
+        tMax: 5000,
+        maxSphereTracingSteps: 325,
+        resolution: 0.6
+    },
+    camera: {
+        lookFrom: {x: 16.925, y: 9.020, z: 24.002},
+        lookAt: {x: 14.416, y: 8.425, z: 20.288},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1
+    },
+    background: '#000',
+    geometries: [
+        sdf(
+            {
+                domain: {
+                    domainOp: 'twist',
+                    size: 0.1,
+                },
+                // bounding box has to be set manually
+                // when doing bounded repetitions
+                boundingBox: {
+                    minCoords: {x: -5, y: 0, z: -5},
+                    maxCoords: {x: 5, y: 15, z: 5}
+                }
+            },
+            opUnionRound({radius: 4.0, colorBlendAmount: 0.3},
+                sdfBox({
+                    domain: {
+                        domainOp: 'repeatBounded',
+                        size: 2,
+                        repetitions: {
+                            x: 2,
+                            y: 2,
+                            z: 2
+                        }
+                    },
+                    material: 'floor-white',
+                    dimensions: {x: 0.5, y: 0.5, z: 0.5},
+                    position: {x: 0, y: 5, z: 0}
+                }),
+                sdfSphere({
+                    material: 'lambert-red',
+                    radius: 3,
+                    position: {x: 0, y: 12, z: 0}
+                })
+            )
+        ),
+        plane({
+            material: 'floor-white',
+            texture: {
+                name: 'check',
+                uvScale: 20
+            },
+            scale: 1000,
+            position: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: 50,
+                y: 80.0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: -50,
+                y: 80.0,
+                z: 0
+            },
+        })
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.3, 0.0, 0.0, 1.);
+                }
+            `
+        })
+    ],
+    materials: [
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        lambertMaterial({
+            name: `lambert-red`,
+            color: '#ff0000',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        // clearcoatMaterial({
+        //     name: 'lambert-red',
+        //     color: '#ff0000',
+        //     // color: '#101010',
+        //     refIdx: 1.8,
+        // }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        }),
+        dialectricMaterial({
+            name: 'dialectric-test',
+            // color: '#cccccc',
+            color: '#ffffff',
+            refIdx: 1.8,
+        }),
+        clearcoatMaterial({
+            name: 'clearcoat-test',
+            // color: '#ffffff',
+            color: '#101010',
+            refIdx: 1.8,
+        }),
+        metalMaterial({
+            name: 'metal-fuzz-test',
+            color: '#aaaaaa',
+            fuzz: 0.1,
+            albedo: [1.0, 1.0, 1.0]
+        }),
+    ]
+});

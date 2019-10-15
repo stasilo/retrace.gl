@@ -35,9 +35,9 @@ const defaultMaxSampleCount = 10;
 // const defaultSceneUrl = 'assets/scenes/model-test-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/material-test-scene/index.js.rtr';
 
-// const defaultSceneUrl = 'assets/scenes/hollow-box-sdf-scene/index.js.rtr';
-
-const defaultSceneUrl = 'assets/scenes/sdf-test-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sdf-test-scene-1/index.js.rtr';
+const defaultSceneUrl = 'assets/scenes/sdf-test-scene-2/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sdf-test-scene-3/index.js.rtr';
 
 let instance = null;
 class Store {

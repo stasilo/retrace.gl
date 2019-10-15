@@ -1,0 +1,161 @@
+scene({
+    rendererSettings: {
+        realtimeHitDepth: 2,
+        hitDepth: 8,
+        tMax: 5000,
+        maxSphereTracingSteps: 255,
+        resolution: 0.4
+    },
+    camera: {
+        lookFrom: {x: -70.223, y: 17.344, z: 40.042},
+        lookAt: {x: -65.983, y: 17.509, z: 38.481},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1
+    },
+    background: '#000',
+    geometries: [
+        sdf(
+            // {
+            //     domain: {
+            //         domainOp: 'repeat',
+            //         axis: 'z',
+            //         size: 40,
+            //     },
+            //     // bounding box has to be set manually
+            //     // when doing csg repetitions
+            //     boundingBox: {
+            //         minCoords: {x: -100, y: 0, z: -30},
+            //         maxCoords: {x: 100, y: 80, z: 30}
+            //     }
+            // },
+            opSubtract(
+                opUnionRound({radius: 6.0, colorBlendAmount: 0.5},
+                    opSubtract(
+                        sdfSphere({
+                            material: 'clearcoat-test',
+                            radius: 10,
+                            position: {x: 9, y: 9.5, z: 0}
+                        }),
+                        sdfSphere({
+                            material: 'clearcoat-test',
+                            radius: 10,
+                            position: {x: 0, y: 9.5, z: 0}
+                        })
+                    ),
+                    sdfBox({
+                        material: 'clearcoat-test',
+                        dimensions: {x: 15, y: 3, z: 15},
+                        position: {x: 11, y: 39, z: 9.5}
+                    }),
+                    sdfBox({
+                        domain: {
+                            domainOp: 'twist',
+                            size: 0.13,
+                        },
+                        material: `lambert-red`,
+                        dimensions: {x: 7, y: 7, z: 7},
+                        position: {x: 11, y: 27, z: 9.5}
+                    }),
+                    sdfSphere({
+                        material: 'floor-white',
+                        radius: 10,
+                        position: {x: 10, y: 9.5, z: 20}
+                    })
+                ),
+                sdfSphere({
+                    material: 'floor-white',
+                    radius: 7,
+                    position: {x: 0, y: 39, z: 9.5}
+                })
+            )
+        ),
+        sdf(
+            sdfCylinder({
+                radius: 5,
+                height: 5,
+                position: {x: 8, y: 10, z: 0},
+                rotation: { x: degToRad(45) },
+                material: `lambert-red`,
+            })
+        ),
+        plane({
+            material: 'floor-white',
+            texture: {
+                name: 'check',
+                uvScale: 20
+            },
+            scale: 1000,
+            position: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: 50,
+                y: 80.0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: -50,
+                y: 80.0,
+                z: 0
+            },
+        })
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.3, 0.0, 0.0, 1.);
+                }
+            `
+        })
+    ],
+    materials: [
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        lambertMaterial({
+            name: `lambert-red`,
+            color: '#ff0000',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        }),
+        dialectricMaterial({
+            name: 'dialectric-test',
+            // color: '#cccccc',
+            color: '#ffffff',
+            refIdx: 1.8,
+        }),
+        clearcoatMaterial({
+            name: 'clearcoat-test',
+            color: '#101010',
+            refIdx: 1.8,
+        }),
+        metalMaterial({
+            name: 'metal-fuzz-test',
+            color: '#aaaaaa',
+            fuzz: 0.1,
+            albedo: [1.0, 1.0, 1.0]
+        }),
+    ]
+});
