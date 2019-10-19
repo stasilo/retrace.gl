@@ -3,13 +3,14 @@ import SdfModel, {
 } from '../sdf-model';
 
 class SdfBox extends SdfModel {
-    constructor({domain, dimensions, position, rotation, material}) {
+    constructor({domain, dimensions, position, rotation, material, texture}) {
         super({
+            geoType: sdfGeometryTypes.box,
             domain,
-            material,
             position,
             dimensions,
-            geoType: sdfGeometryTypes.box,
+            material,
+            texture
         });
     }
 }

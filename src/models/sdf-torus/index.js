@@ -2,30 +2,30 @@ import SdfModel, {
     sdfGeometryTypes
 } from '../sdf-model';
 
-class SdfCylinder extends SdfModel {
+class SdfTorus extends SdfModel {
     constructor({
         domain,
-        radius,
-        height,
+        innerRadius,
+        outerRadius,
         position,
         rotation,
-        material,
-        texture
+        texture,
+        material
     }) {
         super({
-            geoType: sdfGeometryTypes.cylinder,
+            geoType: sdfGeometryTypes.torus,
             domain,
             position,
             dimensions: {
-                x: radius,
-                y: height,
+                x: innerRadius,
+                y: outerRadius,
                 z: -1
             },
             rotation,
             material,
-            texture
+            texture,
         });
     }
 }
 
-export default SdfCylinder;
+export default SdfTorus;

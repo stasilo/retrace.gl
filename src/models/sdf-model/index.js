@@ -3,7 +3,8 @@ import {vec3} from 'gl-matrix';
 import {
     range,
     defined,
-    flatten
+    flatten,
+    isObj
 } from '../../utils';
 
 const sdfOperators = {
@@ -44,13 +45,15 @@ const sdfDomainOperations = {
     repeat: 1,
     twist: 2,
     bend: 3,
-    repeatBounded: 4
+    repeatBounded: 4,
+    repeatPolar: 5
 };
 
 const sdfGeometryTypes = {
     sphere: 1,
     box: 2,
-    cylinder: 3
+    cylinder: 3,
+    torus: 4
 };
 
 const standardSdfOpArrayDataOffset = 1;
@@ -135,11 +138,11 @@ const sdf = (...args) => {
         opts.domain && opts.domain.size // 17
             ? opts.domain.size
             : 1,
-        ...(opts.domain && opts.domain.repetitions
+        ...(opts.domain && opts.domain.bounds
             ? [
-                opts.domain.repetitions.x,
-                opts.domain.repetitions.y,
-                opts.domain.repetitions.z
+                opts.domain.bounds.x,
+                opts.domain.bounds.y,
+                opts.domain.bounds.z
             ]
             : [0, 0, 0]
         )
@@ -174,6 +177,24 @@ const sdf = (...args) => {
                     dataArray[offset + 6],
                     dataArray[offset + 7],
                     dataArray[offset + 8]
+                );
+
+                vec3.sub(minCoords, position, dimensions);
+                vec3.add(maxCoords, position, dimensions);
+
+                break;
+
+            case sdfGeometryTypes.torus:
+                position = vec3.fromValues(
+                    dataArray[offset + 9],
+                    dataArray[offset + 10],
+                    dataArray[offset + 11]
+                );
+
+                dimensions = vec3.fromValues(
+                    dataArray[offset + 7] + dataArray[offset + 6], // outer radius
+                    dataArray[offset + 6], // inner radius
+                    dataArray[offset + 7] + dataArray[offset + 6]
                 );
 
                 vec3.sub(minCoords, position, dimensions);
@@ -298,17 +319,36 @@ class SdfModel {
         dimensions,
         rotation,
         material,
+        texture,
         geoType
     }) {
+        this.geoType = geoType;
+        this.opType = sdfOperators.noOp;
+        // this.opRadius = -1;
+
         this.domain = defined(domain)
             ? domain
             : {};
 
-        this.material = material;
-        this.geoType = geoType;
-
-        this.opType = sdfOperators.noOp;
-        // this.opRadius = -1;
+        this.material = material
+            ? {materialName: material}
+            : 0,
+        this.texture = texture // 3
+            ? {
+                textureName: isObj(texture)
+                    ? texture.name
+                    : texture
+             }
+            : -1,
+        this.textureUvScale = {
+            x: 1,
+            y: 1,
+            ...(defined(texture) && defined(texture.uvScale)
+                ? texture.uvScale.x || texture.uvScale.y
+                    ? texture.uvScale
+                    : {x: texture.uvScale, y: texture.uvScale}
+                : [])
+        };
 
         this.position = {
             x: 0,
@@ -341,8 +381,8 @@ class SdfModel {
             x: 0,
             y: 0,
             z: 0,
-            ...(defined(domain) && defined(domain.repetitions)
-                ? domain.repetitions
+            ...(defined(domain) && defined(domain.bounds)
+                ? domain.bounds
                 : [])
         };
     }
@@ -353,11 +393,9 @@ class SdfModel {
             this.opType, // 1, mutated by operation calls
             -1, // 2, opRadius, mutated by operation calls
 
-            this.material // 3
-                ? {materialName: this.material}
-                : 0,
-            -1, // 4, not used?
-            -1, // 5, not used?
+            this.material, // 3
+            this.texture, // 4
+            -1, // 5, not used
 
             this.dimensions.x, // 6
             this.dimensions.y, // 7
@@ -368,8 +406,8 @@ class SdfModel {
             this.position.z, // 11
 
             -1, // 12, color blend amount (op union round color blending amount - mutated by op call)
-            -1, // 13, not used
-            -1, // 14, not used
+            1/this.textureUvScale.x, // 13
+            1/this.textureUvScale.y, // 14
 
             this.domain.domainOp // 15
                 ? sdfDomainOperations[this.domain.domainOp]

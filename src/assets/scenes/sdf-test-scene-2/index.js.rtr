@@ -1,14 +1,14 @@
 scene({
     rendererSettings: {
         realtimeHitDepth: 2,
-        hitDepth: 8,
+        hitDepth: 4,
         tMax: 5000,
         maxSphereTracingSteps: 255,
-        resolution: 0.4
+        resolution: 0.35
     },
     camera: {
-        lookFrom: {x: -70.223, y: 17.344, z: 40.042},
-        lookAt: {x: -65.983, y: 17.509, z: 38.481},
+        lookFrom: {x: 38.310, y: 117.908, z: 190.104},
+        lookAt: {x: 37.711, y: 115.602, z: 186.266},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -16,19 +16,28 @@ scene({
     background: '#000',
     geometries: [
         sdf(
-            // {
-            //     domain: {
-            //         domainOp: 'repeat',
-            //         axis: 'z',
-            //         size: 40,
-            //     },
-            //     // bounding box has to be set manually
-            //     // when doing csg repetitions
-            //     boundingBox: {
-            //         minCoords: {x: -100, y: 0, z: -30},
-            //         maxCoords: {x: 100, y: 80, z: 30}
-            //     }
-            // },
+            {
+                // domain: {
+                //     domainOp: 'repeatPolar',
+                //     // axis: 'z',
+                //     size: 1,
+                // },
+                domain: {
+                    domainOp: 'repeatBounded',
+                    size: 2, //0.0001,
+                    bounds: {
+                        x: 9,
+                        y: 0,
+                        z: 4.5
+                    }
+                },
+                // bounding box has to be set manually
+                // when doing csg repetitions
+                boundingBox: {
+                    minCoords: {x: -100, y: 0, z: -100},
+                    maxCoords: {x: 100, y: 80, z: 100}
+                }
+            },
             opSubtract(
                 opUnionRound({radius: 6.0, colorBlendAmount: 0.5},
                     opSubtract(
@@ -70,15 +79,15 @@ scene({
                 })
             )
         ),
-        sdf(
-            sdfCylinder({
-                radius: 5,
-                height: 5,
-                position: {x: 8, y: 10, z: 0},
-                rotation: { x: degToRad(45) },
-                material: `lambert-red`,
-            })
-        ),
+        // sdf(
+        //     sdfCylinder({
+        //         radius: 5,
+        //         height: 5,
+        //         position: {x: 8, y: 10, z: 0},
+        //         rotation: { x: degToRad(45) },
+        //         material: `lambert-red`,
+        //     })
+        // ),
         plane({
             material: 'floor-white',
             texture: {

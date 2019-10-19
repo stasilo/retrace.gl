@@ -116,6 +116,14 @@ const getSource = ({options, Scene}) =>
         return color;
     }
 
+    mat3 getTextureTriplanarMapping(int textureId, vec3 p, vec2 texUvScale) {
+        return mat3(
+            getSceneTextureData(textureId, p.yz * texUvScale).rgb,
+            getSceneTextureData(textureId, p.xz * texUvScale).rgb,
+            getSceneTextureData(textureId, p.xy * texUvScale).rgb
+        );
+    }
+
     // 3d texs
     vec4 getSceneTextureData(int textureId, vec3 uv) {
         vec4 color = vec4(0.);
@@ -133,6 +141,19 @@ const getSource = ({options, Scene}) =>
 
         return color;
     }
+
+    // vec3 triplanarTextureMap(vec3 surfacePos, vec3 normal) {
+    //     // Take projections along 3 axes, sample texture values from each projection, and stack into a matrix
+    //
+    //     mat3 triMapSamples = mat3(
+    //         texture(iChannel0, surfacePos.yz).rgb,
+    //         texture(iChannel0, surfacePos.xz).rgb,
+    //         texture(iChannel0, surfacePos.xy).rgb
+    //     );
+    //
+    //     // Weight three samples by absolute value of normal components
+    //     return triMapSamples * abs(normal);
+    // }
 
     /*
      * Model bvh & triangle data
@@ -1128,6 +1149,8 @@ const getSource = ({options, Scene}) =>
         float opRadius;
         float colorBlendAmount;
         int materialId;
+        int textureId;
+        vec2 texUvScale;
         vec3 dimensions;
         vec3 position;
         vec3 rotation;
@@ -1181,6 +1204,8 @@ const getSource = ({options, Scene}) =>
             float(sdfData1.z), //  op radius
             float(sdfData5.x), // color blend amount
             int(sdfData2.x), // material id
+            int(sdfData2.y), // texture id
+            vec2(sdfData5.y, sdfData5.z), // texture uv scale
             sdfData3, // dimensions
             sdfData4, // position
             sdfData7, // rotation
@@ -1243,11 +1268,18 @@ const getSource = ({options, Scene}) =>
     	return c;
     }
 
+    // https://www.shadertoy.com/view/3syGzz
+    // https://observablehq.com/@makio135/iq-sdf
     #define SDF_DOM_OP_PMOD3_BOUNDED ${sdfDomainOperations.repeatBounded}
-    void pMod3Bounded(inout vec3 p, in float size, in vec3 bounds) {
-        vec3 q = p - bounds * clamp(round(p/size), -bounds, bounds);
-        p = q;
+    void pMod3Bounded(inout vec3 p, in float s, in vec3 lim) {
+        p = p - s*clamp(round(p/s), -lim, lim);
     }
+
+    // void pMod3Bounded(inout vec3 p, in float size, in vec3 bounds) {
+    //     // p = p + vec3(-5., 0., 0.);
+    //     vec3 q = p - bounds * clamp(round(p/size), -bounds, bounds);
+    //     p = q;
+    // }
 
     // repeat space along 3 axes
     // see: http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
@@ -1270,6 +1302,27 @@ const getSource = ({options, Scene}) =>
         p = q;
     }
 
+    // repeat around the origin by a fixed angle.
+    // for easier use, num of repetitions is use to specify the angle.
+
+    #define SDF_DOM_OP_POLAR ${sdfDomainOperations.repeatPolar}
+    float pModPolar(inout vec2 p, float repetitions) {
+    	float angle = 2.*PI/repetitions;
+    	float a = atan(p.y, p.x) + angle/2.;
+    	float r = length(p);
+    	float c = floor(a/angle);
+
+        a = mod(a,angle) - angle/2.;
+    	p = vec2(cos(a), sin(a))*r;
+
+    	// For an odd number of repetitions, fix cell index of the cell in -x direction
+    	// (cell index would be e.g. -5 and 5 in the two halves of the cell):
+    	if (abs(c) >= (repetitions/2.)) c = abs(c);
+
+        return c;
+    }
+
+
     /**
      * Signed distance functions
      */
@@ -1283,11 +1336,16 @@ const getSource = ({options, Scene}) =>
     #define SDF_BOX ${sdfGeometryTypes.box}
     float boxSdf(vec3 p, vec3 b) {
     	vec3 d = abs(p) - b;
-
     	return length(max(d, vec3(0))) + vmax(min(d, vec3(0)));
     }
 
-    // Cylinder standing upright on the xz plane
+    // torus in the xz-plane
+    #define SDF_TORUS ${sdfGeometryTypes.torus}
+    float torusSdf(vec3 p, float smallRadius, float largeRadius) {
+        return length(vec2(length(p.xz) - largeRadius, p.y)) - smallRadius;
+    }
+
+    // cylinder standing upright on the xz plane
     #define SDF_CYLINDER ${sdfGeometryTypes.cylinder}
     float cylinderSdf(vec3 p, vec3 b) {
         float r = b.x;
@@ -1298,6 +1356,13 @@ const getSource = ({options, Scene}) =>
 
     	return d;
     }
+
+    // float sdCapsule( vec3 p, vec3 a, vec3 b, float r) {
+    //     vec3 pa = p - a, ba = b - a;
+    //     float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+    //
+    //     return length( pa - ba*h ) - r;
+    // }
 
     // float roundedBoxSdf(vec3 p, vec3 b) {
     //     float r = 0.5;
@@ -1314,22 +1379,6 @@ const getSource = ({options, Scene}) =>
         switch(opHeader.opType) {
             case SDF_NOOP:
                 break;
-
-            case SDF_DOM_OP_TWIST: {
-                pTwist(/* => out */ p, opHeader.size);
-                break;
-            }
-
-            case SDF_DOM_OP_BEND: {
-                pCheapBend(/* => out */ p, opHeader.size);
-                break;
-            }
-
-            case SDF_DOM_OP_PMOD3_BOUNDED: {
-                // vec3 bounds = vec3(2., 1., 2.);
-                pMod3Bounded(/* => out */ p, opHeader.size, opHeader.bounds);
-                break;
-            }
 
             case SDF_DOM_OP_PMOD1: {
                 if(opHeader.axis == SDF_XYZ_AXIS
@@ -1358,6 +1407,26 @@ const getSource = ({options, Scene}) =>
 
                 break;
             }
+
+            case SDF_DOM_OP_TWIST: {
+                pTwist(/* => out */ p, opHeader.size);
+                break;
+            }
+
+            case SDF_DOM_OP_BEND: {
+                pCheapBend(/* => out */ p, opHeader.size);
+                break;
+            }
+
+            case SDF_DOM_OP_PMOD3_BOUNDED: {
+                pMod3Bounded(/* => out */ p, opHeader.size, opHeader.bounds);
+                break;
+            }
+
+            case SDF_DOM_OP_POLAR: {
+                pModPolar(/* => out */ p.xz, opHeader.size);
+                break;
+            }
         }
     }
 
@@ -1375,7 +1444,7 @@ const getSource = ({options, Scene}) =>
         }
     }
 
-    void sdfGeometryDistance(SdfGeometry sdfData, vec3 p, inout float d) {
+    float sdfGeometryDistance(SdfGeometry sdfData, vec3 p, inout float d) {
         switch(sdfData.geoType) {
             case SDF_SPHERE: {
                 float radius = sdfData.dimensions.x;
@@ -1394,133 +1463,165 @@ const getSource = ({options, Scene}) =>
                 break;
             }
 
+            case SDF_TORUS: {
+                d = torusSdf(p, sdfData.dimensions.x, sdfData.dimensions.y);
+                break;
+            }
+
             default:
                 break;
         }
+
+        return d;
     }
 
-    // good info on materials:
-    // https://github.com/ajweeks/RaymarchingWorkshop
-
-    float sceneSdf(vec3 samplePoint, out int materialId) {
-        int csgIndex = 0;
-        int geoIndex = 0;
-
-        bool encounteredNewCsg = false;
-
-        float d1 = 0.;
-        float d2 = 0.;
-
-        materialId = 0;
-
-        SdfGeometry sdfData;
-        SdfCsgDomainOpHeader csgHeader;
-
-        int opType = SDF_NOOP;
-        float opRadius = -1.;
-
-        csgHeader = getPackedSdfCsgDomainOpHeader(csgIndex, geoIndex);
-
-        while(true) {
-            sdfData = getPackedSdf(csgIndex, geoIndex);
-            if(sdfData.geoType == -1) {
-                break;
-            }
-
-            vec3 p = samplePoint - sdfData.position;
-
-            if(encounteredNewCsg) {
-                opType = SDF_UNION;
-                // materialId = sdfData.materialId;
-                csgHeader = getPackedSdfCsgDomainOpHeader(csgIndex, geoIndex);
-                encounteredNewCsg = false;
-            }
-
-            applySdfDomainOperation(csgHeader, /* => out */ p);
-
-            if(geoIndex == 0) {
-                opType = sdfData.opType;
-                opRadius = sdfData.opRadius;
-
-                sdfGeometryDistance(sdfData, p, /* => out */ d1);
-                materialId = sdfData.materialId;
-
-                // single sdf geo, no csg operation, or,
-                // the end of the current csg
-
-                if(opType == SDF_NOOP) {
-                    sdfData.opType = SDF_UNION;
-                    encounteredNewCsg = true;
-
-                    csgIndex += 1;
-                    geoIndex += 1;
-                }
-            } else {
-                sdfGeometryDistance(sdfData, p, /* => out */ d2);
-                float prevDist = d1;
-
-                switch(opType) {
-                    case SDF_UNION: {
-                        d1 = opUnion(d1, d2);
-                        if(prevDist > d1) {
-                            materialId = sdfData.materialId;
-                        }
-
-                        break;
-                    }
-
-                    case SDF_UNION_ROUND: {
-                        d1 = opUnionRound(d1, d2, opRadius);
-                        if(prevDist > d2 && prevDist > d1) {
-                            materialId = sdfData.materialId;
-                        }
-                        break;
-                    }
-
-                    case SDF_SUBTRACT: {
-                        d1 = opSubtraction(d2, d1);
-                        break;
-                    }
-
-                    case SDF_INTERSECT: {
-                        d1 = opIntersection(d1, d2);
-                        break;
-                    }
-
-                    // a no op means we have no more
-                    // SDF's in this csg or have encountered a new csg "object"
-
-                    case SDF_NOOP:
-                        encounteredNewCsg = true;
-                        csgIndex += 1;
-
-                        break;
-
-                    default:
-                        break;
-                }
-
-            }
-
-            // if(d1 > T_MAX) {
-            //     return d1;
-            // }
-
-            if(!encounteredNewCsg) {
-                opType = sdfData.opType;
-                opRadius = sdfData.opRadius;
-                geoIndex += 1;
-            }
-        }
-
-
-        return d1;
+    float sdfGeometryDistance(SdfGeometry sdfData, vec3 p) {
+        float disc;
+        return sdfGeometryDistance(sdfData, p, disc);
     }
 
-    float sceneSdf(vec3 p) {
-        int materialId;
-        return sceneSdf(p, materialId);
+    // estimate the normal for a single SdfGeometry object
+    // (as opposed to estimateBvhSdfSceneNormal() which estimates the normal for the whole scene)
+
+    vec3 estimateSdfGeometryNormal(SdfGeometry sdfData, vec3 p) {
+        return normalize(
+            vec3(
+                sdfGeometryDistance(sdfData, vec3(p.x + EPSILON, p.y, p.z))
+                    - sdfGeometryDistance(sdfData, vec3(p.x - EPSILON, p.y, p.z)),
+                sdfGeometryDistance(sdfData, vec3(p.x, p.y + EPSILON, p.z))
+                    - sdfGeometryDistance(sdfData, vec3(p.x, p.y - EPSILON, p.z)),
+                sdfGeometryDistance(sdfData, vec3(p.x, p.y, p.z  + EPSILON))
+                    - sdfGeometryDistance(sdfData, vec3(p.x, p.y, p.z - EPSILON))
+            )
+        );
     }
+
+    vec3 getTriplanarMappedTextureColor(SdfGeometry sdfData, vec3 p) {
+        mat3 triMapSamples = getTextureTriplanarMapping(sdfData.textureId, p, sdfData.texUvScale);
+        vec3 sdfNormal = estimateSdfGeometryNormal(sdfData, p);
+
+        return triMapSamples * abs(sdfNormal);
+    }
+
+    // float sceneSdf(vec3 samplePoint, out int materialId) {
+    //     int csgIndex = 0;
+    //     int geoIndex = 0;
+    //
+    //     bool encounteredNewCsg = false;
+    //
+    //     float d1 = 0.;
+    //     float d2 = 0.;
+    //
+    //     materialId = 0;
+    //
+    //     SdfGeometry sdfData;
+    //     SdfCsgDomainOpHeader csgHeader;
+    //
+    //     int opType = SDF_NOOP;
+    //     float opRadius = -1.;
+    //
+    //     csgHeader = getPackedSdfCsgDomainOpHeader(csgIndex, geoIndex);
+    //
+    //     while(true) {
+    //         sdfData = getPackedSdf(csgIndex, geoIndex);
+    //         if(sdfData.geoType == -1) {
+    //             break;
+    //         }
+    //
+    //         vec3 p = samplePoint - sdfData.position;
+    //
+    //         if(encounteredNewCsg) {
+    //             opType = SDF_UNION;
+    //             // materialId = sdfData.materialId;
+    //             csgHeader = getPackedSdfCsgDomainOpHeader(csgIndex, geoIndex);
+    //             encounteredNewCsg = false;
+    //         }
+    //
+    //         applySdfDomainOperation(csgHeader, /* => out */ p);
+    //
+    //         if(geoIndex == 0) {
+    //             opType = sdfData.opType;
+    //             opRadius = sdfData.opRadius;
+    //
+    //             sdfGeometryDistance(sdfData, p, /* => out */ d1);
+    //             materialId = sdfData.materialId;
+    //
+    //             // single sdf geo, no csg operation, or,
+    //             // the end of the current csg
+    //
+    //             if(opType == SDF_NOOP) {
+    //                 sdfData.opType = SDF_UNION;
+    //                 encounteredNewCsg = true;
+    //
+    //                 csgIndex += 1;
+    //                 geoIndex += 1;
+    //             }
+    //         } else {
+    //             sdfGeometryDistance(sdfData, p, /* => out */ d2);
+    //             float prevDist = d1;
+    //
+    //             switch(opType) {
+    //                 case SDF_UNION: {
+    //                     d1 = opUnion(d1, d2);
+    //                     if(prevDist > d1) {
+    //                         materialId = sdfData.materialId;
+    //                     }
+    //
+    //                     break;
+    //                 }
+    //
+    //                 case SDF_UNION_ROUND: {
+    //                     d1 = opUnionRound(d1, d2, opRadius);
+    //                     if(prevDist > d2 && prevDist > d1) {
+    //                         materialId = sdfData.materialId;
+    //                     }
+    //                     break;
+    //                 }
+    //
+    //                 case SDF_SUBTRACT: {
+    //                     d1 = opSubtraction(d2, d1);
+    //                     break;
+    //                 }
+    //
+    //                 case SDF_INTERSECT: {
+    //                     d1 = opIntersection(d1, d2);
+    //                     break;
+    //                 }
+    //
+    //                 // a no op means we have no more
+    //                 // SDF's in this csg or have encountered a new csg "object"
+    //
+    //                 case SDF_NOOP:
+    //                     encounteredNewCsg = true;
+    //                     csgIndex += 1;
+    //
+    //                     break;
+    //
+    //                 default:
+    //                     break;
+    //             }
+    //
+    //         }
+    //
+    //         // if(d1 > T_MAX) {
+    //         //     return d1;
+    //         // }
+    //
+    //         if(!encounteredNewCsg) {
+    //             opType = sdfData.opType;
+    //             opRadius = sdfData.opRadius;
+    //             geoIndex += 1;
+    //         }
+    //     }
+    //
+    //
+    //     return d1;
+    // }
+    //
+    // float sceneSdf(vec3 p) {
+    //     int materialId;
+    //     return sceneSdf(p, materialId);
+    // }
 
     float bvhSceneSdf(
         vec3 samplePoint,
@@ -1565,7 +1666,12 @@ const getSource = ({options, Scene}) =>
                 sdfGeometryDistance(sdfData, p, /* => out */ d1);
                 materialId = sdfData.materialId;
                 Material sdfMaterial = getPackedMaterial(materialId);
-                color = sdfMaterial.color;
+
+                if(sdfData.textureId > -1) {
+                    color = getTriplanarMappedTextureColor(sdfData, p);
+                } else {
+                    color = sdfMaterial.color;
+                }
 
                 // single sdf geo, no csg operation, or,
                 // the end of the current csg
@@ -1593,9 +1699,14 @@ const getSource = ({options, Scene}) =>
                         d1 = opUnionRound(d1, d2, opRadius);
 
                         Material sdfMaterial = getPackedMaterial(sdfData.materialId);
-                        vec3 newColor = sdfMaterial.color;
+                        // vec3 newColor = sdfMaterial.color;
 
-                        // colorBlendAmount = 1./5.;
+                        vec3 newColor;
+                        if(sdfData.textureId > -1) {
+                            newColor = getTriplanarMappedTextureColor(sdfData, p);
+                        } else {
+                            newColor = sdfMaterial.color;
+                        }
 
                         color = mix(
                             color,
@@ -1607,7 +1718,7 @@ const getSource = ({options, Scene}) =>
                             )
                         );
 
-                        // incorrect but cool blend?
+                        // "incorrect" but cool blend?
                         // color = mix(color, newColor, clamp(prevDist - d1, 0.0, 1.0));
 
                         if(prevDist > d2 && prevDist > d1) {
@@ -1661,46 +1772,52 @@ const getSource = ({options, Scene}) =>
         return bvhSceneSdf(p, sdfDataTexOffset, materialId, c);
     }
 
-    /**
-     * Using the gradient of the SDF, estimate the normal on the surface at point p.
+    /*
+     * Estimate normal on the surface at point p using the lim. gradient of the sdf
      */
-    vec3 estimateSdfNormal(vec3 p) {
-        return normalize(vec3(
-            sceneSdf(vec3(p.x + EPSILON, p.y, p.z)) - sceneSdf(vec3(p.x - EPSILON, p.y, p.z)),
-            sceneSdf(vec3(p.x, p.y + EPSILON, p.z)) - sceneSdf(vec3(p.x, p.y - EPSILON, p.z)),
-            sceneSdf(vec3(p.x, p.y, p.z  + EPSILON)) - sceneSdf(vec3(p.x, p.y, p.z - EPSILON))
-        ));
+
+    // vec3 estimateSdfNormal(vec3 p) {
+    //     return normalize(vec3(
+    //         sceneSdf(vec3(p.x + EPSILON, p.y, p.z)) - sceneSdf(vec3(p.x - EPSILON, p.y, p.z)),
+    //         sceneSdf(vec3(p.x, p.y + EPSILON, p.z)) - sceneSdf(vec3(p.x, p.y - EPSILON, p.z)),
+    //         sceneSdf(vec3(p.x, p.y, p.z  + EPSILON)) - sceneSdf(vec3(p.x, p.y, p.z - EPSILON))
+    //     ));
+    // }
+
+    vec3 estimateBvhSdfSceneNormal(vec3 p, float sdfDataTexOffset) {
+        return normalize(
+            vec3(
+                bvhSceneSdf(vec3(p.x + EPSILON, p.y, p.z), sdfDataTexOffset)
+                    - bvhSceneSdf(vec3(p.x - EPSILON, p.y, p.z), sdfDataTexOffset),
+                bvhSceneSdf(vec3(p.x, p.y + EPSILON, p.z), sdfDataTexOffset)
+                    - bvhSceneSdf(vec3(p.x, p.y - EPSILON, p.z), sdfDataTexOffset),
+                bvhSceneSdf(vec3(p.x, p.y, p.z  + EPSILON), sdfDataTexOffset)
+                    - bvhSceneSdf(vec3(p.x, p.y, p.z - EPSILON), sdfDataTexOffset)
+            )
+        );
     }
 
-    vec3 estimateBvhSdfNormal(vec3 p, float sdfDataTexOffset) {
-        return normalize(vec3(
-            bvhSceneSdf(vec3(p.x + EPSILON, p.y, p.z), sdfDataTexOffset) - bvhSceneSdf(vec3(p.x - EPSILON, p.y, p.z), sdfDataTexOffset),
-            bvhSceneSdf(vec3(p.x, p.y + EPSILON, p.z), sdfDataTexOffset) - bvhSceneSdf(vec3(p.x, p.y - EPSILON, p.z), sdfDataTexOffset),
-            bvhSceneSdf(vec3(p.x, p.y, p.z  + EPSILON), sdfDataTexOffset) - bvhSceneSdf(vec3(p.x, p.y, p.z - EPSILON), sdfDataTexOffset)
-        ));
-    }
-
-    float sphereTraceDistance(Ray ray, float start, float end, out int materialId) {
-        float depth = start;
-
-        for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
-            float dist = sceneSdf(ray.origin + depth * ray.dir, /* => out */ materialId);
-            if(materialId == DIALECTRIC_MATERIAL_TYPE) {
-                dist = abs(dist);
-            }
-
-            if (dist < EPSILON) {
-                return depth;
-            }
-
-            depth += dist;
-            if (depth >= end) {
-                return end;
-            }
-        }
-
-        return end;
-    }
+    // float sphereTraceDistance(Ray ray, float start, float end, out int materialId) {
+    //     float depth = start;
+    //
+    //     for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
+    //         float dist = sceneSdf(ray.origin + depth * ray.dir, /* => out */ materialId);
+    //         if(materialId == DIALECTRIC_MATERIAL_TYPE) {
+    //             dist = abs(dist);
+    //         }
+    //
+    //         if (dist < EPSILON) {
+    //             return depth;
+    //         }
+    //
+    //         depth += dist;
+    //         if (depth >= end) {
+    //             return end;
+    //         }
+    //     }
+    //
+    //     return end;
+    // }
 
     float bvhSphereTraceDistance(
         Ray ray,
@@ -2354,7 +2471,7 @@ const getSource = ({options, Scene}) =>
                     record.hasHit = true;
                     record.hitT = tMax;
                     record.hitPoint = pointOnRay(ray, record.hitT);
-                    record.normal = estimateBvhSdfNormal(record.hitPoint, lookupOffset);
+                    record.normal = estimateBvhSdfSceneNormal(record.hitPoint, lookupOffset);
                     record.material = getPackedMaterial(lookupSdfMaterialId);
 
                     if(record.material.type != DIALECTRIC_MATERIAL_TYPE) {
@@ -2382,7 +2499,7 @@ const getSource = ({options, Scene}) =>
         //
         //     record.hitPoint = pointOnRay(ray, record.hitT);
         //     // record.normal = estimateSdfNormal(record.hitPoint);
-        //     record.normal = estimateBvhSdfNormal(record.hitPoint, 0.);
+        //     record.normal = estimateBvhSdfSceneNormal(record.hitPoint, 0.);
         //
         //     record.material = getPackedMaterial(lookupSdfMaterialId);
         //

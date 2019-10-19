@@ -162,6 +162,15 @@ class Scene {
                             return material ? material.id : 0;
                         }
 
+                        if(isObj(sdfDataItem) && 'textureName' in sdfDataItem) {
+                            const texture = this.textures.elements
+                                .find(texture => 
+                                    texture.name === sdfDataItem.textureName
+                                );
+
+                            return texture ? texture.id : 0;
+                        }
+
                         return sdfDataItem;
                     });
 

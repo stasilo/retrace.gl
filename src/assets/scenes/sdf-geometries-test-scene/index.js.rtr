@@ -1,54 +1,66 @@
+
+const startPos = -50;
+
 scene({
     rendererSettings: {
         realtimeHitDepth: 2,
-        hitDepth: 12,
+        hitDepth: 8,
         tMax: 5000,
-        maxSphereTracingSteps: 325,
-        resolution: 0.6
+        maxSphereTracingSteps: 255,
+        resolution: 0.4
     },
     camera: {
-        lookFrom: {x: 16.925, y: 9.020, z: 24.002},
-        lookAt: {x: 14.416, y: 8.425, z: 20.288},
+        lookFrom: {x: -19.685, y: 34.419, z: 79.733},
+        lookAt: {x: -19.666, y: 33.026, z: 75.434},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
     },
-    background: '#000',
+    background: '#010101',
     geometries: [
         sdf(
-            {
-                domain: {
-                    domainOp: 'twist',
-                    size: 0.1,
-                },
-                // bounding box has to be set manually
-                // when doing bounded repetitions
-                boundingBox: {
-                    minCoords: {x: -5, y: 0, z: -5},
-                    maxCoords: {x: 5, y: 15, z: 5}
+            sdfCylinder({
+                radius: 5,
+                height: 5,
+                position: {x: startPos, y: 10, z: 0},
+                // rotation: { x: degToRad(45) },
+                material: 'clearcoat-test',
+                // texture: {
+                //     name: 'check',
+                //     uvScale: 2
+                // },
+            })
+        ),
+        sdf(
+            sdfSphere({
+                material: `lambert-red`,
+                radius: 5,
+                position: {x: startPos + 20, y: 10, z: 0},
+            })
+        ),
+        sdf(
+            sdfBox({
+                material: 'clearcoat-test',
+                dimensions: {x: 5, y: 5, z: 5},
+                position: {x: startPos + 40, y: 10, z: 0},
+                // texture: {
+                //     name: 'check',
+                //     uvScale: 2
+                // }
+            }),
+        ),
+        sdf(
+            sdfTorus({
+                material: 'lambert-red',
+                // dimensions: {x: 5, y: 5, z: 5},
+                innerRadius: 2.5,
+                outerRadius: 5,
+                position: {x: startPos + 60, y: 10, z: 0},
+                texture: {
+                    name: 'check',
+                    uvScale: 20
                 }
-            },
-            opUnionRound({radius: 4.0, colorBlendAmount: 0.3},
-                sdfBox({
-                    domain: {
-                        domainOp: 'repeatBounded',
-                        size: 2,
-                        bounds: {
-                            x: 2,
-                            y: 2,
-                            z: 2
-                        }
-                    },
-                    material: 'floor-white',
-                    dimensions: {x: 0.5, y: 0.5, z: 0.5},
-                    position: {x: 0, y: 5, z: 0}
-                }),
-                sdfSphere({
-                    material: 'lambert-red',
-                    radius: 3,
-                    position: {x: 0, y: 12, z: 0}
-                })
-            )
+            }),
         ),
         plane({
             material: 'floor-white',
@@ -82,6 +94,14 @@ scene({
             },
         })
     ],
+    // displacements: {
+    //     // displacement(
+    //     //     name: 'sinus-displacement',
+    //     //     src: `
+    //     //         d = sin(20*p.x)*sin(20*p.y)*sin(20*p.z)
+    //     //     `
+    //     // )
+    // },
     textures: [
         texture({
             name: 'check',
