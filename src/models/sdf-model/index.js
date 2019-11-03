@@ -17,27 +17,32 @@ const sdfOperators = {
 
 const sdfAxes = {
     x: 0,
+
     xy: 1,
+    yx: 1,
+
     xz: 2,
+    zx: 2,
 
     y: 3,
-    yx: 4,
+
     xy: 4,
+    yx: 4,
+
     yz: 5,
     zy: 5,
 
     z: 6,
-    zx: 7,
-    xz: 7,
-    zy: 8,
-    yz: 8,
 
-    xyz: 9,
-    xzy: 9,
-    yzx: 9,
-    yxz: 9,
-    zxy: 9,
-    zyx: 9
+    zy: 7,
+    yz: 7,
+
+    xyz: 8,
+    xzy: 8,
+    yzx: 8,
+    yxz: 8,
+    zxy: 8,
+    zyx: 8
 };
 
 const sdfDomainOperations = {
@@ -57,7 +62,7 @@ const sdfGeometryTypes = {
 };
 
 const standardSdfOpArrayDataOffset = 1;
-const standardSdfDataArrayLength = 24;
+const standardSdfDataArrayLength = 30;
 const sdfHeaderOffsetSize = 6;
 
 const sdfOperation = (opCode, opArguments, ...geometries) => {
@@ -254,19 +259,34 @@ const sdf = (...args) => {
         };
     };
 
-    let finalBounds;
+    let finalBounds, geometryTypes = [];
+    const noOfSdfsInCsg = dataArray.length / standardSdfDataArrayLength;
+
+    range(0, noOfSdfsInCsg).forEach(i => {
+        const offset = standardSdfDataArrayLength * i;
+        const geoType = dataArray[offset];
+
+        geometryTypes.push(geoType);
+    });
 
     if(defined(opts.boundingBox)) {
         finalBounds = {
-            minCoords: vec3.fromValues(opts.boundingBox.minCoords.x, opts.boundingBox.minCoords.y, opts.boundingBox.minCoords.z),
-            maxCoords: vec3.fromValues(opts.boundingBox.maxCoords.x, opts.boundingBox.maxCoords.y, opts.boundingBox.maxCoords.z)
+            minCoords: vec3.fromValues(
+                opts.boundingBox.minCoords.x,
+                opts.boundingBox.minCoords.y,
+                opts.boundingBox.minCoords.z
+            ),
+            maxCoords: vec3.fromValues(
+                opts.boundingBox.maxCoords.x,
+                opts.boundingBox.maxCoords.y,
+                opts.boundingBox.maxCoords.z
+            )
         };
     } else {
-        const noOfSdfsInCsg = dataArray.length / standardSdfDataArrayLength;
-
         if(noOfSdfsInCsg === 1) {
             const geoType = dataArray[0];
             finalBounds = constructCsgBoundingBox(geoType, dataArray, 0);
+            // geometryTypes = [geoType];
         } else {
             let boundingBoxes = [];
 
@@ -279,6 +299,7 @@ const sdf = (...args) => {
                     : -1;
                 const geoType = dataArray[offset];
 
+                // geometryTypes.push(geoTypes);
                 finalBounds = constructCsgBoundingBox(geoType, dataArray, offset);
 
                 if(prevOp != sdfOperators.subtract) {
@@ -305,6 +326,7 @@ const sdf = (...args) => {
         boundingBox: finalBounds,
         includeInBvh: true,
         isSdfGeometry: true,
+        geometryTypes,
         data: [
             ...csgHeader,
             ...dataArray
@@ -320,6 +342,7 @@ class SdfModel {
         rotation,
         material,
         texture,
+        displacementMap,
         geoType
     }) {
         this.geoType = geoType;
@@ -333,13 +356,15 @@ class SdfModel {
         this.material = material
             ? {materialName: material}
             : 0,
+
         this.texture = texture // 3
             ? {
                 textureName: isObj(texture)
                     ? texture.name
                     : texture
              }
-            : -1,
+            : -1;
+
         this.textureUvScale = {
             x: 1,
             y: 1,
@@ -349,6 +374,34 @@ class SdfModel {
                     : {x: texture.uvScale, y: texture.uvScale}
                 : [])
         };
+
+        this.displacementMap = displacementMap
+            ? {
+                displacementMapName: isObj(displacementMap)
+                    ? displacementMap.name
+                    : displacementMap
+             }
+            : -1;
+
+        //console.log('Setting this.displacementMap: ', this.displacementMap);
+
+        this.displacementMapScale = defined(displacementMap) && displacementMap.scale
+            ? displacementMap.scale
+            : 1;
+
+        //console.log('Setting this.displacementMapScale: ', this.displacementMapScale);
+
+        this.displacementMapUvScale = {
+            x: 1,
+            y: 1,
+            ...(defined(displacementMap) && defined(displacementMap.uvScale)
+                ? displacementMap.uvScale.x || displacementMap.uvScale.y
+                    ? displacementMap.uvScale
+                    : {x: displacementMap.uvScale, y: displacementMap.uvScale}
+                : [])
+        };
+
+        //console.log('this.displacementMapUvScale: ', this.displacementMapUvScale);
 
         this.position = {
             x: 0,
@@ -406,8 +459,8 @@ class SdfModel {
             this.position.z, // 11
 
             -1, // 12, color blend amount (op union round color blending amount - mutated by op call)
-            1/this.textureUvScale.x, // 13
-            1/this.textureUvScale.y, // 14
+            this.textureUvScale.x, // 13
+            this.textureUvScale.y, // 14
 
             this.domain.domainOp // 15
                 ? sdfDomainOperations[this.domain.domainOp]
@@ -425,7 +478,15 @@ class SdfModel {
 
             this.domainOpBounds.x, // 21
             this.domainOpBounds.y, // 22
-            this.domainOpBounds.z // 23
+            this.domainOpBounds.z, // 23
+
+            this.displacementMap, // 24
+            this.displacementMapUvScale.x, // 25
+            this.displacementMapUvScale.y, // 26,
+
+            this.displacementMapScale, // 27
+            -1, // 28
+            -1 // 29
         ];
     }
 }

@@ -1,0 +1,114 @@
+scene({
+    rendererSettings: {
+        realtimeHitDepth: 2,
+        hitDepth: 8,
+        tMax: 5000,
+        maxSphereTracingSteps: 255,
+        resolution: 0.5
+    },
+    camera: {
+        lookFrom: {x: -17.630, y: 19.904, z: 33.115},
+        lookAt: {x: -15.521, y: 18.659, z: 29.320},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1
+    },
+    background: '#000',
+    geometries: [
+        sdf(
+            sdfSphere({
+                material: 'lambert-white',
+                radius: 7,
+                position: {x: -8, y: 10, z: 0},
+                displacementMap: {
+                    name: 'aluminum',
+                    uvScale: 0.2,
+                    scale: 2
+                }
+            })
+        ),
+        sdf(
+            sdfBox({
+                material: 'lambert-white',
+                dimensions: {x: 5, y: 5, z: 5},
+                position: {x: 8, y: 10, z: 0},
+                displacementMap: {
+                    name: 'aluminum',
+                    uvScale: 0.2,
+                    scale: 0.7
+                }
+            }),
+        ),
+        plane({
+            material: 'lambert-white',
+            texture: {
+                name: 'check',
+                uvScale: 20
+            },
+            scale: 1000,
+            position: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: 50,
+                y: 80.0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: -50,
+                y: 80.0,
+                z: 0
+            },
+        })
+    ],
+    textures: [
+        texture({
+            name: 'aluminum',
+            url: 'assets/images/displacementMapTest.png'
+        }),
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.4, 0.0, 0.0, 1.);
+                }
+            `
+        })
+    ],
+    materials: [
+        lambertMaterial({
+            name: `lambert-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        clearcoatMaterial({
+            name: 'clearcoat-test',
+            // color: '#ffffff',
+            color: '#101010',
+            refIdx: 1.8,
+        }),
+        // lambertMaterial({
+        //     name: `lambert-red`,
+        //     color: '#ff0000',
+        //     albedo: [0.8, 0.8, 0.8]
+        // }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        }),
+    ]
+});

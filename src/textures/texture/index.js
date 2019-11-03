@@ -4,7 +4,6 @@ import {vec3, vec2} from 'gl-matrix';
 import {getGlInstances} from '../../gl';
 import {defined, loadImage} from '../../utils';
 
-
 import vertShader from '../../shaders/vert.glsl';
 import createTexRenderShader from '../../shaders/dynamicTexRender.glsl.js';
 

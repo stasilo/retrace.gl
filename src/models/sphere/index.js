@@ -40,6 +40,7 @@ class Sphere {
         };
 
         this.normalMap = normalMap;
+
         this.normalMapScale = {
             x: 1,
             y: 1,
@@ -49,6 +50,7 @@ class Sphere {
                     : {x: normalMap.scale, y: normalMap.scale}
                 : [])
         };
+
         this.normalUvScale = {
             x: 1,
             y: 1,

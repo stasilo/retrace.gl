@@ -32,16 +32,18 @@ class VolumeTexture {
 
         this.options = options;
 
-        const propsHash = hashCode(props);
+        const cacheProps = {name, size, options};
+        const propsHash = hashCode(cacheProps);
 
-        if(propsHash in cachedVolumes && cache) {
-            this.data = cachedVolumes[hashCode(props)];
+        if(propsHash in cachedVolumes && defined(cache) && cache) {
+            this.data = cachedVolumes[propsHash];
+            console.log('using cache!');
         } else {
             this.data = isFn(data)
                 ? data()
                 : data;
 
-            cachedVolumes[hashCode(props)] = this.data;
+            cachedVolumes[propsHash] = this.data;
         }
     }
 

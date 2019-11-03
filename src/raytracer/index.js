@@ -77,6 +77,8 @@ async function raytraceApp({
      * raytrace draw call
      */
 
+    console.log('scene: ', scene);
+
     const shader = rayTraceShader({
         options: {
             realTime,

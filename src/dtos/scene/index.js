@@ -1,9 +1,26 @@
 import MaterialList from '../../dtos/material-list';
 import TextureList from '../../dtos/texture-list';
+import DisplacementList from '../../dtos/displacement-list'
 
 import ObjModel from '../../models/obj-model';
 import Sphere from '../../models/sphere';
 import Volume from '../../models/volume';
+
+import Texture from '../../textures/texture';
+import VolumeTexture from '../../textures/volume-texture';
+
+import LambertMaterial from '../../materials/lambert';
+import MetalMaterial from '../../materials/metal';
+import DialectricMaterial from '../../materials/dialectric';
+import EmissiveMaterial from '../../materials/emissive';
+import ClearcoatMaterial from '../../materials/clearcoat';
+import CoatedEmissiveMaterial from '../../materials/coated-emissive';
+
+import AnisotropicVolumeMaterial from '../../materials/anisotropic-volume';
+import IsotropicVolumeMaterial from '../../materials/isotropic-volume';
+
+
+import {sdfGeometryTypes} from '../../models/sdf-model';
 
 import {
     defined,
@@ -16,7 +33,7 @@ import {
     isFn
 } from '../../utils';
 
-const defaultScenerendererSettings = {
+const defaultSceneRendererSettings = {
     realtimeHitDepth: 2,
     hitDepth: 4,
     tMax: 5000,
@@ -31,14 +48,15 @@ class Scene {
         background,
         geometries,
         materials,
-        textures
+        textures,
+        displacements
     }) {
         if(!geometries.length) {
             return null;
         }
 
         this.rendererSettings = {
-            ...defaultScenerendererSettings,
+            ...defaultSceneRendererSettings,
             ...rendererSettings
         };
 
@@ -48,11 +66,44 @@ class Scene {
             : [background, background];
 
         this.materials = new MaterialList(materials);
+        this.displacements = new DisplacementList(displacements);
+
+        this.hasLambertMaterial = this.materials.elements
+            .filter(t => t instanceof LambertMaterial)
+            .length > 0;
+        this.hasDialectricMaterial = this.materials.elements
+            .filter(t => t instanceof DialectricMaterial)
+            .length > 0;
+        this.hasMetalMaterial = this.materials.elements
+            .filter(t => t instanceof MetalMaterial)
+            .length > 0;
+        this.hasClearcoatMaterial = this.materials.elements
+            .filter(t => t instanceof ClearcoatMaterial)
+            .length > 0;
+        this.hasEmissiveMaterial = this.materials.elements
+            .filter(t => t instanceof EmissiveMaterial)
+            .length > 0;
+        this.hasCoatedEmissiveMaterial = this.materials.elements
+            .filter(t => t instanceof CoatedEmissiveMaterial)
+            .length > 0;
+        this.hasIsotropicVolumeMaterial = this.materials.elements
+            .filter(t => t instanceof IsotropicVolumeMaterial)
+            .length > 0;
+        this.hasAnisotropicVolumeMaterial = this.materials.elements
+            .filter(t => t instanceof AnisotropicVolumeMaterial)
+            .length > 0;
 
         return (async () => {
             this.textures = await new TextureList(textures);
-            this.geometries = await this.finalizeGeometries(geometries);
 
+            this.hasTextures = this.textures.elements
+                .filter(t => t instanceof Texture)
+                .length > 0;
+            this.hasVolumeTextures = this.textures.elements
+                .filter(t => t instanceof VolumeTexture)
+                .length > 0;
+
+            this.geometries = await this.finalizeGeometries(geometries);
             let {sdfGeometries, sdfGeometryData} = this.finalizeSdfGeometries(geometries);
 
             this.sdfGeometries = sdfGeometries;
@@ -66,6 +117,23 @@ class Scene {
                 .filter(g => g instanceof Sphere).length > 0;
             this.hasVolumeGeometries = this.geometries
                 .filter(g => g instanceof Volume).length > 0;
+
+            this.hasSdfSphereGeometries = this.sdfGeometries
+                .filter(g =>
+                    g.geometryTypes.indexOf(sdfGeometryTypes.sphere) > -1
+                ).length > 0;
+            this.hasSdfBoxGeometries = this.sdfGeometries
+                .filter(g =>
+                    g.geometryTypes.indexOf(sdfGeometryTypes.box) > -1
+                ).length > 0;
+            this.hasSdfTorusGeometries = this.sdfGeometries
+                .filter(g =>
+                    g.geometryTypes.indexOf(sdfGeometryTypes.torus) > -1
+                ).length > 0;
+            this.hasSdfCylinderGeometries = this.sdfGeometries
+                .filter(g =>
+                    g.geometryTypes.indexOf(sdfGeometryTypes.cylinder) > -1
+                ).length > 0;
 
             return this;
         })();
@@ -148,6 +216,8 @@ class Scene {
     }
 
     finalizeSdfGeometries(geometries) {
+        //console.log('finalizeSdfGeometries(geometries) geometries: ', geometries);
+
         let sdfGeometryData = flatten(
             geometries
                 .filter(g => g.isSdfGeometry)
@@ -166,6 +236,15 @@ class Scene {
                             const texture = this.textures.elements
                                 .find(texture => 
                                     texture.name === sdfDataItem.textureName
+                                );
+
+                            return texture ? texture.id : 0;
+                        }
+
+                        if(isObj(sdfDataItem) && 'displacementMapName' in sdfDataItem) {
+                            const texture = this.textures.elements
+                                .find(texture => 
+                                    texture.name === sdfDataItem.displacementMapName
                                 );
 
                             return texture ? texture.id : 0;

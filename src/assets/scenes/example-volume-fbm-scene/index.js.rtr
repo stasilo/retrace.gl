@@ -65,6 +65,7 @@ scene({
         volumeTexture({
             name: 'volume-texture',
             size: volTexSize,
+            cache: true,
             data: range3d(volTexSize)
                 |> #.map(([x, y, z]) => {
                     const scale = 0.01;

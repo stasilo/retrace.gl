@@ -4,11 +4,11 @@ scene({
         hitDepth: 4,
         tMax: 5000,
         maxSphereTracingSteps: 255,
-        resolution: 0.35
+        resolution: 0.3
     },
     camera: {
-        lookFrom: {x: 38.310, y: 117.908, z: 190.104},
-        lookAt: {x: 37.711, y: 115.602, z: 186.266},
+        lookFrom: {x: -65.792, y: 40.307, z: 45.765},
+        lookAt: {x: -61.845, y: 39.569, z: 43.699},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -17,27 +17,43 @@ scene({
     geometries: [
         sdf(
             {
-                // domain: {
-                //     domainOp: 'repeatPolar',
-                //     // axis: 'z',
-                //     size: 1,
-                // },
                 domain: {
-                    domainOp: 'repeatBounded',
-                    size: 2, //0.0001,
-                    bounds: {
-                        x: 9,
-                        y: 0,
-                        z: 4.5
-                    }
+                    domainOp: 'twist',
+                    size: 0.13,
                 },
-                // bounding box has to be set manually
-                // when doing csg repetitions
                 boundingBox: {
-                    minCoords: {x: -100, y: 0, z: -100},
-                    maxCoords: {x: 100, y: 80, z: 100}
-                }
+                    minCoords: {x: -40, y: 0, z: -40},
+                    maxCoords: {x: 40, y: 150, z: 40}
+                },
             },
+            // {
+            //     domain: {
+            //         domainOp: 'repeat',
+            //         axis: 'z',
+            //         size: 35,
+            //     },
+            //     boundingBox: {
+            //         minCoords: {x: -20, y: 0, z: -50},
+            //         maxCoords: {x: 20, y: 40, z: 50}
+            //     },
+            //
+            //
+            //     // domain: {
+            //     //     domainOp: 'repeatBounded',
+            //     //     size: 2, //0.0001,
+            //     //     bounds: {
+            //     //         x: 9,
+            //     //         y: 0,
+            //     //         z: 4.5
+            //     //     }
+            //     // },
+            //     // // bounding box has to be set manually
+            //     // // when doing csg repetitions
+            //     // boundingBox: {
+            //     //     minCoords: {x: -100, y: 0, z: -100},
+            //     //     maxCoords: {x: 100, y: 80, z: 100}
+            //     // }
+            // },
             opSubtract(
                 opUnionRound({radius: 6.0, colorBlendAmount: 0.5},
                     opSubtract(
@@ -55,7 +71,11 @@ scene({
                     sdfBox({
                         material: 'clearcoat-test',
                         dimensions: {x: 15, y: 3, z: 15},
-                        position: {x: 11, y: 39, z: 9.5}
+                        position: {x: 11, y: 39, z: 9.5},
+                        texture: {
+                            name: 'check',
+                            uvScale: 1/20
+                        },
                     }),
                     sdfBox({
                         domain: {
