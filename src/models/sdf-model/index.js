@@ -336,6 +336,7 @@ const sdf = (...args) => {
 
 class SdfModel {
     constructor({
+        geoType,
         domain,
         position,
         dimensions,
@@ -343,7 +344,7 @@ class SdfModel {
         material,
         texture,
         displacementMap,
-        geoType
+        displacement
     }) {
         this.geoType = geoType;
         this.opType = sdfOperators.noOp;
@@ -383,8 +384,6 @@ class SdfModel {
              }
             : -1;
 
-        //console.log('Setting this.displacementMap: ', this.displacementMap);
-
         this.displacementMapScale = defined(displacementMap) && displacementMap.scale
             ? displacementMap.scale
             : 1;
@@ -400,6 +399,17 @@ class SdfModel {
                     : {x: displacementMap.uvScale, y: displacementMap.uvScale}
                 : [])
         };
+
+        this.displacementFunc = displacement
+            ? {
+                displacementFuncName: isObj(displacement)
+                    ? displacement.name
+                    : displacement
+             }
+            : -1;
+
+
+        console.log('Setting this.displacementFunc: ', this.displacementFunc);
 
         //console.log('this.displacementMapUvScale: ', this.displacementMapUvScale);
 
@@ -485,7 +495,7 @@ class SdfModel {
             this.displacementMapUvScale.y, // 26,
 
             this.displacementMapScale, // 27
-            -1, // 28
+            this.displacementFunc, // 28
             -1 // 29
         ];
     }

@@ -1187,6 +1187,7 @@ const getSource = ({options, Scene}) =>
             int materialId;
             int textureId;
             vec2 texUvScale;
+            int displacementFuncId;
             int displacementTexId;
             vec2 dispTexUvScale;
             float dispScale;
@@ -1252,6 +1253,7 @@ const getSource = ({options, Scene}) =>
                 int(sdfData2.x), // material id
                 int(sdfData2.y), // texture id
                 vec2(sdfData5.y, sdfData5.z), // texture uv scale
+                int(sdfData10.y),
                 int(sdfData9.x), // displacement map texture id
                 vec2(sdfData9.y, sdfData9.z), // disp. map texture uv scale
                 sdfData10.x, // disp. map scale
@@ -1276,6 +1278,25 @@ const getSource = ({options, Scene}) =>
         ${Scene.displacements.getDisplacements().map(displacement =>
             displacement.src
         ).join('\n')}
+
+        float getDynamicDisplacementDist(int dispId, vec3 p) {
+            float dispDist = 0.;
+
+            switch(dispId) {
+                ${Scene.displacements.getDisplacements().map(displacement =>
+                    `
+                        case ${displacement.id}: {
+                            displacement${displacement.id}(p, dispDist);
+                        }
+                    `
+                ).join('\n')};
+
+                default:
+                    break;
+            }
+
+            return dispDist;
+        }
 
         /**
          * SDF CSG operations
@@ -1754,7 +1775,6 @@ const getSource = ({options, Scene}) =>
                 applySdfRotation(sdfData.rotation, /* => out */ p);
 
                 if(geoIndex == 0) {
-
                     opType = sdfData.opType;
                     opRadius = sdfData.opRadius;
 
@@ -1763,6 +1783,12 @@ const getSource = ({options, Scene}) =>
                         float dispDist = getTriplanarMappedDisplacementDist(sdfData, p);
                         d1 += dispDist;
                     }
+
+                    if(sdfData.displacementFuncId > -1) {
+                        float dispDist = getDynamicDisplacementDist(sdfData.displacementFuncId, p);
+                        d1 += dispDist;
+                    }
+
 
                     materialId = sdfData.materialId;
                     Material sdfMaterial = getPackedMaterial(materialId);
@@ -1783,6 +1809,11 @@ const getSource = ({options, Scene}) =>
                     sdfGeometryDistance(sdfData, p, /* => out */ d2);
                     if(sdfData.displacementTexId > -1) {
                         float dispDist = getTriplanarMappedDisplacementDist(sdfData, p);
+                        d2 += dispDist;
+                    }
+
+                    if(sdfData.displacementFuncId > -1) {
+                        float dispDist = getDynamicDisplacementDist(sdfData.displacementFuncId, p);
                         d2 += dispDist;
                     }
 

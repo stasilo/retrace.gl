@@ -11,7 +11,8 @@ class SdfCylinder extends SdfModel {
         rotation,
         material,
         texture,
-        displacementMap
+        displacementMap,
+        displacement
     }) {
         super({
             geoType: sdfGeometryTypes.cylinder,
@@ -25,7 +26,8 @@ class SdfCylinder extends SdfModel {
             rotation,
             material,
             texture,
-            displacementMap
+            displacementMap,
+            displacement
         });
     }
 }

@@ -10,7 +10,8 @@ class SdfBox extends SdfModel {
         rotation,
         material,
         texture,
-        displacementMap
+        displacementMap,
+        displacement
     }) {
         super({
             geoType: sdfGeometryTypes.box,
@@ -19,7 +20,8 @@ class SdfBox extends SdfModel {
             dimensions,
             material,
             texture,
-            displacementMap
+            displacementMap,
+            displacement
         });
     }
 }

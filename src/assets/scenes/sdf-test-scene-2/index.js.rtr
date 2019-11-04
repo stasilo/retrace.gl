@@ -4,11 +4,11 @@ scene({
         hitDepth: 4,
         tMax: 5000,
         maxSphereTracingSteps: 255,
-        resolution: 0.3
+        resolution: 0.5
     },
     camera: {
-        lookFrom: {x: -65.792, y: 40.307, z: 45.765},
-        lookAt: {x: -61.845, y: 39.569, z: 43.699},
+        lookFrom: {x: -39.262, y: 10.335, z: -26.848},
+        lookAt: {x: -35.947, y: 11.150, z: -23.892},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -16,16 +16,20 @@ scene({
     background: '#000',
     geometries: [
         sdf(
-            {
-                domain: {
-                    domainOp: 'twist',
-                    size: 0.13,
-                },
-                boundingBox: {
-                    minCoords: {x: -40, y: 0, z: -40},
-                    maxCoords: {x: 40, y: 150, z: 40}
-                },
-            },
+            // {
+            //     domain: {
+            //         domainOp: 'twist',
+            //         size: 0.1,
+            //     },
+            //     boundingBox: {
+            //         minCoords: {x: -40, y: 0, z: -40},
+            //         maxCoords: {x: 40, y: 150, z: 40}
+            //     },
+            // },
+
+
+
+
             // {
             //     domain: {
             //         domainOp: 'repeat',
@@ -65,7 +69,8 @@ scene({
                         sdfSphere({
                             material: 'clearcoat-test',
                             radius: 10,
-                            position: {x: 0, y: 9.5, z: 0}
+                            position: {x: 0, y: 9.5, z: 0},
+                            displacement: 'sinus-displacement'
                         })
                     ),
                     sdfBox({
@@ -80,7 +85,7 @@ scene({
                     sdfBox({
                         domain: {
                             domainOp: 'twist',
-                            size: 0.13,
+                            size: 0.1,
                         },
                         material: `lambert-red`,
                         dimensions: {x: 7, y: 7, z: 7},
@@ -139,6 +144,16 @@ scene({
                 z: 0
             },
         })
+    ],
+    displacements: [
+        {
+            name: 'sinus-displacement',
+            src: `
+                float offset = ${glslFloat(random(100))};
+                float d = sin(1.*(p.x+offset)) * sin(1.*(p.y+offset)) * sin(1.*(p.z+offset));
+                dDist = d;
+            `
+        }
     ],
     textures: [
         texture({

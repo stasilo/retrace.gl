@@ -9,7 +9,8 @@ class SdfSphere extends SdfModel {
         position,
         material,
         texture,
-        displacementMap
+        displacementMap,
+        displacement
     }) {
         super({
             geoType: sdfGeometryTypes.sphere,
@@ -22,7 +23,8 @@ class SdfSphere extends SdfModel {
             },
             material,
             texture,
-            displacementMap
+            displacementMap,
+            displacement
         });
     }
 }

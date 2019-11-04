@@ -11,7 +11,8 @@ class SdfTorus extends SdfModel {
         rotation,
         texture,
         material,
-        displacementMap
+        displacementMap,
+        displacement
     }) {
         super({
             geoType: sdfGeometryTypes.torus,
@@ -25,7 +26,8 @@ class SdfTorus extends SdfModel {
             rotation,
             material,
             texture,
-            displacementMap
+            displacementMap,
+            displacement
         });
     }
 }

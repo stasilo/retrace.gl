@@ -27,7 +27,7 @@ const UI = observer(() => {
         <Fragment>
             <Hotkeys
                 keyName="alt+r,alt+e,alt+g,alt+h"
-                onKeyDown={store.handleUiKeyShortcut}
+                onKeyUp={store.handleUiKeyShortcut}
             >
                 <Header>
                     <RenderStatus/>

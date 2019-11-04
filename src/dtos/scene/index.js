@@ -216,8 +216,6 @@ class Scene {
     }
 
     finalizeSdfGeometries(geometries) {
-        //console.log('finalizeSdfGeometries(geometries) geometries: ', geometries);
-
         let sdfGeometryData = flatten(
             geometries
                 .filter(g => g.isSdfGeometry)
@@ -238,7 +236,7 @@ class Scene {
                                     texture.name === sdfDataItem.textureName
                                 );
 
-                            return texture ? texture.id : 0;
+                            return texture ? texture.id : -1;
                         }
 
                         if(isObj(sdfDataItem) && 'displacementMapName' in sdfDataItem) {
@@ -247,7 +245,16 @@ class Scene {
                                     texture.name === sdfDataItem.displacementMapName
                                 );
 
-                            return texture ? texture.id : 0;
+                            return texture ? texture.id : -1;
+                        }
+
+                        if(isObj(sdfDataItem) && 'displacementFuncName' in sdfDataItem) {
+                            const displacement = this.displacements.elements
+                                .find(displacement => 
+                                    displacement.name === sdfDataItem.displacementFuncName
+                                );
+
+                            return displacement ? displacement.id : -1;
                         }
 
                         return sdfDataItem;
@@ -260,6 +267,7 @@ class Scene {
         let sdfGeometries = geometries
             .filter(g => g.isSdfGeometry && g.includeInBvh);
 
+        console.log('scene sdfGeometries: ', sdfGeometries);
         return {
             sdfGeometries,
             sdfGeometryData
