@@ -196,10 +196,13 @@ const sdf = (...args) => {
                     dataArray[offset + 11]
                 );
 
+                const outerRadius = dataArray[offset + 7] + dataArray[offset + 6];
+                const innerRadius = dataArray[offset + 6];
+
                 dimensions = vec3.fromValues(
-                    dataArray[offset + 7] + dataArray[offset + 6], // outer radius
-                    dataArray[offset + 6], // inner radius
-                    dataArray[offset + 7] + dataArray[offset + 6]
+                    outerRadius, // outer radius
+                    hasRotation || hasDomainWarp ? outerRadius : innerRadius, // inner radius
+                    outerRadius
                 );
 
                 vec3.sub(minCoords, position, dimensions);
@@ -215,11 +218,11 @@ const sdf = (...args) => {
                 );
 
                 dimensions = vec3.fromValues(
-                    dataArray[offset + 6] // radius
+                    dataArray[offset + 6] // width
                         * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
                     dataArray[offset + 7] // height
                         * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
-                    dataArray[offset + 6] // radius
+                    dataArray[offset + 6] // depth
                         * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1)
                 );
 
@@ -235,14 +238,22 @@ const sdf = (...args) => {
                     dataArray[offset + 11]
                 );
 
-                dimensions = vec3.fromValues(
-                    dataArray[offset + 6] // radius
-                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
-                    dataArray[offset + 7] // height
-                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
-                    dataArray[offset + 6] // radius
-                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1)
-                );
+                const radius = dataArray[offset + 6];
+                const height = dataArray[offset + 7];
+
+                if(!hasRotation && !hasDomainWarp) {
+                    dimensions = vec3.fromValues(
+                        radius // radius
+                            * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
+                        height // height
+                            * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
+                        dataArray[offset + 6] // radius
+                            * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1)
+                    );
+                } else {
+                    const s = Math.max(radius, height);
+                    dimensions = vec3.fromValues(s, s, s);
+                }
 
                 vec3.sub(minCoords, position, dimensions);
                 vec3.add(maxCoords, position, dimensions);

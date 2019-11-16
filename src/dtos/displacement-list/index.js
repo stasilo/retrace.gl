@@ -20,8 +20,6 @@ class DisplacementList {
                     return displacement;
                 })
             : [];
-
-        console.log('displacement list elements: ', this.elements);
     }
 
     getSrc(id, src) {
@@ -31,7 +29,7 @@ class DisplacementList {
             }
        `;
     }
-    
+
     getDisplacements() {
         return this.elements;
     }

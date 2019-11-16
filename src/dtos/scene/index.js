@@ -38,7 +38,8 @@ const defaultSceneRendererSettings = {
     hitDepth: 4,
     tMax: 5000,
     maxSphereTracingSteps: 255,
-    resolution: 0.5
+    resolution: 0.5,
+    renderMode: 'regular'
 };
 
 class Scene {
@@ -253,6 +254,8 @@ class Scene {
                                 .find(displacement => 
                                     displacement.name === sdfDataItem.displacementFuncName
                                 );
+
+                            console.log('found displacement: ', displacement);
 
                             return displacement ? displacement.id : -1;
                         }

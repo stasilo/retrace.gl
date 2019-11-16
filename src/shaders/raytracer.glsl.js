@@ -23,6 +23,9 @@ const getSource = ({options, Scene}) =>
     precision highp sampler2D;
     precision highp sampler3D;
 
+    ${Scene.rendererSettings.renderMode === 'sdf'
+        ? '#define SDF_RENDER_MODE': '' }
+
     ${options.realTime
         ? '#define REALTIME' : '' }
     ${options.glslCamera
@@ -1287,9 +1290,10 @@ const getSource = ({options, Scene}) =>
                     `
                         case ${displacement.id}: {
                             displacement${displacement.id}(p, dispDist);
+                            break;
                         }
                     `
-                ).join('\n')};
+                ).join('\n')}
 
                 default:
                     break;
@@ -1323,12 +1327,12 @@ const getSource = ({options, Scene}) =>
 
         #define SDF_SUBTRACT ${sdfOperators.subtract}
         float opSubtraction( float d1, float d2) {
-            return max(-d1,d2);
+            return max(-d1, d2);
         }
 
         #define SDF_INTERSECT ${sdfOperators.intersect}
         float opIntersection(float d1, float d2) {
-            return max(d1,d2);
+            return max(d1, d2);
         }
 
         /**
@@ -1789,7 +1793,6 @@ const getSource = ({options, Scene}) =>
                         d1 += dispDist;
                     }
 
-
                     materialId = sdfData.materialId;
                     Material sdfMaterial = getPackedMaterial(materialId);
 
@@ -1956,6 +1959,9 @@ const getSource = ({options, Scene}) =>
         //     return end;
         // }
 
+        float sphereTracedIterCount = 0.;
+        bool hasSphereTracedHit = false;
+
         float bvhSphereTraceDistance(
             Ray ray,
             float start,
@@ -1979,11 +1985,13 @@ const getSource = ({options, Scene}) =>
                 }
 
                 if (dist < EPSILON) {
+                    sphereTracedIterCount = float(i);
                     return depth;
                 }
 
                 depth += dist;
                 if (depth >= end) {
+                    // sphereTracedIterCount = 0.;
                     return end;
                 }
             }
@@ -2279,6 +2287,8 @@ const getSource = ({options, Scene}) =>
                                 int sdfMaterialId;
                                 vec3 sdfBlendedColor;
 
+                                // sphereTracedIterCount = 0.;
+
                                 float dist = bvhSphereTraceDistance(
                                     ray,
                                     0.,
@@ -2386,116 +2396,203 @@ const getSource = ({options, Scene}) =>
         switch(lookupGeometryType) {
             #ifdef HAS_TRIANGLE_GEOS
                 case BVH_TRIANGLE_GEOMETRY: {
-                    // vertices
+                    #ifndef SDF_RENDER_MODE
+                        // vertices
 
-                    float xOffset = mod(lookupOffset, DATA_TEX_SIZE);
-                    float yOffset = floor(lookupOffset * DATA_TEX_INV_SIZE);
-                    vec3 v0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        float xOffset = mod(lookupOffset, DATA_TEX_SIZE);
+                        float yOffset = floor(lookupOffset * DATA_TEX_INV_SIZE);
+                        vec3 v0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    xOffset = mod(lookupOffset + 1., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 1.) * DATA_TEX_INV_SIZE);
-                    vec3 v1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        xOffset = mod(lookupOffset + 1., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 1.) * DATA_TEX_INV_SIZE);
+                        vec3 v1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    xOffset = mod(lookupOffset + 2., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 2.) * DATA_TEX_INV_SIZE);
-                    vec3 v2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        xOffset = mod(lookupOffset + 2., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 2.) * DATA_TEX_INV_SIZE);
+                        vec3 v2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    // normals
+                        // normals
 
-                    xOffset = mod(lookupOffset + 3., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 3.) * DATA_TEX_INV_SIZE);
-                    vec3 n0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        xOffset = mod(lookupOffset + 3., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 3.) * DATA_TEX_INV_SIZE);
+                        vec3 n0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    xOffset = mod(lookupOffset + 4., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 4.) * DATA_TEX_INV_SIZE);
-                    vec3 n1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        xOffset = mod(lookupOffset + 4., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 4.) * DATA_TEX_INV_SIZE);
+                        vec3 n1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    xOffset = mod(lookupOffset + 5., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 5.) * DATA_TEX_INV_SIZE);
-                    vec3 n2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        xOffset = mod(lookupOffset + 5., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 5.) * DATA_TEX_INV_SIZE);
+                        vec3 n2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    // texture cooords
+                        // texture cooords
 
-                    xOffset = mod(lookupOffset + 6., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 6.) * DATA_TEX_INV_SIZE);
-                    vec3 t0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        xOffset = mod(lookupOffset + 6., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 6.) * DATA_TEX_INV_SIZE);
+                        vec3 t0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    xOffset = mod(lookupOffset + 7., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 7.) * DATA_TEX_INV_SIZE);
-                    vec3 t1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        xOffset = mod(lookupOffset + 7., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 7.) * DATA_TEX_INV_SIZE);
+                        vec3 t1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    xOffset = mod(lookupOffset + 8., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 8.) * DATA_TEX_INV_SIZE);
-                    vec3 t2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        xOffset = mod(lookupOffset + 8., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 8.) * DATA_TEX_INV_SIZE);
+                        vec3 t2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    // meta data
+                        // meta data
 
-                    xOffset = mod(lookupOffset + 9., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 9.) * DATA_TEX_INV_SIZE);
-                    vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        xOffset = mod(lookupOffset + 9., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 9.) * DATA_TEX_INV_SIZE);
+                        vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    int materialId = int(meta.x);
-                    bool smoothShading = bool(meta.y);
+                        int materialId = int(meta.x);
+                        bool smoothShading = bool(meta.y);
 
-                    xOffset = mod(lookupOffset + 10., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 10.) * DATA_TEX_INV_SIZE);
-                    meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-
-                    int textureId = int(meta.x);
-                    bool flipNormals = bool(meta.z);
-
-                    xOffset = mod(lookupOffset + 11., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 11.) * DATA_TEX_INV_SIZE);
-                    meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-
-                    int normalMapTextureId = int(meta.x);
-                    vec2 normalMapScale = meta.yz;
-
-                    xOffset = mod(lookupOffset + 12., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 12.) * DATA_TEX_INV_SIZE);
-                    meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-
-                    vec2 texUvScale = meta.xy;
-
-                    float triangleW = 1.0 - triangleUv.x - triangleUv.y;
-                    vec2 interpUv = triangleW * t0.xy
-                        + triangleUv.x * t1.xy
-                        + triangleUv.y * t2.xy;
-
-                    record.hasHit = true;
-                    record.hitT = tMax;
-                    record.material = getPackedMaterial(materialId);
-                    record.color = textureId == -1
-                        ? record.material.color
-                        : getSceneTextureData(textureId, interpUv * texUvScale).rgb;
-                    record.hitPoint = pointOnRay(ray, tMax);
-
-                    vec3 normal;
-                    if(smoothShading == true) {
-                        normal = normalize(
-                            triangleW * n0
-                                + triangleUv.x * n1
-                                + triangleUv.y * n2
-                        );
-                    } else {
-                        if(!flipNormals) {
-                            normal = normalize(cross(v1 - v0, v2 - v0));
-                        } else {
-                            normal = normalize(cross(v2 - v0, v1 - v0));
-                        }
-                    }
-
-                    if(normalMapTextureId > -1) {
-                        xOffset = mod(lookupOffset + 13., DATA_TEX_SIZE);
-                        yOffset = floor((lookupOffset + 13.) * DATA_TEX_INV_SIZE);
+                        xOffset = mod(lookupOffset + 10., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 10.) * DATA_TEX_INV_SIZE);
                         meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                        vec2 normUvScale = meta.xy;
+                        int textureId = int(meta.x);
+                        bool flipNormals = bool(meta.z);
 
-                        record.normal = perturbNormal(normal, normalMapScale, normalMapTextureId, interpUv * normUvScale);
-                    } else {
+                        xOffset = mod(lookupOffset + 11., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 11.) * DATA_TEX_INV_SIZE);
+                        meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        int normalMapTextureId = int(meta.x);
+                        vec2 normalMapScale = meta.yz;
+
+                        xOffset = mod(lookupOffset + 12., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 12.) * DATA_TEX_INV_SIZE);
+                        meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        vec2 texUvScale = meta.xy;
+
+                        float triangleW = 1.0 - triangleUv.x - triangleUv.y;
+                        vec2 interpUv = triangleW * t0.xy
+                            + triangleUv.x * t1.xy
+                            + triangleUv.y * t2.xy;
+
+                        record.hasHit = true;
+                        record.hitT = tMax;
+                        record.material = getPackedMaterial(materialId);
+                        record.color = textureId == -1
+                            ? record.material.color
+                            : getSceneTextureData(textureId, interpUv * texUvScale).rgb;
+                        record.hitPoint = pointOnRay(ray, tMax);
+
+                        vec3 normal;
+                        if(smoothShading == true) {
+                            normal = normalize(
+                                triangleW * n0
+                                    + triangleUv.x * n1
+                                    + triangleUv.y * n2
+                            );
+                        } else {
+                            if(!flipNormals) {
+                                normal = normalize(cross(v1 - v0, v2 - v0));
+                            } else {
+                                normal = normalize(cross(v2 - v0, v1 - v0));
+                            }
+                        }
+
+                        if(normalMapTextureId > -1) {
+                            xOffset = mod(lookupOffset + 13., DATA_TEX_SIZE);
+                            yOffset = floor((lookupOffset + 13.) * DATA_TEX_INV_SIZE);
+                            meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                            vec2 normUvScale = meta.xy;
+
+                            record.normal = perturbNormal(normal, normalMapScale, normalMapTextureId, interpUv * normUvScale);
+                        } else {
+                            record.normal = normal;
+                        }
+                    #endif
+
+                    #ifdef SDF_RENDER_MODE
+                        // vertices
+
+                        float xOffset = mod(lookupOffset, DATA_TEX_SIZE);
+                        float yOffset = floor(lookupOffset * DATA_TEX_INV_SIZE);
+                        vec3 v0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        xOffset = mod(lookupOffset + 1., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 1.) * DATA_TEX_INV_SIZE);
+                        vec3 v1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        xOffset = mod(lookupOffset + 2., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 2.) * DATA_TEX_INV_SIZE);
+                        vec3 v2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        // normals
+
+                        xOffset = mod(lookupOffset + 3., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 3.) * DATA_TEX_INV_SIZE);
+                        vec3 n0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        xOffset = mod(lookupOffset + 4., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 4.) * DATA_TEX_INV_SIZE);
+                        vec3 n1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        xOffset = mod(lookupOffset + 5., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 5.) * DATA_TEX_INV_SIZE);
+                        vec3 n2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        // texture cooords
+
+                        // xOffset = mod(lookupOffset + 6., DATA_TEX_SIZE);
+                        // yOffset = floor((lookupOffset + 6.) * DATA_TEX_INV_SIZE);
+                        // vec3 t0 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        //
+                        // xOffset = mod(lookupOffset + 7., DATA_TEX_SIZE);
+                        // yOffset = floor((lookupOffset + 7.) * DATA_TEX_INV_SIZE);
+                        // vec3 t1 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        //
+                        // xOffset = mod(lookupOffset + 8., DATA_TEX_SIZE);
+                        // yOffset = floor((lookupOffset + 8.) * DATA_TEX_INV_SIZE);
+                        // vec3 t2 = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        // meta data
+
+                        xOffset = mod(lookupOffset + 9., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 9.) * DATA_TEX_INV_SIZE);
+                        vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        bool smoothShading = bool(meta.y);
+
+                        xOffset = mod(lookupOffset + 10., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 10.) * DATA_TEX_INV_SIZE);
+                        meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        bool flipNormals = bool(meta.z);
+
+
+                        float triangleW = 1.0 - triangleUv.x - triangleUv.y;
+                        // vec2 interpUv = triangleW * t0.xy
+                        //     + triangleUv.x * t1.xy
+                        //     + triangleUv.y * t2.xy;
+
+                        record.hasHit = true;
+                        record.hitT = tMax;
+                        record.hitPoint = pointOnRay(ray, tMax);
+
+                        vec3 normal;
+                        if(smoothShading == true) {
+                            normal = normalize(
+                                triangleW * n0
+                                    + triangleUv.x * n1
+                                    + triangleUv.y * n2
+                            );
+                        } else {
+                            if(!flipNormals) {
+                                normal = normalize(cross(v1 - v0, v2 - v0));
+                            } else {
+                                normal = normalize(cross(v2 - v0, v1 - v0));
+                            }
+                        }
+
                         record.normal = normal;
-                    }
+                    #endif
 
                     break;
                 }
@@ -2503,41 +2600,106 @@ const getSource = ({options, Scene}) =>
 
             #ifdef HAS_SPHERE_GEOS
                 case BVH_SPHERE_GEOMETRY: {
-                    // geo data
+                    #ifndef SDF_RENDER_MODE
+                        // geo data
 
-                    float xOffset = mod(lookupOffset, DATA_TEX_SIZE);
-                    float yOffset = floor(lookupOffset * DATA_TEX_INV_SIZE);
-                    vec3 center = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        float xOffset = mod(lookupOffset, DATA_TEX_SIZE);
+                        float yOffset = floor(lookupOffset * DATA_TEX_INV_SIZE);
+                        vec3 center = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                    xOffset = mod(lookupOffset + 1., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 1.) * DATA_TEX_INV_SIZE);
-                    vec3 data = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-                    float radius = data.x;
+                        xOffset = mod(lookupOffset + 1., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 1.) * DATA_TEX_INV_SIZE);
+                        vec3 data = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        float radius = data.x;
 
-                    // meta data
+                        // meta data
 
-                    xOffset = mod(lookupOffset + 9., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 9.) * DATA_TEX_INV_SIZE);
-                    vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-                    int materialId = int(meta.x);
+                        xOffset = mod(lookupOffset + 9., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 9.) * DATA_TEX_INV_SIZE);
+                        vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        int materialId = int(meta.x);
 
-                    xOffset = mod(lookupOffset + 10., DATA_TEX_SIZE);
-                    yOffset = floor((lookupOffset + 10.) * DATA_TEX_INV_SIZE);
-                    meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-                    int textureId = int(meta.x);
+                        xOffset = mod(lookupOffset + 10., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 10.) * DATA_TEX_INV_SIZE);
+                        meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        int textureId = int(meta.x);
 
-                    record.hasHit = true;
-                    record.hitT = tMax;
-                    record.hitPoint = pointOnRay(ray, record.hitT);
-                    record.material = getPackedMaterial(materialId);
+                        record.hasHit = true;
+                        record.hitT = tMax;
+                        record.hitPoint = pointOnRay(ray, record.hitT);
+                        record.material = getPackedMaterial(materialId);
 
 
-                    if(record.material.type == ISOTROPIC_VOLUME_MATERIAL_TYPE
-                        || record.material.type == ANISOTROPIC_VOLUME_MATERIAL_TYPE)
-                    {
-                        record.normal = vec3(1., 0., 0.); // random
-                        record.color = record.material.color;
-                    } else {
+                        if(record.material.type == ISOTROPIC_VOLUME_MATERIAL_TYPE
+                            || record.material.type == ANISOTROPIC_VOLUME_MATERIAL_TYPE)
+                        {
+                            record.normal = vec3(1., 0., 0.); // random
+                            record.color = record.material.color;
+                        } else {
+                            xOffset = mod(lookupOffset + 10., DATA_TEX_SIZE);
+                            yOffset = floor((lookupOffset + 10.) * DATA_TEX_INV_SIZE);
+                            meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                            int textureId = int(meta.x);
+
+                            xOffset = mod(lookupOffset + 11., DATA_TEX_SIZE);
+                            yOffset = floor((lookupOffset + 11.) * DATA_TEX_INV_SIZE);
+                            meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                            int normalMapTextureId = int(meta.x);
+                            vec2 normalMapScale = meta.yz;
+
+                            vec3 p = (record.hitPoint - center) / radius;
+                            vec2 uv = getSphereUv(p);
+
+                            if(textureId > -1) {
+                                xOffset = mod(lookupOffset + 12., DATA_TEX_SIZE);
+                                yOffset = floor((lookupOffset + 12.) * DATA_TEX_INV_SIZE);
+                                meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                                vec2 texUvScale = meta.xy;
+
+                                record.color = getSceneTextureData(textureId, uv * texUvScale).rgb;
+                            } else {
+                                record.color = record.material.color;
+                            }
+
+                            vec3 normal = normalize(
+                                (record.hitPoint - center) / radius
+                            );
+
+                            if(normalMapTextureId > -1) {
+                                xOffset = mod(lookupOffset + 13., DATA_TEX_SIZE);
+                                yOffset = floor((lookupOffset + 13.) * DATA_TEX_INV_SIZE);
+                                meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                                vec2 normUvScale = meta.xy;
+
+                                vec3 nl = dot(normal, ray.dir) < 0.0
+                                    ? normalize(normal)
+                                    : normalize(normal * -1.0);
+
+                                record.normal = perturbNormal(nl, normalMapScale, normalMapTextureId, uv * normUvScale);
+                            } else {
+                                record.normal = normal;
+                            }
+                        }
+                    #endif
+                    #ifdef SDF_RENDER_MODE
+                        // geo data
+
+                        float xOffset = mod(lookupOffset, DATA_TEX_SIZE);
+                        float yOffset = floor(lookupOffset * DATA_TEX_INV_SIZE);
+                        vec3 center = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
+                        xOffset = mod(lookupOffset + 1., DATA_TEX_SIZE);
+                        yOffset = floor((lookupOffset + 1.) * DATA_TEX_INV_SIZE);
+                        vec3 data = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        float radius = data.x;
+
+                        record.hasHit = true;
+                        record.hitT = tMax;
+                        record.hitPoint = pointOnRay(ray, record.hitT);
+
                         xOffset = mod(lookupOffset + 10., DATA_TEX_SIZE);
                         yOffset = floor((lookupOffset + 10.) * DATA_TEX_INV_SIZE);
                         meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
@@ -2547,50 +2709,18 @@ const getSource = ({options, Scene}) =>
                         yOffset = floor((lookupOffset + 11.) * DATA_TEX_INV_SIZE);
                         meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
-                        int normalMapTextureId = int(meta.x);
-                        vec2 normalMapScale = meta.yz;
-
-                        vec3 p = (record.hitPoint - center) / radius;
-                        vec2 uv = getSphereUv(p);
-
-                        if(textureId > -1) {
-                            xOffset = mod(lookupOffset + 12., DATA_TEX_SIZE);
-                            yOffset = floor((lookupOffset + 12.) * DATA_TEX_INV_SIZE);
-                            meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-
-                            vec2 texUvScale = meta.xy;
-
-                            record.color = getSceneTextureData(textureId, uv * texUvScale).rgb;
-                        } else {
-                            record.color = record.material.color;
-                        }
-
                         vec3 normal = normalize(
                             (record.hitPoint - center) / radius
                         );
 
-                        if(normalMapTextureId > -1) {
-                            xOffset = mod(lookupOffset + 13., DATA_TEX_SIZE);
-                            yOffset = floor((lookupOffset + 13.) * DATA_TEX_INV_SIZE);
-                            meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
-
-                            vec2 normUvScale = meta.xy;
-
-                            vec3 nl = dot(normal, ray.dir) < 0.0
-                                ? normalize(normal)
-                                : normalize(normal * -1.0);
-
-                            record.normal = perturbNormal(nl, normalMapScale, normalMapTextureId, uv * normUvScale);
-                        } else {
-                            record.normal = normal;
-                        }
-                    }
-
+                        record.normal = normal;
+                    #endif
                     break;
                 }
             #endif
 
             #ifdef HAS_VOLUME_GEOS
+            #ifndef SDF_RENDER_MODE
                 case BVH_VOLUME_GEOMETRY: {
                     float xOffset = mod(lookupOffset + 9., DATA_TEX_SIZE);
                     float yOffset = floor((lookupOffset + 9.) * DATA_TEX_INV_SIZE);
@@ -2608,20 +2738,26 @@ const getSource = ({options, Scene}) =>
                     break;
                 }
             #endif
+            #endif
 
             #ifdef HAS_SDF_GEOS
                 case BVH_SDF_GEOMETRY: {
                     record.hasHit = true;
                     record.hitT = tMax;
                     record.hitPoint = pointOnRay(ray, record.hitT);
-                    record.normal = estimateBvhSdfSceneNormal(record.hitPoint, lookupOffset);
-                    record.material = getPackedMaterial(lookupSdfMaterialId);
 
-                    if(record.material.type != DIALECTRIC_MATERIAL_TYPE) {
-                        record.hitPoint = record.hitPoint + EPSILON * record.normal;
-                    }
+                    hasSphereTracedHit = true;
 
-                    record.color = lookupSdfBlendedColor;
+                    #ifndef SDF_RENDER_MODE
+                        record.normal = estimateBvhSdfSceneNormal(record.hitPoint, lookupOffset);
+                        record.material = getPackedMaterial(lookupSdfMaterialId);
+
+                        if(record.material.type != DIALECTRIC_MATERIAL_TYPE) {
+                            record.hitPoint = record.hitPoint + EPSILON * record.normal;
+                        }
+
+                        record.color = lookupSdfBlendedColor;
+                    #endif
                 }
             #endif
 
@@ -2681,38 +2817,57 @@ const getSource = ({options, Scene}) =>
 
     // colorize
     vec3 paint(Ray ray) {
-        vec3 color = vec3(1.0);
-        float tMax = T_MAX;
+        #ifndef SDF_RENDER_MODE
+            vec3 color = vec3(1.0);
+            float tMax = T_MAX;
 
-        // float fogT = T_MAX;
+            // float fogT = T_MAX;
 
-        HitRecord hitRecord;
-        for(int hitCounts = 0; hitCounts < MAX_HIT_DEPTH; hitCounts++) {
-            hitWorld(ray, tMax, /* out => */ hitRecord);
-            if(hitRecord.hasHit) {
-                // if(hitCounts == 0) {
-                //     fogT = hitRecord.hitT;
+            HitRecord hitRecord;
+            for(int hitCounts = 0; hitCounts < MAX_HIT_DEPTH; hitCounts++) {
+                hitWorld(ray, tMax, /* out => */ hitRecord);
+                if(hitRecord.hasHit) {
+                    // if(hitCounts == 0) {
+                    //     fogT = hitRecord.hitT;
+                    // }
+
+                    if(emit(hitRecord, /* out => */ color)) {
+                        break;
+                    }
+
+                    if(!shadeAndScatter(/* out => */ hitRecord, /* out => */ color, /* out => */ ray)) {
+                        break;
+                    }
+                } else {
+                    color *= background(ray.dir);
+                    break;
+                }
+
+                // // optimization?
+                // if(dot(color, color) < 0.0001) {
+                //     return color;
                 // }
-
-                if(emit(hitRecord, /* out => */ color)) {
-                    break;
-                }
-
-                if(!shadeAndScatter(/* out => */ hitRecord, /* out => */ color, /* out => */ ray)) {
-                    break;
-                }
-            } else {
-                color *= background(ray.dir);
-                break;
             }
 
-            // // optimization?
-            // if(dot(color, color) < 0.0001) {
-            //     return color;
-            // }
-        }
+            // color = applyFog(color, fogT, background(ray.dir));
+        #endif
 
-        // color = applyFog(color, fogT, background(ray.dir));
+        #ifdef SDF_RENDER_MODE
+            vec3 color = vec3(0.0, 0., 0.);
+            float tMax = T_MAX;
+            HitRecord hitRecord;
+
+            hitWorld(ray, tMax, /* out => */ hitRecord);
+            if(hitRecord.hasHit && hasSphereTracedHit) {
+                color.x = sphereTracedIterCount / float(MAX_MARCHING_STEPS);
+                // color = vec3(sphereTracedIterCount / float(MAX_MARCHING_STEPS), 0., 0.);
+            } else if(hitRecord.hasHit) {
+                // color.x = 0.;
+                color = hitRecord.normal;
+            }
+            // color = vec3(sphereTracedIterCount / float(MAX_MARCHING_STEPS), 0., 0.);
+        #endif
+
         return color;
     }
 
@@ -2749,8 +2904,10 @@ const getSource = ({options, Scene}) =>
         return color;
     }
 
-    void main () {
+    void main() {
         uTime;
+        uBgGradientColors[0];
+        uBgGradientColors[1];
 
         // set initial seed for stateful rng
         gRandSeed = uSeed * uv;///vec2(0.1, 0.1); //uSeed + 20.; //uv + uSeed;

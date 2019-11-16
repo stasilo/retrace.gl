@@ -35,7 +35,7 @@ async function raytraceApp({
     realTime,
     debug
 }) {
-    const {glCanvas, glImgCanvas, gl, glApp} = getGlInstances();
+    const {glCanvas, gl, glApp} = getGlInstances();
     let store = getStore();
 
     if(debug) {
@@ -77,8 +77,7 @@ async function raytraceApp({
      * raytrace draw call
      */
 
-    console.log('scene: ', scene);
-
+    // console.log('scene: ', scene);
     const shader = rayTraceShader({
         options: {
             realTime,
@@ -88,6 +87,8 @@ async function raytraceApp({
         },
         Scene: scene
     });
+
+    console.log('shader: ', shader);
 
     const rayTraceGlProgram = glApp.createProgram(vertShader, shader);
 
@@ -283,6 +284,7 @@ async function raytraceApp({
                 // save final render to separate canvas
                 // in case we want to save the image
                 // (webgl doesn't preserve drawing buffers)
+                const {glImgCanvas} = getGlInstances();
                 let imgCtx = glImgCanvas.getContext('2d');
                 imgCtx.drawImage(glCanvas, 0, 0);
 

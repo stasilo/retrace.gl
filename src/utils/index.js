@@ -65,9 +65,6 @@ const subRange = (rangeA, rangeB) =>
         ).length == 0
     );
 
-const takeRandom = (arr) =>
-    arr.filter(randomBool);
-
 // array manipulation
 
 const reverse = ([x, ...xs]) => typeof x !== 'undefined'
@@ -86,6 +83,9 @@ const zip = (arr, ...arrs) =>
             [...a, arr[i]], [val]
         )
     );
+
+const shuffle = (array) =>
+    [...array].sort(() => Math.random() - 0.5);
 
 // random no stuff
 
@@ -110,6 +110,11 @@ const randomBool = () =>
 
 const pluckRandom = (arr) =>
     arr[parseInt(random(arr.length))];
+
+const takeRandom = (arr, lim) =>
+    typeof lim !== 'undefined'
+        ? shuffle(arr).slice(0, lim)
+        : arr.filter(randomBool);
 
 const maybe = (cb, p = 0.5) =>
     random() > p
@@ -290,6 +295,7 @@ export {
     reverse,
     zip,
     flatten,
+    shuffle,
     random,
     randomIdx,
     randomSign,

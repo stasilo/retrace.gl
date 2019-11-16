@@ -63,6 +63,8 @@ const resetCanvas = () => {
     if(glCanvas) {
         glCanvas.remove();
         glCanvas = null;
+        glImgCanvas.remove();
+        glImgCanvas = null;
     }
 };
 

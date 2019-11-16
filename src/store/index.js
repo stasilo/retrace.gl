@@ -38,10 +38,10 @@ const defaultMaxSampleCount = 10;
 // const defaultSceneUrl = 'assets/scenes/sdf-displacement-map-scene/index.js.rtr';
 
 // const defaultSceneUrl = 'assets/scenes/sdf-test-scene-1/index.js.rtr';
-const defaultSceneUrl = 'assets/scenes/sdf-test-scene-2/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sdf-test-scene-2/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-test-scene-3/index.js.rtr';
 
-// const defaultSceneUrl = 'assets/scenes/sdf-geometries-test-scene/index.js.rtr';
+const defaultSceneUrl = 'assets/scenes/sdf-geometries-test-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-displacement-func-test-scene/index.js.rtr';
 
 let instance = null;
