@@ -1,0 +1,242 @@
+
+const startPos = -50;
+
+scene({
+    rendererSettings: {
+        realtimeHitDepth: 2,
+        hitDepth: 8,
+        tMax: 5000,
+        maxSphereTracingSteps: 255,
+        resolution: 0.35,
+        renderMode: 'sdf'
+    },
+    camera: {
+        lookFrom: {x: -14.286, y: 7.658, z: -8.470},
+        lookAt: {x: -10.160, y: 6.818, z: -6.844},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1
+    },
+    background: '#000',
+    geometries: [
+        sdf(
+            opUnionRound({radius: 0.7, colorBlendAmount: 0.3},
+                ...(range3d(3, 3, 3)
+                // |> subRange(#, range3d(4, 6, 0, 1, 4, 5))
+                |> #.map(([x, y, z]) => {
+                    return sdfTorus({
+                        // material: 'lambert-red',
+                        material: 'floor-white',
+                        // dimensions: {x: 5, y: 5, z: 5},
+                        innerRadius: 0.3,
+                        outerRadius: 1,
+                        displacement: 'torus-displacement',
+                        position: {
+                            x: -9 + x*2.5,
+                            y: 3 + y*1.5,
+                            z: -9 + z*2.5
+                        },
+                        rotation: {
+                            z: random(Math.PI),
+                            y: random(Math.PI),
+                            z: random(Math.PI)
+                        }
+                    })
+                })),
+            )
+            |> opIntersect(#,
+                sdfSphere({
+                    // material: `lambert-red`,
+                    material: 'clearcoat-test',
+                    radius: 3,
+                    position: {x: -6, y: 5, z: -6},
+                })
+            )
+        ),
+        sdf(
+            sdfCylinder({
+                radius: 1,
+                height: 4,
+                position: {x: -6, y: 5, z: -6},
+                material: `floor-white`,
+                // rotation: {
+                //     x: degToRad(45)
+                // },
+                displacement: 'torus-displacement',
+                // material: 'clearcoat-test',
+                // texture: {
+                //     name: 'check',
+                //     uvScale: 0.1
+                // },
+            })
+            |> opSubtract(#,
+                // sdfSphere({
+                //     domain: {
+                //         domainOp: 'repeat',
+                //         axis: 'xyz',
+                //         size: 0.45
+                //     },
+                //     // material: 'clearcoat-test',
+                //     material: `lambert-red`,
+                //     dimensions: {x: 0.15, y: 0.15, z: 0.15},
+                //     position: {x: -6 + random(3), y: 13, z: -3 - random(3)},
+
+                //     // material: `lambert-red`,
+                //     radius: 0.15 + random(0.5),
+                // }),
+                sdfBox({
+                    domain: {
+                        domainOp: 'repeat',
+                        axis: 'xyz',
+                        size: 0.5
+                    },
+                    rotation: {
+                        z: random(Math.PI),
+                        y: random(Math.PI),
+                        z: random(Math.PI)
+                    },
+                    // material: 'clearcoat-test',
+                    material: `lambert-red`,
+                    dimensions: {x: 0.18, y: 0.18, z: 0.18},
+                    position: {x: -5 - random(3), y: 10.5, z: -5},
+                }),
+                // sdfBox({
+                //     domain: {
+                //         domainOp: 'repeat',
+                //         axis: 'xyz',
+                //         size: 0.4
+                //     },
+                //     // material: 'clearcoat-test',
+                //     material: `lambert-red`,
+                //     dimensions: {x: 0.15, y: 0.15, z: 0.15},
+                //     position: {x: -6, y: 13, z: -6},
+                // }),
+            )
+        ),
+        // sdf(
+        //     sdfSphere({
+        //         // material: `lambert-red`,
+        //         material: 'clearcoat-test',
+        //         radius: 5,
+        //         position: {x: startPos + 20, y: 10, z: 0},
+        //     })
+        // ),
+        // sdf(
+        //     sdfBox({
+        //         // material: 'clearcoat-test',
+        //         material: `lambert-red`,
+        //         dimensions: {x: 5, y: 5, z: 5},
+        //         position: {x: startPos + 25, y: 10, z: 0},
+        //     }),
+        // ),
+        // sdf(
+        //     sdfTorus({
+        //         // material: 'lambert-red',
+        //         material: 'clearcoat-test',
+        //         // dimensions: {x: 5, y: 5, z: 5},
+        //         innerRadius: 2.5,
+        //         outerRadius: 5,
+        //         position: {x: startPos + 33, y: 10, z: 0},
+        //         // texture: {
+        //         //     name: 'check',
+        //         //     uvScale: 20
+        //         // }
+        //     }),
+        // ),
+
+        plane({
+            material: 'floor-white',
+            texture: {
+                name: 'check',
+                uvScale: 20
+            },
+            scale: 1000,
+            position: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: 50,
+                y: 80.0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: -50,
+                y: 80.0,
+                z: 0
+            },
+        })
+    ],
+    displacements: [
+        {
+            name: 'torus-displacement',
+            src: `
+                float offset = ${glslFloat(random(100))};
+                // float d = sin(1.*(p.x+offset)) * sin(1.*(p.y+offset)) * sin(1.*(p.z+offset));
+                float d = snoise((p+offset)*0.5);
+                dDist = d*-0.2;
+            `
+        }
+    ],
+    textures: [
+        texture({
+            name: 'aluminum',
+            url: 'assets/images/displacementMapTest.png'
+        }),
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(${normedColorStr('#aa0000')}, 1.0);
+                }
+            `
+        })
+    ],
+    materials: [
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        lambertMaterial({
+            name: `lambert-red`,
+            color: '#ff0000',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        // clearcoatMaterial({
+        //     name: 'lambert-red',
+        //     color: '#ff0000',
+        //     // color: '#101010',
+        //     refIdx: 1.8,
+        // }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        }),
+        // dialectricMaterial({
+        //     name: 'dialectric-test',
+        //     // color: '#cccccc',
+        //     color: '#ffffff',
+        //     refIdx: 1.8,
+        // }),
+        clearcoatMaterial({
+            name: 'clearcoat-test',
+            // color: '#ffffff',
+            color: '#101010',
+            refIdx: 1.8,
+        }),
+    ]
+});

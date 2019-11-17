@@ -622,6 +622,7 @@ const getSource = ({options, Scene}) =>
         bool hasHit;
         vec3 hitPoint;
         float hitT;
+        int sphereTracedIterCount;
         vec3 normal;
         vec2 uv;
 
@@ -719,7 +720,10 @@ const getSource = ({options, Scene}) =>
                     ray.invDir = 1./ray.dir;
 
                     // TODO: add check for sphere tracing here!
-                    // should only be done if sphere tracing !
+                    // should only be done if sphere tracing!
+
+                    // bump hitPoint in order to have correct starting point
+                    // when sphere tracing sdf's
                     hitRecord.hitPoint = hitRecord.hitPoint + (EPSILON*2. * outwardNormal);
 
                 } else {
@@ -728,7 +732,7 @@ const getSource = ({options, Scene}) =>
                     ray.invDir = 1./ray.dir;
 
                     // TODO: add check for sphere tracing here!
-                    // should only be done if sphere tracing !
+                    // should only be done if sphere tracing!
                     hitRecord.hitPoint = hitRecord.hitPoint + (EPSILON*2. * -outwardNormal);
                 }
 
@@ -1774,9 +1778,9 @@ const getSource = ({options, Scene}) =>
                 sdfData = getPackedSdf(sdfDataTexOffset + SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE);
                 vec3 p = samplePoint - sdfData.position;
 
+                applySdfRotation(sdfData.rotation, /* => out */ p);
                 applySdfDomainOperation(csgHeader, /* => out */ p);
                 applySdfDomainOperation(sdfData.domainOp, /* => out */ p);
-                applySdfRotation(sdfData.rotation, /* => out */ p);
 
                 if(geoIndex == 0) {
                     opType = sdfData.opType;
@@ -1959,20 +1963,20 @@ const getSource = ({options, Scene}) =>
         //     return end;
         // }
 
-        float sphereTracedIterCount = 0.;
-        bool hasSphereTracedHit = false;
-
         float bvhSphereTraceDistance(
             Ray ray,
             float start,
             float end,
             float sdfTexOffset,
             out int materialId,
-            out vec3 color
+            out vec3 color,
+            out int iterCount
         ) {
             float depth = start;
 
             for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
+                iterCount = i;
+
                 float dist = bvhSceneSdf(
                     ray.origin + depth * ray.dir,
                     sdfTexOffset,
@@ -1985,13 +1989,11 @@ const getSource = ({options, Scene}) =>
                 }
 
                 if (dist < EPSILON) {
-                    sphereTracedIterCount = float(i);
                     return depth;
                 }
 
                 depth += dist;
                 if (depth >= end) {
-                    // sphereTracedIterCount = 0.;
                     return end;
                 }
             }
@@ -2006,10 +2008,12 @@ const getSource = ({options, Scene}) =>
 
     void hitWorld(Ray ray, float tMax, out HitRecord hitRecord) {
         HitRecord record;
-
         record.hasHit = false;
         record.hitT = T_MAX;
+
         hitRecord.hasHit = false;
+        hitRecord.sphereTracedIterCount = 0;
+
         int lookupGeometryType = -1;
 
         float lookupOffset = 0.;
@@ -2035,6 +2039,7 @@ const getSource = ({options, Scene}) =>
 
         vec3 lookupSdfBlendedColor;
         int lookupSdfMaterialId = -1;
+        int lookupBvhSphereTraceDistance = 0;
 
         while (true) {
             if (currentStackData.rayT < tMax) {
@@ -2286,8 +2291,7 @@ const getSource = ({options, Scene}) =>
                             case BVH_SDF_GEOMETRY: {
                                 int sdfMaterialId;
                                 vec3 sdfBlendedColor;
-
-                                // sphereTracedIterCount = 0.;
+                                int iterCount = 0;
 
                                 float dist = bvhSphereTraceDistance(
                                     ray,
@@ -2295,7 +2299,8 @@ const getSource = ({options, Scene}) =>
                                     T_MAX,
                                     sdfOffset,
                                     /* => out */ sdfMaterialId,
-                                    /* => out */ sdfBlendedColor
+                                    /* => out */ sdfBlendedColor,
+                                    /* => out */ iterCount
                                 );
 
                                 if(dist < tMax &&
@@ -2307,6 +2312,7 @@ const getSource = ({options, Scene}) =>
                                     lookupOffset = sdfOffset;
                                     lookupSdfBlendedColor = sdfBlendedColor;
                                     lookupSdfMaterialId = sdfMaterialId;
+                                    lookupBvhSphereTraceDistance = iterCount;
                                 }
 
                                 break;
@@ -2746,7 +2752,7 @@ const getSource = ({options, Scene}) =>
                     record.hitT = tMax;
                     record.hitPoint = pointOnRay(ray, record.hitT);
 
-                    hasSphereTracedHit = true;
+                    record.sphereTracedIterCount = lookupBvhSphereTraceDistance;
 
                     #ifndef SDF_RENDER_MODE
                         record.normal = estimateBvhSdfSceneNormal(record.hitPoint, lookupOffset);
@@ -2858,14 +2864,11 @@ const getSource = ({options, Scene}) =>
             HitRecord hitRecord;
 
             hitWorld(ray, tMax, /* out => */ hitRecord);
-            if(hitRecord.hasHit && hasSphereTracedHit) {
-                color.x = sphereTracedIterCount / float(MAX_MARCHING_STEPS);
-                // color = vec3(sphereTracedIterCount / float(MAX_MARCHING_STEPS), 0., 0.);
+            if(hitRecord.hasHit && hitRecord.sphereTracedIterCount > 0) {
+                color.x = float(hitRecord.sphereTracedIterCount) / float(MAX_MARCHING_STEPS);
             } else if(hitRecord.hasHit) {
-                // color.x = 0.;
                 color = hitRecord.normal;
             }
-            // color = vec3(sphereTracedIterCount / float(MAX_MARCHING_STEPS), 0., 0.);
         #endif
 
         return color;
