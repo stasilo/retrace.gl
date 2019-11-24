@@ -4,7 +4,8 @@ import {
     range,
     defined,
     flatten,
-    isObj
+    isObj,
+    unique
 } from '../../utils';
 
 const sdfOperators = {
@@ -58,10 +59,13 @@ const sdfGeometryTypes = {
     sphere: 1,
     box: 2,
     cylinder: 3,
-    torus: 4
+    torus: 4,
+    plane: 5
 };
 
 const standardSdfOpArrayDataOffset = 1;
+const standardSdfDomainOpArrayDataOffset = 15;
+
 const standardSdfDataArrayLength = 30;
 const sdfHeaderOffsetSize = 6;
 
@@ -260,6 +264,28 @@ const sdf = (...args) => {
 
                 break;
 
+            case sdfGeometryTypes.plane:
+                position = vec3.fromValues(
+                    dataArray[offset + 9],
+                    dataArray[offset + 10],
+                    dataArray[offset + 11]
+                );
+
+                // dimensions
+                dimensions = vec3.fromValues(
+                    dataArray[offset + 6],
+                    dataArray[offset + 7],
+                    dataArray[offset + 8]
+                );
+
+                console.log('PLANE DIMENSIONS: ', dimensions);
+                if(dimensions[1] != 0) {
+                    vec3.sub(minCoords, position, vec3.fromValues(100000, 0.01, 100000));
+                    vec3.add(maxCoords, position, vec3.fromValues(100000, 0.01, 100000));
+                }
+
+                break;
+
             default:
                 break;
         }
@@ -270,15 +296,26 @@ const sdf = (...args) => {
         };
     };
 
-    let finalBounds, geometryTypes = [];
+    let finalBounds;
+    let geometryTypes = [], opCodes = [];
+    let domainOpCodes = opts.domain && opts.domain.domainOp
+        ? [opts.domain.domainOp]
+        : [];
+
     const noOfSdfsInCsg = dataArray.length / standardSdfDataArrayLength;
 
     range(0, noOfSdfsInCsg).forEach(i => {
-        const offset = standardSdfDataArrayLength * i;
-        const geoType = dataArray[offset];
-
+        const geoType = dataArray[standardSdfDataArrayLength * i];
         geometryTypes.push(geoType);
+
+        const opCode = dataArray[standardSdfDataArrayLength * i + standardSdfOpArrayDataOffset];
+        opCodes.push(opCode);
+
+        const domainOpCode = dataArray[standardSdfDataArrayLength * i + standardSdfDomainOpArrayDataOffset];
+        domainOpCodes.push(domainOpCode);
     });
+
+    console.log('domainOpCodes: ', unique(domainOpCodes));
 
     if(defined(opts.boundingBox)) {
         finalBounds = {
@@ -297,7 +334,6 @@ const sdf = (...args) => {
         if(noOfSdfsInCsg === 1) {
             const geoType = dataArray[0];
             finalBounds = constructCsgBoundingBox(geoType, dataArray, 0);
-            // geometryTypes = [geoType];
         } else {
             let boundingBoxes = [];
 
@@ -308,9 +344,8 @@ const sdf = (...args) => {
                 const prevOp = i > 0 ?
                     dataArray[prevOffset + 1]
                     : -1;
-                const geoType = dataArray[offset];
 
-                // geometryTypes.push(geoTypes);
+                const geoType = dataArray[offset];
                 finalBounds = constructCsgBoundingBox(geoType, dataArray, offset);
 
                 if(prevOp != sdfOperators.subtract) {
@@ -333,11 +368,15 @@ const sdf = (...args) => {
         }
     }
 
+    console.log('sdf opcodes: ', unique(opCodes));
+
     return {
         boundingBox: finalBounds,
         includeInBvh: true,
         isSdfGeometry: true,
-        geometryTypes,
+        geometryTypes: unique(geometryTypes),
+        opCodes: unique(opCodes),
+        domainOpCodes: unique(domainOpCodes),
         data: [
             ...csgHeader,
             ...dataArray
@@ -358,6 +397,10 @@ class SdfModel {
         displacement
     }) {
         this.geoType = geoType;
+        if(geoType === 5) {
+            console.log('dimensions: ', dimensions);
+        }
+
         this.opType = sdfOperators.noOp;
         // this.opRadius = -1;
 
@@ -433,6 +476,10 @@ class SdfModel {
                 : [])
         };
 
+        if(geoType === 5) {
+            console.log('SDF MODEL DIMENSIONS FOR PLANE: ', dimensions);
+
+        }
         this.dimensions = {
             x: 0,
             y: 0,

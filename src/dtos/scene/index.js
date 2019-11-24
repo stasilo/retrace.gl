@@ -5,7 +5,6 @@ import DisplacementList from '../../dtos/displacement-list'
 import ObjModel from '../../models/obj-model';
 import Sphere from '../../models/sphere';
 import Volume from '../../models/volume';
-
 import Texture from '../../textures/texture';
 import VolumeTexture from '../../textures/volume-texture';
 
@@ -19,8 +18,11 @@ import CoatedEmissiveMaterial from '../../materials/coated-emissive';
 import AnisotropicVolumeMaterial from '../../materials/anisotropic-volume';
 import IsotropicVolumeMaterial from '../../materials/isotropic-volume';
 
-
-import {sdfGeometryTypes} from '../../models/sdf-model';
+import {
+    sdfGeometryTypes,
+    sdfOperators,
+    sdfDomainOperations
+} from '../../models/sdf-model';
 
 import {
     defined,
@@ -110,7 +112,7 @@ class Scene {
             this.sdfGeometries = sdfGeometries;
             this.sdfGeometryData = sdfGeometryData;
 
-            this.hasSdfGeometries = this.sdfGeometries.length > 0;
+            // geos
 
             this.hasTriangleGeometries = this.geometries
                 .filter(g => g instanceof ObjModel).length > 0;
@@ -119,6 +121,9 @@ class Scene {
             this.hasVolumeGeometries = this.geometries
                 .filter(g => g instanceof Volume).length > 0;
 
+            // sdf geos
+
+            this.hasSdfGeometries = this.sdfGeometries.length > 0;
             this.hasSdfSphereGeometries = this.sdfGeometries
                 .filter(g =>
                     g.geometryTypes.indexOf(sdfGeometryTypes.sphere) > -1
@@ -134,6 +139,51 @@ class Scene {
             this.hasSdfCylinderGeometries = this.sdfGeometries
                 .filter(g =>
                     g.geometryTypes.indexOf(sdfGeometryTypes.cylinder) > -1
+                ).length > 0;
+
+
+            console.log('this.sdfGeometries: ', this.sdfGeometries);
+
+            // sdf op codes
+
+            this.hasSdfUnionOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.union) > -1
+                ).length > 0;
+            this.hasSdfUnionRoundOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.unionRound) > -1
+                ).length > 0;
+            this.hasSdfSubtractOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.subtract) > -1
+                ).length > 0;
+            this.hasSdfIntersectOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.intersect) > -1
+                ).length > 0;
+
+            // sdf domain op codes
+
+            this.hasSdfRepeatOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.domainOpCodes.indexOf(sdfDomainOperations.repeat) > -1
+                ).length > 0;
+            this.hasSdfTwistOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.domainOpCodes.indexOf(sdfDomainOperations.twist) > -1
+                ).length > 0;
+            this.hasSdfBendOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.domainOpCodes.indexOf(sdfDomainOperations.bend) > -1
+                ).length > 0;
+            this.hasSdfRepeatBoundedOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.domainOpCodes.indexOf(sdfDomainOperations.repeatBounded) > -1
+                ).length > 0;
+            this.hasSdfRepeatPolarOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.domainOpCodes.indexOf(sdfDomainOperations.repeatPolar) > -1
                 ).length > 0;
 
             return this;
@@ -191,6 +241,7 @@ class Scene {
                 }
 
                 // replace normal map texture name with name + id
+
                 if(defined(hitable.normalMap)) {
                     const normTexName = hitable.normalMap.name
                         ? hitable.normalMap.name
@@ -228,7 +279,9 @@ class Scene {
                                     material.name === sdfDataItem.materialName
                                 );
 
-                            return material ? material.id : 0;
+                            return material
+                                ? material.id
+                                : 0;
                         }
 
                         if(isObj(sdfDataItem) && 'textureName' in sdfDataItem) {
@@ -237,7 +290,9 @@ class Scene {
                                     texture.name === sdfDataItem.textureName
                                 );
 
-                            return texture ? texture.id : -1;
+                            return texture
+                                ? texture.id
+                                : -1;
                         }
 
                         if(isObj(sdfDataItem) && 'displacementMapName' in sdfDataItem) {
@@ -246,7 +301,9 @@ class Scene {
                                     texture.name === sdfDataItem.displacementMapName
                                 );
 
-                            return texture ? texture.id : -1;
+                            return texture
+                                ? texture.id
+                                : -1;
                         }
 
                         if(isObj(sdfDataItem) && 'displacementFuncName' in sdfDataItem) {
@@ -255,9 +312,9 @@ class Scene {
                                     displacement.name === sdfDataItem.displacementFuncName
                                 );
 
-                            console.log('found displacement: ', displacement);
-
-                            return displacement ? displacement.id : -1;
+                            return displacement
+                                ? displacement.id
+                                : -1;
                         }
 
                         return sdfDataItem;
@@ -270,7 +327,6 @@ class Scene {
         let sdfGeometries = geometries
             .filter(g => g.isSdfGeometry && g.includeInBvh);
 
-        console.log('scene sdfGeometries: ', sdfGeometries);
         return {
             sdfGeometries,
             sdfGeometryData

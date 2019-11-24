@@ -87,6 +87,9 @@ const zip = (arr, ...arrs) =>
 const shuffle = (array) =>
     [...array].sort(() => Math.random() - 0.5);
 
+const unique = (arr) =>
+    [... new Set(arr)];
+
 // random no stuff
 
 const random = (max = 1, min) => {
@@ -285,17 +288,22 @@ const loadImage = async (url) =>
 export {
     defined,
     definedNotNull,
+
     isFn,
     isArray,
     isObj,
+
     range,
     range2d,
     range3d,
     subRange,
+
     reverse,
     zip,
     flatten,
     shuffle,
+    unique,
+
     random,
     randomIdx,
     randomSign,
@@ -303,11 +311,15 @@ export {
     maybe,
     pluckRandom,
     takeRandom,
+
     roundEven,
+
     degToRad,
     radToDeg,
+
     clamp,
     lerp,
+
     hashCode,
     tileSeamless3d,
     isHexColor,

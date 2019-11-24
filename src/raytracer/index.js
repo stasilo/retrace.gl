@@ -77,7 +77,7 @@ async function raytraceApp({
      * raytrace draw call
      */
 
-    // console.log('scene: ', scene);
+    console.log('scene: ', scene);
     const shader = rayTraceShader({
         options: {
             realTime,
@@ -88,7 +88,7 @@ async function raytraceApp({
         Scene: scene
     });
 
-    console.log('shader: ', shader);
+    // console.log('shader: ', shader);
 
     const rayTraceGlProgram = glApp.createProgram(vertShader, shader);
 

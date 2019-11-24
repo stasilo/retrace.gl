@@ -39,6 +39,7 @@ import SdfSphere from '../../models/sdf-sphere';
 import SdfBox from '../../models/sdf-box';
 import SdfCylinder from '../../models/sdf-cylinder';
 import SdfTorus from '../../models/sdf-torus';
+import SdfXzPlane from '../../models/sdf-xz-plane';
 
 import  {
     sdf as _sdf,
@@ -127,6 +128,8 @@ const sdfCylinder = (o) =>
     new SdfCylinder(o).geometryData();
 const sdfTorus = (o) =>
     new SdfTorus(o).geometryData();
+const sdfXzPlane = (o) =>
+    new SdfXzPlane(o).geometryData();
 
 const sdf = _sdf;
 const opUnion = sdfOpUnion;

@@ -18,10 +18,15 @@ import simplexNoise from './lib/noise/simplex.glsl';
 const getSource = ({options, Scene}) =>
 `   #version 300 es
 
-    precision highp float;
-    precision highp int;
-    precision highp sampler2D;
-    precision highp sampler3D;
+    // precision highp float;
+    // precision highp int;
+    // precision highp sampler2D;
+    // precision highp sampler3D;
+
+    precision lowp float;
+    precision lowp int;
+    precision lowp sampler2D;
+    precision lowp sampler3D;
 
     ${Scene.rendererSettings.renderMode === 'sdf'
         ? '#define SDF_RENDER_MODE': '' }
@@ -69,23 +74,43 @@ const getSource = ({options, Scene}) =>
     ${Scene.hasSdfTorusGeometries
         ? '#define HAS_SDF_TORUS_GEOS' : ''}
 
+    ${Scene.hasSdfUnionOpCode
+        ? '#define HAS_SDF_OP_UNION' : ''}
+    ${Scene.hasSdfUnionRoundOpCode
+        ? '#define HAS_SDF_OP_UNIONROUND' : ''}
+    ${Scene.hasSdfSubtractOpCode
+        ? '#define HAS_SDF_OP_SUBTRACT' : ''}
+    ${Scene.hasSdfIntersectOpCode
+        ? '#define HAS_SDF_OP_INTERSECT' : ''}
+
+    ${Scene.hasSdfRepeatOpCode
+        ? '#define HAS_SDF_OP_REPEAT' : ''}
+    ${Scene.hasSdfTwistOpCode
+        ? '#define HAS_SDF_OP_TWIST' : ''}
+    ${Scene.hasSdfBendOpCode
+        ? '#define HAS_SDF_OP_BEND' : ''}
+    ${Scene.hasSdfRepeatBoundedOpCode
+        ? '#define HAS_SDF_OP_REPEATBOUNDED' : ''}
+    ${Scene.hasSdfRepeatPolarOpCode
+        ? '#define HAS_SDF_OP_REPEATPOLAR' : ''}
+
 
     #define FLT_MAX 3.402823466e+38
 
     #define T_MIN 0.0001
-    #define T_MAX ${glslFloat(Scene.rendererSettings.tMax)} //5000.0
+    #define T_MAX ${glslFloat(Scene.rendererSettings.tMax)}
 
     #ifdef REALTIME
-        #define MAX_HIT_DEPTH ${Scene.rendererSettings.realtimeHitDepth} //2
+        #define MAX_HIT_DEPTH ${Scene.rendererSettings.realtimeHitDepth}
     #endif
 
     #ifndef REALTIME
-        #define MAX_HIT_DEPTH ${Scene.rendererSettings.hitDepth} //12 //4
+        #define MAX_HIT_DEPTH ${Scene.rendererSettings.hitDepth}
     #endif
 
     #define NUM_SAMPLES ${options.numSamples}
 
-    #define MAX_MARCHING_STEPS ${Scene.rendererSettings.maxSphereTracingSteps} //355 //255
+    #define MAX_MARCHING_STEPS ${Scene.rendererSettings.maxSphereTracingSteps}
     #define MIN_DIST 0.0
     #define MAX_DIST T_MAX
     #define EPSILON 0.0001
@@ -366,6 +391,45 @@ const getSource = ({options, Scene}) =>
 
     float vmin(vec4 v) {
         return min(min(v.x, v.y), min(v.z, v.w));
+    }
+
+    float hash(vec3 p)  { // replace this by something better
+        p  = 17.0*fract( p*0.3183099+vec3(.11,.17,.13) );
+        return fract( p.x*p.y*p.z*(p.x+p.y+p.z) );
+    }
+
+    // http://iquilezles.org/www/articles/smin/smin.htm
+    float smin( float a, float b, float k) {
+        float h = max(k-abs(a-b),0.0);
+        return min(a, b) - h*h*0.25/k;
+    }
+
+    // http://iquilezles.org/www/articles/smin/smin.htm
+    float smax( float a, float b, float k) {
+        float h = max(k-abs(a-b),0.0);
+        return max(a, b) + h*h*0.25/k;
+    }
+
+    // sdf lattice noise
+    // by iq: https://www.shadertoy.com/view/Ws3XWl
+    float noiseSdf(in vec3 p) {
+        vec3 i = floor(p);
+        vec3 f = fract(p);
+
+        const float G1 = 0.30;
+        const float G2 = 0.75;
+
+    	#define RAD(r) ((r)*(r)*G2)
+        #define SPH(i,f,c) length(f-c)-RAD(hash(i+c))
+
+        return smin(smin(smin(SPH(i,f,vec3(0,0,0)),
+                              SPH(i,f,vec3(0,0,1)),G1),
+                         smin(SPH(i,f,vec3(0,1,0)),
+                              SPH(i,f,vec3(0,1,1)),G1),G1),
+                    smin(smin(SPH(i,f,vec3(1,0,0)),
+                              SPH(i,f,vec3(1,0,1)),G1),
+                         smin(SPH(i,f,vec3(1,1,0)),
+                              SPH(i,f,vec3(1,1,1)),G1),G1),G1);
     }
 
     /*
@@ -778,7 +842,6 @@ const getSource = ({options, Scene}) =>
                     ray.dir = normalize(reflected);
                     ray.invDir = 1./ray.dir;
                     color *= hitRecord.material.albedo; // * hitRecord.color;
-
                 } else {
                     // get lambertian random reflection direction
                     // ray.dir = hitRecord.normal + randomPointInUnitSphere();
@@ -1414,9 +1477,19 @@ const getSource = ({options, Scene}) =>
          */
 
         #define SDF_SPHERE ${sdfGeometryTypes.sphere}
-        float sphereSdf(vec3 samplePoint, float radius) {
-            return length(samplePoint) - radius;
+        float sphereSdf(vec3 p, float radius) {
+            return length(p) - radius;
         }
+
+        #define SDF_PLANE ${sdfGeometryTypes.plane}
+        // Plane with normal n (n is normalized) at some distance from the origin
+        float planeSdf(vec3 p, vec3 n) {
+        	return dot(p, n);
+        }
+
+        // float planeSdf(vec3 p, vec3 n, float distanceFromOrigin) {
+        // 	return dot(p, n) + distanceFromOrigin;
+        // }
 
         // box: correct distance to corners
         #define SDF_BOX ${sdfGeometryTypes.box}
@@ -1466,91 +1539,143 @@ const getSource = ({options, Scene}) =>
                 case SDF_NOOP:
                     break;
 
-                case SDF_DOM_OP_PMOD1: {
-                    if(opHeader.axis == SDF_XYZ_AXIS) {
-                        pMod1(/* => out */ p.x, opHeader.size);
-                        pMod1(/* => out */ p.y, opHeader.size);
-                        pMod1(/* => out */ p.z, opHeader.size);
+                #ifdef HAS_SDF_OP_REPEAT
+                    case SDF_DOM_OP_PMOD1: {
+                        // if(opHeader.axis == SDF_XYZ_AXIS) {
+                        //     pMod1(/* => out */ p.x, opHeader.size);
+                        //     pMod1(/* => out */ p.y, opHeader.size);
+                        //     pMod1(/* => out */ p.z, opHeader.size);
+                        //
+                        //     break;
+                        // }
+                        //
+                        // if(opHeader.axis == SDF_XY_AXIS) {
+                        //     pMod1(/* => out */ p.x, opHeader.size);
+                        //     pMod1(/* => out */ p.y, opHeader.size);
+                        //
+                        //     break;
+                        // }
+                        //
+                        // if(opHeader.axis == SDF_XZ_AXIS) {
+                        //     pMod1(/* => out */ p.x, opHeader.size);
+                        //     pMod1(/* => out */ p.z, opHeader.size);
+                        //
+                        //     break;
+                        // }
+                        //
+                        // if(opHeader.axis == SDF_YZ_AXIS) {
+                        //     pMod1(/* => out */ p.y, opHeader.size);
+                        //     pMod1(/* => out */ p.z, opHeader.size);
+                        //
+                        //     break;
+                        // }
+                        //
+                        // if(opHeader.axis == SDF_X_AXIS) {
+                        //     pMod1(/* => out */ p.x, opHeader.size);
+                        //
+                        //     break;
+                        // }
+                        //
+                        // if(opHeader.axis == SDF_Y_AXIS) {
+                        //     pMod1(/* => out */ p.y, opHeader.size);
+                        //
+                        //     break;
+                        // }
+                        //
+                        // if(opHeader.axis == SDF_Z_AXIS) {
+                        //     pMod1(/* => out */ p.z, opHeader.size);
+                        //
+                        //     break;
+                        // }
+
+                        if(opHeader.axis == SDF_XYZ_AXIS) {
+                            pMod1(/* => out */ p.x, opHeader.size);
+                            pMod1(/* => out */ p.y, opHeader.size);
+                            pMod1(/* => out */ p.z, opHeader.size);
+
+                            break;
+                        } else if(opHeader.axis == SDF_XY_AXIS) {
+                            pMod1(/* => out */ p.x, opHeader.size);
+                            pMod1(/* => out */ p.y, opHeader.size);
+
+                            break;
+                        } else if(opHeader.axis == SDF_XZ_AXIS) {
+                            pMod1(/* => out */ p.x, opHeader.size);
+                            pMod1(/* => out */ p.z, opHeader.size);
+
+                            break;
+                        } else if(opHeader.axis == SDF_YZ_AXIS) {
+                            pMod1(/* => out */ p.y, opHeader.size);
+                            pMod1(/* => out */ p.z, opHeader.size);
+
+                            break;
+                        } else if(opHeader.axis == SDF_X_AXIS) {
+                            pMod1(/* => out */ p.x, opHeader.size);
+
+                            break;
+                        } else if(opHeader.axis == SDF_Y_AXIS) {
+                            pMod1(/* => out */ p.y, opHeader.size);
+
+                            break;
+                        } else if(opHeader.axis == SDF_Z_AXIS) {
+                            pMod1(/* => out */ p.z, opHeader.size);
+
+                            break;
+                        }
 
                         break;
                     }
+                #endif
 
-                    if(opHeader.axis == SDF_XY_AXIS) {
-                        pMod1(/* => out */ p.x, opHeader.size);
-                        pMod1(/* => out */ p.y, opHeader.size);
-
+                #ifdef HAS_SDF_OP_TWIST
+                    case SDF_DOM_OP_TWIST: {
+                        pTwist(/* => out */ p, opHeader.size);
                         break;
                     }
+                #endif
 
-                    if(opHeader.axis == SDF_XZ_AXIS) {
-                        pMod1(/* => out */ p.x, opHeader.size);
-                        pMod1(/* => out */ p.z, opHeader.size);
-
+                #ifdef HAS_SDF_OP_BEND
+                    case SDF_DOM_OP_BEND: {
+                        pCheapBend(/* => out */ p, opHeader.size);
                         break;
                     }
+                #endif
 
-                    if(opHeader.axis == SDF_YZ_AXIS) {
-                        pMod1(/* => out */ p.y, opHeader.size);
-                        pMod1(/* => out */ p.z, opHeader.size);
-
+                #ifdef HAS_SDF_OP_REPEATBOUNDED
+                    case SDF_DOM_OP_PMOD3_BOUNDED: {
+                        pMod3Bounded(/* => out */ p, opHeader.size, opHeader.bounds);
                         break;
                     }
+                #endif
 
-                    if(opHeader.axis == SDF_X_AXIS) {
-                        pMod1(/* => out */ p.x, opHeader.size);
-
+                #ifdef HAS_SDF_OP_REPEATPOLAR
+                    case SDF_DOM_OP_POLAR: {
+                        pModPolar(/* => out */ p.xz, opHeader.size);
                         break;
                     }
+                #endif
 
-                    if(opHeader.axis == SDF_Y_AXIS) {
-                        pMod1(/* => out */ p.y, opHeader.size);
-
-                        break;
-                    }
-
-                    if(opHeader.axis == SDF_Z_AXIS) {
-                        pMod1(/* => out */ p.z, opHeader.size);
-
-                        break;
-                    }
-
+                default:
                     break;
-                }
-
-                case SDF_DOM_OP_TWIST: {
-                    pTwist(/* => out */ p, opHeader.size);
-                    break;
-                }
-
-                case SDF_DOM_OP_BEND: {
-                    pCheapBend(/* => out */ p, opHeader.size);
-                    break;
-                }
-
-                case SDF_DOM_OP_PMOD3_BOUNDED: {
-                    pMod3Bounded(/* => out */ p, opHeader.size, opHeader.bounds);
-                    break;
-                }
-
-                case SDF_DOM_OP_POLAR: {
-                    pModPolar(/* => out */ p.xz, opHeader.size);
-                    break;
-                }
             }
         }
 
         void applySdfRotation(vec3 rotation, inout vec3 p) {
-            if(rotation.x != 0.) {
-                p *= rotateX(rotation.x);
-            }
+            p *= rotateX(rotation.x);
+            p *= rotateY(rotation.y);
+            p *= rotateZ(rotation.z);
 
-            if(rotation.y != 0.) {
-                p *= rotateY(rotation.y);
-            }
-
-            if(rotation.z != 0.) {
-                p *= rotateZ(rotation.z);
-            }
+            // if(rotation.x != 0.) {
+            //     p *= rotateX(rotation.x);
+            // }
+            //
+            // if(rotation.y != 0.) {
+            //     p *= rotateY(rotation.y);
+            // }
+            //
+            // if(rotation.z != 0.) {
+            //     p *= rotateZ(rotation.z);
+            // }
         }
 
         float sdfGeometryDistance(SdfGeometry sdfData, vec3 p, inout float d) {
@@ -1584,6 +1709,11 @@ const getSource = ({options, Scene}) =>
                         break;
                     }
                 #endif
+
+                case SDF_PLANE: {
+                    d = planeSdf(p, /* up vector */ sdfData.dimensions);
+                    break;
+                }
 
                 default:
                     break;
@@ -1774,7 +1904,9 @@ const getSource = ({options, Scene}) =>
 
             csgHeader = getPackedSdfCsgDomainOpHeader(sdfDataTexOffset);
 
-            while(true) {
+            // TODO: if this could be unrolled there would be perf. gains :) (maybe 1/4 speed up!?)
+            // while(!finished) {
+            for(int i = 0; i < 20; i++) {
                 sdfData = getPackedSdf(sdfDataTexOffset + SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE);
                 vec3 p = samplePoint - sdfData.position;
 
@@ -1787,13 +1919,11 @@ const getSource = ({options, Scene}) =>
                     opRadius = sdfData.opRadius;
 
                     sdfGeometryDistance(sdfData, p, /* => out */ d1);
-                    if(sdfData.displacementTexId > -1) {
-                        float dispDist = getTriplanarMappedDisplacementDist(sdfData, p);
-                        d1 += dispDist;
-                    }
-
                     if(sdfData.displacementFuncId > -1) {
                         float dispDist = getDynamicDisplacementDist(sdfData.displacementFuncId, p);
+                        d1 += dispDist;
+                    } else if(sdfData.displacementTexId > -1) {
+                        float dispDist = getTriplanarMappedDisplacementDist(sdfData, p);
                         d1 += dispDist;
                     }
 
@@ -1814,72 +1944,76 @@ const getSource = ({options, Scene}) =>
                     }
                 } else {
                     sdfGeometryDistance(sdfData, p, /* => out */ d2);
-                    if(sdfData.displacementTexId > -1) {
-                        float dispDist = getTriplanarMappedDisplacementDist(sdfData, p);
-                        d2 += dispDist;
-                    }
-
                     if(sdfData.displacementFuncId > -1) {
                         float dispDist = getDynamicDisplacementDist(sdfData.displacementFuncId, p);
+                        d2 += dispDist;
+                    } else if(sdfData.displacementTexId > -1) {
+                        float dispDist = getTriplanarMappedDisplacementDist(sdfData, p);
                         d2 += dispDist;
                     }
 
                     float prevDist = d1;
 
                     switch(opType) {
-                        case SDF_UNION: {
-                            d1 = opUnion(d1, d2);
-                            if(prevDist > d1) {
-                                materialId = sdfData.materialId;
+                        #ifdef HAS_SDF_OP_UNION
+                            case SDF_UNION: {
+                                d1 = opUnion(d1, d2);
+                                if(prevDist > d1) {
+                                    materialId = sdfData.materialId;
+                                    Material sdfMaterial = getPackedMaterial(sdfData.materialId);
+                                    color = sdfMaterial.color;
+                                }
+
+                                break;
+                            }
+                        #endif
+
+                        #ifdef HAS_SDF_OP_UNIONROUND
+                            case SDF_UNION_ROUND: {
+                                d1 = opUnionRound(d1, d2, opRadius);
                                 Material sdfMaterial = getPackedMaterial(sdfData.materialId);
-                                color = sdfMaterial.color;
+
+                                vec3 newColor;
+                                if(sdfData.textureId > -1) {
+                                    newColor = getTriplanarMappedTextureColor(sdfData, p);
+                                } else {
+                                    newColor = sdfMaterial.color;
+                                }
+
+                                color = mix(
+                                    color,
+                                    newColor,
+                                    clamp(
+                                        (prevDist - d1 - d2) * colorBlendAmount,
+                                        0.0,
+                                        1.0
+                                    )
+                                );
+
+                                // "incorrect" but cool blend?
+                                // color = mix(color, newColor, clamp(prevDist - d1, 0.0, 1.0));
+
+                                if(prevDist > d2 && prevDist > d1) {
+                                    materialId = sdfData.materialId;
+                                }
+
+                                break;
                             }
+                        #endif
 
-                            break;
-                        }
-
-                        case SDF_UNION_ROUND: {
-                            d1 = opUnionRound(d1, d2, opRadius);
-
-                            Material sdfMaterial = getPackedMaterial(sdfData.materialId);
-                            // vec3 newColor = sdfMaterial.color;
-
-                            vec3 newColor;
-                            if(sdfData.textureId > -1) {
-                                newColor = getTriplanarMappedTextureColor(sdfData, p);
-                            } else {
-                                newColor = sdfMaterial.color;
+                        #ifdef HAS_SDF_OP_SUBTRACT
+                            case SDF_SUBTRACT: {
+                                d1 = opSubtraction(d2, d1);
+                                break;
                             }
+                        #endif
 
-                            color = mix(
-                                color,
-                                newColor,
-                                clamp(
-                                    (prevDist - d1 - d2) * colorBlendAmount,
-                                    0.0,
-                                    1.0
-                                )
-                            );
-
-                            // "incorrect" but cool blend?
-                            // color = mix(color, newColor, clamp(prevDist - d1, 0.0, 1.0));
-
-                            if(prevDist > d2 && prevDist > d1) {
-                                materialId = sdfData.materialId;
+                        #ifdef HAS_SDF_OP_INTERSECT
+                            case SDF_INTERSECT: {
+                                d1 = opIntersection(d1, d2);
+                                break;
                             }
-
-                            break;
-                        }
-
-                        case SDF_SUBTRACT: {
-                            d1 = opSubtraction(d2, d1);
-                            break;
-                        }
-
-                        case SDF_INTERSECT: {
-                            d1 = opIntersection(d1, d2);
-                            break;
-                        }
+                        #endif
 
                         // a no op means we have no more
                         // SDF's in this csg
@@ -1893,7 +2027,12 @@ const getSource = ({options, Scene}) =>
                     }
                 }
 
-                if(finished || d1 > T_MAX) {
+                // if(finished || d1 > T_MAX) {
+                //     break;
+                // }
+
+                // TA BORT
+                if(finished) {
                     break;
                 }
 
@@ -2036,7 +2175,6 @@ const getSource = ({options, Scene}) =>
         int loopCounter = 0;
 
         float sdfOffset = 0.;
-
         vec3 lookupSdfBlendedColor;
         int lookupSdfMaterialId = -1;
         int lookupBvhSphereTraceDistance = 0;
@@ -2066,7 +2204,6 @@ const getSource = ({options, Scene}) =>
                 //         break;
                 //     }
                 // }
-
                 float node0Offset = currentNode.meta.y;
                 float node1Offset = currentNode.meta.z;
 
@@ -2291,7 +2428,7 @@ const getSource = ({options, Scene}) =>
                             case BVH_SDF_GEOMETRY: {
                                 int sdfMaterialId;
                                 vec3 sdfBlendedColor;
-                                int iterCount = 0;
+                                int iterCount;
 
                                 float dist = bvhSphereTraceDistance(
                                     ray,
@@ -2390,9 +2527,9 @@ const getSource = ({options, Scene}) =>
             // safeguard against bugs causing
             // infinite loops while developing (they often crash the browser/os)
 
-            if(loopCounter > 300) {
-                discard;
-            }
+            // if(loopCounter > 300) {
+            //     discard;
+            // }
 
             loopCounter++;
         }
@@ -2582,19 +2719,26 @@ const getSource = ({options, Scene}) =>
                         record.hitT = tMax;
                         record.hitPoint = pointOnRay(ray, tMax);
 
+                        // vec3 normal;
+                        // if(smoothShading == true) {
+                        //     normal = normalize(
+                        //         triangleW * n0
+                        //             + triangleUv.x * n1
+                        //             + triangleUv.y * n2
+                        //     );
+                        // } else {
+                        //     if(!flipNormals) {
+                        //         normal = normalize(cross(v1 - v0, v2 - v0));
+                        //     } else {
+                        //         normal = normalize(cross(v2 - v0, v1 - v0));
+                        //     }
+                        // }
+
                         vec3 normal;
-                        if(smoothShading == true) {
-                            normal = normalize(
-                                triangleW * n0
-                                    + triangleUv.x * n1
-                                    + triangleUv.y * n2
-                            );
+                        if(!flipNormals) {
+                            normal = normalize(cross(v1 - v0, v2 - v0));
                         } else {
-                            if(!flipNormals) {
-                                normal = normalize(cross(v1 - v0, v2 - v0));
-                            } else {
-                                normal = normalize(cross(v2 - v0, v1 - v0));
-                            }
+                            normal = normalize(cross(v2 - v0, v1 - v0));
                         }
 
                         record.normal = normal;
@@ -2708,7 +2852,7 @@ const getSource = ({options, Scene}) =>
 
                         xOffset = mod(lookupOffset + 10., DATA_TEX_SIZE);
                         yOffset = floor((lookupOffset + 10.) * DATA_TEX_INV_SIZE);
-                        meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+                        vec3 meta = texelFetch(uGeometryDataTexture, ivec2(xOffset, yOffset), 0).xyz;
                         int textureId = int(meta.x);
 
                         xOffset = mod(lookupOffset + 11., DATA_TEX_SIZE);
@@ -2797,7 +2941,6 @@ const getSource = ({options, Scene}) =>
         //     record.color = record.material.color;
         // }
 
-
         hitRecord = record;
     }
 
@@ -2826,7 +2969,6 @@ const getSource = ({options, Scene}) =>
         #ifndef SDF_RENDER_MODE
             vec3 color = vec3(1.0);
             float tMax = T_MAX;
-
             // float fogT = T_MAX;
 
             HitRecord hitRecord;
@@ -2841,10 +2983,14 @@ const getSource = ({options, Scene}) =>
                         break;
                     }
 
-                    if(!shadeAndScatter(/* out => */ hitRecord, /* out => */ color, /* out => */ ray)) {
+                    if(!shadeAndScatter(
+                        /* out => */ hitRecord,
+                        /* out => */ color,
+                        /* out => */ ray
+                    )) {
                         break;
                     }
-                } else {
+                } else { // ray bounced out into infinity :)
                     color *= background(ray.dir);
                     break;
                 }
@@ -2867,7 +3013,11 @@ const getSource = ({options, Scene}) =>
             if(hitRecord.hasHit && hitRecord.sphereTracedIterCount > 0) {
                 color.x = float(hitRecord.sphereTracedIterCount) / float(MAX_MARCHING_STEPS);
             } else if(hitRecord.hasHit) {
-                color = hitRecord.normal;
+                float bwNormal = ((0.3 * abs(hitRecord.normal.r))
+                    + (0.59 * abs(hitRecord.normal.g))
+                    + (0.11 * abs(hitRecord.normal.b)))*0.8;
+
+                color = vec3(bwNormal);
             }
         #endif
 
