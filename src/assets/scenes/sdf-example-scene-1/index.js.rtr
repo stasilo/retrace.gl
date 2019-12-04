@@ -7,7 +7,7 @@ scene({
         tMax: 5000,
         maxSphereTracingSteps: 255,
         resolution: 0.5,
-        // renderMode: 'sdf'
+        renderMode: 'sdf'
     },
     camera: {
         lookFrom: {x: 1.635, y: 4.827, z: -15.467},
@@ -54,28 +54,40 @@ scene({
                   position: {x: -6, y: 3.5, z: -6},
               })
           )
+          |> opUnion(#, 
+            sdfBox({
+                material: 'clearcoat-test',
+                // material: `lambert-red`,
+                dimensions: {x: 2.7, y: 0.5, z: 2.7},
+                position: {x: -7, y: 0.5, z: -6.6},
+            }),
+          )
         ),
-        sdf(
-          sdfBox({
-              material: 'clearcoat-test',
-              // material: `lambert-red`,
-              dimensions: {x: 2.7, y: 0.5, z: 2.7},
-              position: {x: -7, y: 0.5, z: -6.6},
-          }),
-        ),
-        sdf(
-          sdfXzPlane({
-              // material: 'clearcoat-test',
-              material: `lambert-white`,
-              displacement: 'noise-displacement',
-              upDirection: {x: 0, y: 1, z: 0},
-              // position: {x: -7, y: 0.5, z: -6.6},
-            //   texture: {
-            //       name: 'check',
-            //       uvScale: 0.05
-            //   },
-          })
-        ),
+        // sdf(
+        //   sdfBox({
+        //       material: 'clearcoat-test',
+        //       // material: `lambert-red`,
+        //       dimensions: {x: 2.7, y: 0.5, z: 2.7},
+        //       position: {x: -7, y: 0.5, z: -6.6},
+        //   }),
+        // ),
+
+        // sdf(
+        //   sdfXzPlane({
+        //       // material: 'clearcoat-test',
+        //       material: `lambert-white`,
+        //       displacement: 'noise-displacement',
+        //       upDirection: {x: 0, y: 1, z: 0},
+        //       // position: {x: -7, y: 0.5, z: -6.6},
+        //     //   texture: {
+        //     //       name: 'check',
+        //     //       uvScale: 0.05
+        //     //   },
+        //   })
+        // ),
+
+
+        ///////
         // sdf(
         //   sdfBox({
         //       material: 'ceil-light',
@@ -303,12 +315,6 @@ scene({
           color: '#ffffff',
           intensity: 10
         }),
-        // dialectricMaterial({
-        //     name: 'dialectric-test',
-        //     // color: '#cccccc',
-        //     color: '#ffffff',
-        //     refIdx: 1.8,
-        // }),
         clearcoatMaterial({
           name: 'clearcoat-test',
           // color: '#ffffff',

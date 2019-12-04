@@ -9,6 +9,7 @@ import {
 import fps from 'fps';
 
 import raytraceApp from '../raytracer';
+import exportSdfApp from '../sdf-exporter';
 import dynamicScene from '../dtos/dynamic-scene';
 
 import {createCamera} from '../camera';
@@ -45,6 +46,8 @@ const defaultSceneUrl = 'assets/scenes/sdf-example-scene-1/index.js.rtr';
 
 // const defaultSceneUrl = 'assets/scenes/sdf-geometries-test-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-displacement-func-test-scene/index.js.rtr';
+
+// const defaultSceneUrl = 'assets/scenes/sdf-export-test/index.js.rtr';
 
 let instance = null;
 class Store {
@@ -178,6 +181,25 @@ class Store {
     realTime() {
         this.realTimeMode = true;
         this.trace();
+    }
+
+    @action
+    async exportSdf() {
+        if(this._activeRenderInstance) {
+            this.cancelTrace();
+        }
+
+        this._activeRenderInstance = await exportSdfApp({
+            scene: this._scene,
+            camera: this._camera,
+            shaderSampleCount: this.realTimeMode
+                ? 1
+                : shaderSampleCount,
+            maxSampleCount: this._currentMaxSampleCount,
+            realTime: this.realTimeMode,
+            debug: false
+        });
+
     }
 
     @action

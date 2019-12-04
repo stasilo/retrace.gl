@@ -28,8 +28,17 @@ const getSource = ({options, Scene}) =>
     precision lowp sampler2D;
     precision lowp sampler3D;
 
+    ${options.exportSdf
+        ? '#define SDF_EXPORT' : '' }
+
     ${Scene.rendererSettings.renderMode === 'sdf'
         ? '#define SDF_RENDER_MODE': '' }
+
+    #ifdef SDF_EXPORT
+        uniform vec3 uSdfExportDimensions;
+        uniform vec3 uSdfExportBoundsA;
+        uniform vec3 uSdfExportBoundsB;
+    #endif
 
     ${options.realTime
         ? '#define REALTIME' : '' }
@@ -139,6 +148,69 @@ const getSource = ({options, Scene}) =>
 
     in vec2 uv;
     out vec4 fragColor;
+
+    #ifdef SDF_EXPORT
+        // https://github.com/mikolalysenko/glsl-read-float/blob/master/index.glsl
+
+        #define ENCODE_FLOAT_MAX  1.70141184e38
+        #define ENCODE_FLOAT_MIN  1.17549435e-38
+
+        int coordToIndex(vec2 coord, vec2 size) {
+            return int(
+                floor(coord.x) + (floor(coord.y) * size.x)
+            );
+        }
+
+        vec3 vertFromIndex(float index) {
+            vec3 vertDims = uSdfExportDimensions + vec3(1.);
+            vec3 scale = (uSdfExportBoundsB - uSdfExportBoundsA) / uSdfExportDimensions;
+            vec3 shift = uSdfExportBoundsA;
+
+            vec3 vert = vec3(0);
+            vert.x = mod(index, vertDims.x);
+            vert.y = mod(floor(index / vertDims.x), vertDims.y);
+            vert.z = mod(floor(index / (vertDims.y * vertDims.x)), vertDims.z);
+            return scale * vert + shift;
+        }
+
+        lowp vec4 encodeFloat(highp float v) {
+            highp float av = abs(v);
+
+            //Handle special cases
+            if(av < ENCODE_FLOAT_MIN) {
+                return vec4(0.0, 0.0, 0.0, 0.0);
+            } else if(v > ENCODE_FLOAT_MAX) {
+                return vec4(127.0, 128.0, 0.0, 0.0) / 255.0;
+            } else if(v < -ENCODE_FLOAT_MAX) {
+                return vec4(255.0, 128.0, 0.0, 0.0) / 255.0;
+            }
+
+            highp vec4 c = vec4(0,0,0,0);
+
+            //Compute exponent and mantissa
+            highp float e = floor(log2(av));
+            highp float m = av * pow(2.0, -e) - 1.0;
+
+            //Unpack mantissa
+            c[1] = floor(128.0 * m);
+            m -= c[1] / 128.0;
+            c[2] = floor(32768.0 * m);
+            m -= c[2] / 32768.0;
+            c[3] = floor(8388608.0 * m);
+
+            //Unpack exponent
+            highp float ebias = e + 127.0;
+            c[0] = floor(ebias / 2.0);
+            ebias -= c[0] * 2.0;
+            c[1] += floor(ebias) * 128.0;
+
+            //Unpack sign bit
+            c[0] += 128.0 * step(0.0, -v);
+
+            //Scale back to range
+            return c / 255.0;
+        }
+    #endif
 
     /*
      * "Includes"
@@ -1905,8 +1977,8 @@ const getSource = ({options, Scene}) =>
             csgHeader = getPackedSdfCsgDomainOpHeader(sdfDataTexOffset);
 
             // TODO: if this could be unrolled there would be perf. gains :) (maybe 1/4 speed up!?)
-            // while(!finished) {
-            for(int i = 0; i < 20; i++) {
+            while(!finished) {
+            // for(int i = 0; i < 20; i++) {
                 sdfData = getPackedSdf(sdfDataTexOffset + SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE);
                 vec3 p = samplePoint - sdfData.position;
 
@@ -3061,6 +3133,7 @@ const getSource = ({options, Scene}) =>
         uTime;
         uBgGradientColors[0];
         uBgGradientColors[1];
+        camera;
 
         // set initial seed for stateful rng
         gRandSeed = uSeed * uv;///vec2(0.1, 0.1); //uSeed + 20.; //uv + uSeed;
@@ -3091,17 +3164,41 @@ const getSource = ({options, Scene}) =>
             );
         #endif
 
-        vec3 color = trace(camera);
-        color = sqrt(color); // correct gamma
+        #ifndef SDF_EXPORT
+            vec3 color = trace(camera);
+            color = sqrt(color); // correct gamma
 
-        #ifndef REALTIME
-            vec3 prevColor = texture(accumTexture, uv).rgb;
+            #ifndef REALTIME
+                vec3 prevColor = texture(accumTexture, uv).rgb;
 
-            color *= uOneOverSampleCount;
-            color += prevColor;
+                color *= uOneOverSampleCount;
+                color += prevColor;
+            #endif
+
+            fragColor = vec4(color, 1.);
         #endif
 
-        fragColor = vec4(color, 1.);
+        #ifdef SDF_EXPORT
+            vec3 vertDims = uSdfExportDimensions + vec3(1);
+            vec3 scale = (uSdfExportBoundsB - uSdfExportBoundsA) / uSdfExportDimensions;
+            vec3 shift = uSdfExportBoundsA;
+
+            float vertIndex = float(coordToIndex(gl_FragCoord.xy, uResolution.xy));
+
+            if (vertIndex >= vertDims.x * vertDims.y * vertDims.z) {
+                fragColor = vec4(1);
+                return;
+            }
+
+            vec3 vert = vertFromIndex(vertIndex);
+            float sdfOffset = 0.;
+
+            int matId;
+            vec3 c;
+
+            float potential = bvhSceneSdf(vert, sdfOffset, matId, c);
+            fragColor = encodeFloat(potential);
+        #endif
     }
 `;
 
