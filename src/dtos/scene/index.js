@@ -47,6 +47,7 @@ const defaultSceneRendererSettings = {
 class Scene {
     constructor({
         rendererSettings,
+        sdfExportSettings,
         camera,
         background,
         geometries,
@@ -62,6 +63,8 @@ class Scene {
             ...defaultSceneRendererSettings,
             ...rendererSettings
         };
+
+        this.sdfExportSettings = sdfExportSettings;
 
         this.camera = camera;
         this.background = isArray(background)

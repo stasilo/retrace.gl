@@ -2,11 +2,11 @@ import PicoGL from 'picogl';
 import {vec3, vec2} from 'gl-matrix';
 
 import unpackFloat from 'glsl-read-float';
-import march from '../cubemarch';
-import StlExporter from '../stl-exporter';
-
 import spector from 'spectorjs';
 import queryString from 'query-string';
+
+import march from '../cubemarch';
+import StlExporter from '../stl-exporter';
 
 import {getGlInstances} from '../gl';
 import {createCamera} from '../camera';
@@ -24,7 +24,7 @@ import {
     normedColor,
     normedColorStr,
     animationFrame,
-    range3d
+    range,
 } from '../utils';
 
 import getStore from '../store';
@@ -32,6 +32,7 @@ import getStore from '../store';
 const dataTextureSize = 2048;
 
 async function sdfExportApp({
+    sdfExportSettings,
     scene,
     camera,
     shaderSampleCount,
@@ -39,8 +40,12 @@ async function sdfExportApp({
     realTime,
     debug
 }) {
-    const {glCanvas, gl, glApp} = getGlInstances();
+    const {glCanvas, glImgCanvas, gl, glApp} = getGlInstances();
     let store = getStore();
+
+    let imgCtx = glImgCanvas.getContext('2d');
+    imgCtx.drawImage(glCanvas, 0, 0);
+    glImgCanvas.style.visibility = 'visible';
 
     const materialData = scene.materials.getMaterialData();
     const sceneTextures = scene.textures.getTextures();
@@ -52,85 +57,29 @@ async function sdfExportApp({
     const alignment = 1;
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, alignment);
 
-    // let exportDims = [85, 85, 85]; // exportDims / resolution?
-    // let exportBoundsA = [-10, -1, -10];
-    // let exportBoundsB = [-1, 10, -1];
-
-
-    let exportBoundsA = [-10, -0.1, -10];
-    // let exportBoundsB = [0, 8, 0];
-    let exportBoundsB = [0, 2, 0];
-    // ^-- TODO: split aabb into ~4-6 parts and render to separate textures
-    // in order to increase resolution
-
-    let boundsDim = [
-        exportBoundsB[0] - exportBoundsA[0],
-        exportBoundsB[1] - exportBoundsA[1],
-        exportBoundsB[2] - exportBoundsA[2]
-    ];
-
-
-    let base = boundsDim[0];
-    let value = 135//130//93;//88;
-
-    let exportDims = [
-        Math.round((boundsDim[0] / base) * value),
-        Math.round((boundsDim[1] / base) * value),
-        Math.round((boundsDim[2] / base) * value)
-    ];
-
-    console.log('exportDims: ', exportDims);
-    // exportDims = [88, 88, 88];
-
-    console.log('boundsDim: ', boundsDim);
-
-    const vertexCount = (exportDims[0] + 1) * (exportDims[1] + 1) * (exportDims[2] + 1);
-    const exportSize = Math.ceil(Math.sqrt(vertexCount));
-
-    console.log('export texture size: ', exportSize);
-    console.log('cubeMarch vertexCount: ', vertexCount);
-    console.log('cubeMarch exportSize/resolutioon: ', exportSize);
-
-    // raytrace framebuffer
-    let cubeMarchFboColorTarget = glApp.createTexture2D(exportSize, exportSize, {
-        // type: gl.FLOAT,
-        // internalFormat: gl.RGBA32F,
-        // format: gl.RGBA
-        format: gl.RGBA,
-        type: gl.UNSIGNED_BYTE,
-    });
-
-    let cubeMarchFbo = glApp.createFramebuffer()
-        .colorTarget(0, cubeMarchFboColorTarget)
-
-    // framebuffer for accumulating samples
-    // let accumFboColorTarget = glApp.createTexture2D(glApp.width, glApp.height, {
-    //     type: gl.FLOAT,
-    //     internalFormat: gl.RGBA32F,
-    //     format: gl.RGBA
-    // });
-    //
-    // let accumFbo = glApp.createFramebuffer()
-    //     .colorTarget(0, accumFboColorTarget);
-
     /*
      * raytrace draw call
      */
 
-    console.log('scene: ', scene);
+    // console.log('scene: ', scene);
+
+    const numSdfCsgs = scene.sdfGeometries.length;
+    const sdfBvhOffsets = scene.sdfGeometries
+        .map(geo => geo.bvhSdfOffset);
+
     const shader = rayTraceShader({
         options: {
             exportSdf: true,
             realTime: true,
             glslCamera: false,
+            numSdfCsgs: numSdfCsgs,
             numSamples: shaderSampleCount,
             dataTexSize: dataTextureSize,
         },
         Scene: scene
     });
 
-    // console.log('shader: ', shader);
-
+    console.log('export shader: ', shader);
     const rayTraceGlProgram = glApp.createProgram(vertShader, shader);
 
     // full screen quad
@@ -239,10 +188,6 @@ async function sdfExportApp({
         .texture('uMaterialDataTexture', materialDataTexture)
         .texture('uSdfDataTexture', sdfDataTexture)
         .uniform('uBgGradientColors[0]', new Float32Array(bgColors))
-        .uniform('uResolution', vec2.fromValues(exportSize, exportSize))
-        .uniform('uSdfExportDimensions', vec3.fromValues(...exportDims))
-        .uniform('uSdfExportBoundsA', vec3.fromValues(...exportBoundsA))
-        .uniform('uSdfExportBoundsB', vec3.fromValues(...exportBoundsB))
         .uniform('uSeed', vec2.fromValues(random(), random()))
         .uniform('uTime', 0);
 
@@ -260,12 +205,6 @@ async function sdfExportApp({
         });
     }
 
-    // if(!realTime) {
-    //     rayTraceDrawCall
-    //         .texture('accumTexture', accumFbo.colorAttachments[0])
-    //         .uniform('uOneOverSampleCount', 1/maxSampleCount);
-    // }
-
     // camera uniform
     // TODO: make this a uniform buffer?
 
@@ -277,74 +216,204 @@ async function sdfExportApp({
             );
     };
 
-    setCameraUniforms();
-
-    glApp.clear();
-
     camera.update();
     setCameraUniforms();
 
-    // store.fpsTicker.tick();
-    // store.updateSceneSrc();
+    const calcBoundExportParams = (exportBoundsA, exportBoundsB, resolution) => {
+        let boundsDim = [
+            exportBoundsB[0] - exportBoundsA[0],
+            exportBoundsB[1] - exportBoundsA[1],
+            exportBoundsB[2] - exportBoundsA[2]
+        ];
 
-    glApp.drawFramebuffer(cubeMarchFbo)
-        .clear();
+        let base = boundsDim[0];
 
-    // render sdf to framebuffer
-    rayTraceDrawCall
-        .uniform('uTime', 0)
-        .uniform('uSeed', vec2.fromValues(random(), random()))
-        .draw();
+        let exportDims = [
+            Math.round((boundsDim[0] / base) * resolution),
+            Math.round((boundsDim[1] / base) * resolution),
+            Math.round((boundsDim[2] / base) * resolution)
+        ];
 
-    // read sdf data from framebuffer
-    const pixelCount = exportSize * exportSize;
-    let pixels = new Uint8Array(pixelCount * 4).fill(0);
+        // console.log('exportDims: ', exportDims);
+        // console.log('boundsDim: ', boundsDim);
 
-    glApp.readFramebuffer(cubeMarchFbo);
-    glApp.gl.readPixels(
-        0, 0,
-        exportSize, exportSize,
-        gl.RGBA, gl.UNSIGNED_BYTE,
-        pixels
-    );
+        const exportVertexCount = (exportDims[0] + 1)
+            * (exportDims[1] + 1)
+            * (exportDims[2] + 1);
 
-    let previousValue = null;
-    let containsGeometry = false;
-    let blockPotentials = [];
+        const exportSize = Math.ceil(Math.sqrt(exportVertexCount));
 
-    for (let i = 0; i < vertexCount; i++) {
-        const r = pixels[i * 4 + 0];
-        const g = pixels[i * 4 + 1];
-        const b = pixels[i * 4 + 2];
-        const a = pixels[i * 4 + 3];
+        // console.log('exportSize: ', exportSize);
 
-        const value = unpackFloat(r, g, b, a);
+        return {
+            exportBoundsA,
+            exportBoundsB,
+            exportDims,
+            exportSize,
+            exportVertexCount
+        };
+    };
 
-        if (!containsGeometry && previousValue && (value > 0) !== (previousValue > 0)) {
-            containsGeometry = true;
-        }
+    const splitBoundsVertically = (boundsA, boundsB, parts = 4) => {
+        const aY = boundsA[1];
+        const bY = boundsB[1];
 
-        previousValue = value;
-        blockPotentials[i] = value;
+        const partHeight = (bY - aY) / parts;
+
+        return range(parts).map(i => ({
+            exportBoundsA: [
+                boundsA[0],
+                boundsA[1] + (partHeight * i),
+                boundsA[2]
+            ],
+            exportBoundsB: [
+                boundsB[0],
+                boundsA[1] + (partHeight * (i + 1)),
+                boundsB[2]
+            ]
+        }));
+    };
+
+
+    let exportBoundsA = Object.values(sdfExportSettings.minCoords);
+    let exportBoundsB = Object.values(sdfExportSettings.maxCoords);
+
+    const res = sdfExportSettings.resolution;
+
+    const initialBoundParams = calcBoundExportParams(exportBoundsA, exportBoundsB, res);
+    let boundsToRender;
+
+    const maxTexSizeBeforeSplit = 700;
+    if(initialBoundParams.exportSize > maxTexSizeBeforeSplit) {
+        let boundParts = 2;
+
+        do {
+            boundsToRender = splitBoundsVertically(
+                exportBoundsA,
+                exportBoundsB,
+                boundParts
+            ).map(bounds =>
+                calcBoundExportParams(
+                    bounds.exportBoundsA,
+                    bounds.exportBoundsB,
+                    res
+                )
+            );
+
+            boundParts++;
+        } while(
+            boundsToRender[0].exportSize > maxTexSizeBeforeSplit
+        );
+
+    } else {
+        boundsToRender = [initialBoundParams];
     }
 
-    if (!containsGeometry) {
-        alert('SDF export failed - could not find any geometry data within bounds!')
-        return;
-    }
+    console.log('boundsToRender: ', boundsToRender);
 
-    let result = march(
-        blockPotentials,
-        0,
-        blockPotentials.length,
-        exportDims,
-        [exportBoundsA, exportBoundsB]
-    );
+    // raytrace framebuffer
+    let cubeMarchFboColorTarget = glApp.createTexture2D(1, 1, {
+        format: gl.RGBA,
+        type: gl.UNSIGNED_BYTE,
+    });
+
+    let cubeMarchFbo = glApp.createFramebuffer()
+        .colorTarget(0, cubeMarchFboColorTarget)
 
     const stlExporter = new StlExporter();
+    stlExporter.startModel('retrace-sdf-export.stl');
 
-    stlExporter.startModel('kaka.stl');
-    stlExporter.addSection(result.vertices, result.faces);
+    let exportFailed = false;
+    for(const [i, bounds] of boundsToRender.entries()) {
+        cubeMarchFbo.resize(bounds.exportSize, bounds.exportSize);
+
+        glApp
+            .drawFramebuffer(cubeMarchFbo)
+            .clear();
+
+        // render sdf to framebuffer
+        rayTraceDrawCall
+            .uniform('uResolution', vec2.fromValues(bounds.exportSize, bounds.exportSize))
+            .uniform('uSdfExportDimensions', vec3.fromValues(...bounds.exportDims))
+            .uniform('uSdfExportBoundsA', vec3.fromValues(...bounds.exportBoundsA))
+            .uniform('uSdfExportBoundsB', vec3.fromValues(...bounds.exportBoundsB))
+            .uniform('uSdfBvhOffsets[0]', Uint32Array.from(sdfBvhOffsets))
+            .uniform('uTime', 0)
+            .uniform('uSeed', vec2.fromValues(random(), random()))
+            .draw();
+
+        // read sdf data from framebuffer
+        const pixelCount = bounds.exportSize * bounds.exportSize;
+        let pixels = new Uint8Array(pixelCount * 4).fill(0);
+
+        glApp.readFramebuffer(cubeMarchFbo);
+        glApp.gl.readPixels(
+            0, 0,
+            bounds.exportSize, bounds.exportSize,
+            gl.RGBA, gl.UNSIGNED_BYTE,
+            pixels
+        );
+
+        let previousValue = null;
+        let containsGeometry = false;
+
+        const blockPotentials = range(bounds.exportVertexCount)
+            .map(i => {
+                const r = pixels[i * 4 + 0];
+                const g = pixels[i * 4 + 1];
+                const b = pixels[i * 4 + 2];
+                const a = pixels[i * 4 + 3];
+
+                const value = unpackFloat(r, g, b, a);
+
+                if(!containsGeometry && previousValue
+                    && (value > 0) !== (previousValue > 0))
+                {
+                    containsGeometry = true;
+                }
+
+                previousValue = value;
+
+                return value;
+            });
+
+        // if this is the only bound slice we have a problem,
+        // otherwise the bound is probably too big and contains an empty slice
+
+        if(!containsGeometry) {
+            if(boundsToRender.length == 1) {
+                exportFailed = true;
+                break;
+            } 
+
+            continue;
+        }
+
+        const result = march(
+            blockPotentials,
+            0,
+            blockPotentials.length,
+            bounds.exportDims,
+            [bounds.exportBoundsA, bounds.exportBoundsB]
+        );
+
+        if(!exportFailed) {
+            stlExporter.addSection(result.vertices, result.faces);
+        } else {
+            alert('SDF export failed - could not find any geometry data within bounds!');
+        }
+
+        // force react dom update
+        await new Promise(resolve =>
+            setTimeout(
+                () => {
+                    store.sdfExportProgress = i / boundsToRender.length;
+                    resolve();
+                }, 50
+            )
+        );
+    }
+
     stlExporter.finishModel();
 }
 

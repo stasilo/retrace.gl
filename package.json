@@ -25,7 +25,8 @@
     "dependencies": {
         "mobx": "^5.9.4",
         "mobx-react": "^5.4.3",
-        "normalize.css": "^8.0.1"
+        "normalize.css": "^8.0.1",
+        "react-modal": "^3.11.1"
     },
     "devDependencies": {
         "@babel/core": "^7.0.0",

@@ -31,13 +31,16 @@ const getSource = ({options, Scene}) =>
     ${options.exportSdf
         ? '#define SDF_EXPORT' : '' }
 
-    ${Scene.rendererSettings.renderMode === 'sdf'
+    ${options.renderMode === 'sdf'
         ? '#define SDF_RENDER_MODE': '' }
 
     #ifdef SDF_EXPORT
+        #define NUM_SDF_CSGS ${options.numSdfCsgs}
+
         uniform vec3 uSdfExportDimensions;
         uniform vec3 uSdfExportBoundsA;
         uniform vec3 uSdfExportBoundsB;
+        uniform int uSdfBvhOffsets[NUM_SDF_CSGS];
     #endif
 
     ${options.realTime
@@ -3181,7 +3184,6 @@ const getSource = ({options, Scene}) =>
         #ifdef SDF_EXPORT
             vec3 vertDims = uSdfExportDimensions + vec3(1);
             vec3 scale = (uSdfExportBoundsB - uSdfExportBoundsA) / uSdfExportDimensions;
-            vec3 shift = uSdfExportBoundsA;
 
             float vertIndex = float(coordToIndex(gl_FragCoord.xy, uResolution.xy));
 
@@ -3191,12 +3193,20 @@ const getSource = ({options, Scene}) =>
             }
 
             vec3 vert = vertFromIndex(vertIndex);
-            float sdfOffset = 0.;
 
             int matId;
             vec3 c;
 
-            float potential = bvhSceneSdf(vert, sdfOffset, matId, c);
+            float potential = FLT_MAX;
+            for(int i = 0; i < NUM_SDF_CSGS; i++) {
+                float sdfOffset = float(uSdfBvhOffsets[i]);
+
+                potential = opUnion(
+                    potential,
+                    bvhSceneSdf(vert, sdfOffset, matId, c)
+                );
+            }
+
             fragColor = encodeFloat(potential);
         #endif
     }

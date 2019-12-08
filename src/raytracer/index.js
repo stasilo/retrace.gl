@@ -35,8 +35,10 @@ async function raytraceApp({
     realTime,
     debug
 }) {
-    const {glCanvas, gl, glApp} = getGlInstances();
+    const {glCanvas, glImgCanvas, gl, glApp} = getGlInstances();
     let store = getStore();
+
+    glImgCanvas.style.visibility = 'hidden';
 
     if(debug) {
         let spectorGlDebug = new spector.Spector();
@@ -81,6 +83,7 @@ async function raytraceApp({
     const shader = rayTraceShader({
         options: {
             realTime,
+            renderMode: store.renderMode,
             glslCamera: false,
             numSamples: shaderSampleCount,
             dataTexSize: dataTextureSize,
@@ -216,10 +219,16 @@ async function raytraceApp({
         });
     }
 
+    // TODO: REMOVE DIRECT STORE ACCESS FROM THIS FUNCTION!!! PASS AS PROPS
+    // let sampleCount = store.renderMode == 'sdf'
+    //     ? 2
+    //     : maxSampleCount;
+
     if(!realTime) {
         rayTraceDrawCall
             .texture('accumTexture', accumFbo.colorAttachments[0])
-            .uniform('uOneOverSampleCount', 1/maxSampleCount);
+            // .uniform('uOneOverSampleCount', 1/sampleCount);
+            .uniform('uOneOverSampleCount', 1/store.currentMaxSampleCount);
     }
 
     // camera uniform

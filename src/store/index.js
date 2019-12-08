@@ -53,11 +53,20 @@ let instance = null;
 class Store {
     appArgs = null;
 
-    @observable _realTimeMode = false;  //true;
+    @observable _realTimeMode = false;
     @observable _loadingApp = true;
     @observable _hasLoadingError = false;
     @observable _loadingError = null;
     @observable _renderInProgress = false;
+    @observable _renderMode = 'raytrace';
+
+    @observable _sdfExportProgress = -1;
+    @observable _sdfExportSettings = {
+        resolution: 30,
+        minCoords: [-1, -1, -1],
+        maxCoords: [-1, -1, -1]
+    }
+
 
     @observable _editorVisible = true;
     @observable _editorFocused = false;
@@ -79,6 +88,7 @@ class Store {
 
     fpsTicker = null;
     currentrendererSettings = null;
+    _isInitialRender = true;
 
     constructor() {
         this.appArgs = queryString.parse(window.location.search);
@@ -128,8 +138,35 @@ class Store {
     async compileScene() {
         try {
             this._scene = await dynamicScene(this._sceneSrc);
-
             this.currentrendererSettings = this._scene.rendererSettings;
+
+            if(this._isInitialRender) {
+                this._isInitialRender = false;
+
+                const sdfExportSettings = this._scene.sdfExportSettings;
+                if(defined(sdfExportSettings)) {
+                    console.log('sdfExportSettings: ', sdfExportSettings);
+
+                    if(defined(sdfExportSettings.resolution)) {
+                        console.log('settings RESOLUTION!!!!!!!!!')
+                        this.sdfExportSettings.resolution = sdfExportSettings.resolution;
+                    }
+
+                    if(defined(sdfExportSettings.minCoords)) {
+                        this.sdfExportSettings.minCoords = sdfExportSettings.minCoords;
+                    }
+
+                    if(defined(sdfExportSettings.maxCoords)) {
+                        this.sdfExportSettings.maxCoords = sdfExportSettings.maxCoords;
+                    }
+
+                    console.log('setting sdf export settings to: ', this.sdfExportSettings);
+                }
+
+                this.renderMode = defined(this.currentrendererSettings.renderMode)
+                    ? this.currentrendererSettings.renderMode
+                    : 'raytrace';
+            }
 
             resetCanvas();
 
@@ -168,6 +205,8 @@ class Store {
 
             this.hasSceneEvalError = true;
             this.editorVisible = true;
+
+            throw evalError;
         }
     }
 
@@ -185,11 +224,15 @@ class Store {
 
     @action
     async exportSdf() {
-        if(this._activeRenderInstance) {
-            this.cancelTrace();
-        }
+        // if(this._activeRenderInstance) {
+        //     this.cancelTrace();
+        // }
 
-        this._activeRenderInstance = await exportSdfApp({
+        // this._activeRenderInstance = await exportSdfApp({
+        this.sdfExportProgress = 0;
+
+        await exportSdfApp({
+            sdfExportSettings: this.sdfExportSettings,
             scene: this._scene,
             camera: this._camera,
             shaderSampleCount: this.realTimeMode
@@ -200,6 +243,7 @@ class Store {
             debug: false
         });
 
+        this.sdfExportProgress = -1;
     }
 
     @action
@@ -330,6 +374,33 @@ class Store {
     }
 
     @computed
+    get sdfExportProgress() {
+        return this._sdfExportProgress;
+    }
+
+    set sdfExportProgress(val) {
+        this._sdfExportProgress = val;
+    }
+
+    @computed
+    get sdfExportSettings() {
+        return this._sdfExportSettings;
+    }
+
+    set sdfExportSettings(val) {
+        this._sdfExportSettings = val;
+    }
+
+    @computed
+    get renderMode() {
+        return this._renderMode;
+    }
+
+    set renderMode(val) {
+        this._renderMode = val;
+    }
+
+    @computed
     get editorVisible() {
         return this._editorVisible;
     }
@@ -345,6 +416,11 @@ class Store {
 
     set editorFocused(val) {
         this._editorFocused = val;
+    }
+
+    @computed
+    get scene() {
+        return this._scene;
     }
 
     @computed
@@ -374,6 +450,15 @@ class Store {
         this._sceneSrcEvalError = val;
     }
 
+    // sdf
+
+    @computed
+    get sceneHasSdfGeometries() {
+        return this._scene
+            ? this._scene.hasSdfGeometries
+            : false;
+    }
+
     // stats
 
     @computed
@@ -392,10 +477,16 @@ class Store {
 
     @computed
     get currentMaxSampleCount() {
-        return this._currentMaxSampleCount;
+        return this.renderMode == 'sdf'
+            ? 2
+            : this._currentMaxSampleCount;
     }
 
     set currentMaxSampleCount(val) {
+        if(this._renderMode == 'sdf') {
+            return;
+        }
+
         this._currentMaxSampleCount = val;
     }
 
@@ -417,7 +508,7 @@ class Store {
 
     @computed
     get renderProgress() {
-        return this._currentFrameCount / this._currentMaxSampleCount;
+        return this._currentFrameCount / this.currentMaxSampleCount;
     }
 }
 

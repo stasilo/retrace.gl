@@ -1,26 +1,24 @@
-.render-controls {
+.render-mode-controls {
     label {
         margin-right: 10px;
     }
 
-    input {
-        position: relative;
-        display: inline-block;
-        width: 50px;
+    select {
+        background-color: transparent;
+        box-sizing: border-box;
+        margin: 0;
 
+        width: 65px;
         padding: 2px 5px 2px 5px;
 
-        background-color: black;
         outline-color: red;
         border: 1px solid white;
-
+        border-radius: 0;
         color: white;
-        text-align: center;
 
-        &:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        -moz-appearance: none;
+        -webkit-appearance: none;
+        appearance: none;
     }
 
     button {

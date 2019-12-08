@@ -155,6 +155,8 @@ function buildBvh(geometryData, sdfGeometries) {
     range(0, totalSdfCount)
         .forEach(i => {
             const geometry = sdfGeometries[i];
+            geometry.bvhSdfOffset = sdfOffset;
+            
             const j = totalGeoCount + i;
 
             const dummySdf = [

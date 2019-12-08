@@ -6,7 +6,7 @@ scene({
         hitDepth: 4,
         tMax: 5000,
         maxSphereTracingSteps: 255,
-        resolution: 0.4,
+        resolution: 0.5,
         renderMode: 'sdf'
     },
     sdfExportSettings: {
@@ -25,10 +25,16 @@ scene({
     geometries: [
         sdf(
           opUnionRound({radius: 0.5 + random(0.4), colorBlendAmount: 0.3},
+              // 3x3x3 => more full sphere!
+              // ...(range3d(3, 3, 3)
               ...(range3d(2, 3, 2)
+              // |> subRange(#, range3d(4, 6, 0, 1, 4, 5))
               |> #.map(([x, y, z]) => {
                   return sdfTorus({
+                      // material: 'lambert-red',
+                      //   material: 'floor-white',
                       material: 'clearcoat-red',
+                      // dimensions: {x: 5, y: 5, z: 5},
                       innerRadius: 0.15 + random(0.2),
                       outerRadius: 1,
                       displacement: 'torus-displacement',
@@ -47,6 +53,7 @@ scene({
           )
           |> opIntersect(#,
               sdfSphere({
+                  // material: `lambert-red`,
                   material: 'clearcoat-test',
                   radius: 3,
                   position: {x: -6, y: 3.5, z: -6},
@@ -69,6 +76,7 @@ scene({
               position: {x: -7, y: 0.5, z: -6.6},
           }),
         ),
+
         // sdf(
         //   sdfXzPlane({
         //       // material: 'clearcoat-test',
@@ -82,6 +90,131 @@ scene({
         //     //   },
         //   })
         // ),
+
+
+        ///////
+        // sdf(
+        //   sdfBox({
+        //       material: 'ceil-light',
+        //       // material: `lambert-red`,
+        //       dimensions: {x: 2.7, y: 0.1, z: 2.7},
+        //       position: {x: -7, y: 15, z: -6.6},
+        //   }),
+        // ),
+
+
+        // sphere({
+        //     // material: `lambert-red`,
+        //     material: 'clearcoat-test',
+        //     radius: 3,
+        //     position: {x: -6, y: 15.5, z: -6},
+        //     smoothShading: false,
+        // }),
+        // objModel({
+        //     url: 'assets/models/deer.obj',
+        //     material: 'floor-white',
+        //     smoothShading: false,
+        //     scale: 0.02,
+        //     position: {
+        //         x: 0,
+        //         y: 0,
+        //         z: 10
+        //     },
+        //     rotation: {
+        //         y: degToRad(180),
+        //     }
+        // }),
+        // sdf(
+        //     sdfCylinder({
+        //         radius: 1,
+        //         height: 4,
+        //         position: {x: -6, y: 5, z: -6},
+        //         material: `floor-white`,
+        //         // rotation: {
+        //         //     x: degToRad(45)
+        //         // },
+        //         displacement: 'torus-displacement',
+        //         // material: 'clearcoat-test',
+        //         // texture: {
+        //         //     name: 'check',
+        //         //     uvScale: 0.1
+        //         // },
+        //     })
+        //     |> opSubtract(#,
+        //         // sdfSphere({
+        //         //     domain: {
+        //         //         domainOp: 'repeat',
+        //         //         axis: 'xyz',
+        //         //         size: 0.45
+        //         //     },
+        //         //     // material: 'clearcoat-test',
+        //         //     material: `lambert-red`,
+        //         //     dimensions: {x: 0.15, y: 0.15, z: 0.15},
+        //         //     position: {x: -6 + random(3), y: 13, z: -3 - random(3)},
+        //
+        //         //     // material: `lambert-red`,
+        //         //     radius: 0.15 + random(0.5),
+        //         // }),
+        //         sdfBox({
+        //             domain: {
+        //                 domainOp: 'repeat',
+        //                 axis: 'xyz',
+        //                 size: 0.5
+        //             },
+        //             rotation: {
+        //                 z: random(Math.PI),
+        //                 y: random(Math.PI),
+        //                 z: random(Math.PI)
+        //             },
+        //             // material: 'clearcoat-test',
+        //             material: `lambert-red`,
+        //             dimensions: {x: 0.18, y: 0.18, z: 0.18},
+        //             position: {x: -5 - random(3), y: 10.5, z: -5},
+        //         }),
+        //         // sdfBox({
+        //         //     domain: {
+        //         //         domainOp: 'repeat',
+        //         //         axis: 'xyz',
+        //         //         size: 0.4
+        //         //     },
+        //         //     // material: 'clearcoat-test',
+        //         //     material: `lambert-red`,
+        //         //     dimensions: {x: 0.15, y: 0.15, z: 0.15},
+        //         //     position: {x: -6, y: 13, z: -6},
+        //         // }),
+        //     )
+        // ),
+        // sdf(
+        //     sdfSphere({
+        //         // material: `lambert-red`,
+        //         material: 'clearcoat-test',
+        //         radius: 5,
+        //         position: {x: startPos + 20, y: 10, z: 0},
+        //     })
+        // ),
+        // sdf(
+        //     sdfBox({
+        //         // material: 'clearcoat-test',
+        //         material: `lambert-red`,
+        //         dimensions: {x: 5, y: 5, z: 5},
+        //         position: {x: startPos + 25, y: 10, z: 0},
+        //     }),
+        // ),
+        // sdf(
+        //     sdfTorus({
+        //         // material: 'lambert-red',
+        //         material: 'clearcoat-test',
+        //         // dimensions: {x: 5, y: 5, z: 5},
+        //         innerRadius: 2.5,
+        //         outerRadius: 5,
+        //         position: {x: startPos + 33, y: 10, z: 0},
+        //         // texture: {
+        //         //     name: 'check',
+        //         //     uvScale: 20
+        //         // }
+        //     }),
+        // ),
+
         plane({
           material: 'floor-white',
           texture: {
@@ -159,7 +292,7 @@ scene({
               if(s < 0.) {
                   tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
               } else {
-                  tColor = vec4(${normedColorStr('#010101')}, 1.0);
+                  tColor = vec4(${normedColorStr('#aa0000')}, 1.0);
               }
           `
         })
@@ -178,6 +311,7 @@ scene({
         clearcoatMaterial({
             name: 'clearcoat-red',
             color: '#ff0000',
+            // color: '#101010',
             refIdx: 1.8,
         }),
         emissiveMaterial({
@@ -187,6 +321,7 @@ scene({
         }),
         clearcoatMaterial({
           name: 'clearcoat-test',
+          // color: '#ffffff',
           color: '#101010',
           refIdx: 1.8,
         }),

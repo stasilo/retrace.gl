@@ -18,8 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loader.remove();
 
     store.loadingApp = false;
-    // store.trace();
-    store.exportSdf();
+    store.trace();
 
     ReactDOM.render(
         <UI/>,

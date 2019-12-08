@@ -21,10 +21,18 @@ body {
     color: white;
 }
 
-canvas#gl-canvas {
-    position: absolute;
+.ReactModal__Overlay {
+    position: fixed;
+    inset: 0px;
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    z-index: 99;
+    outline: none;
+}
 
-    // top: 50%;
-    // left: 50%;
-    // transform: translate3d(-50%, -50%, 0) scale(2);
+button {
+    outline-color: red;
+}
+
+canvas#gl-canvas, canvas#gl-img-canvas {
+    position: absolute;
 }
