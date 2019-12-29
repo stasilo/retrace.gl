@@ -4,14 +4,14 @@ const startPos = -50;
 scene({
     rendererSettings: {
         realtimeHitDepth: 2,
-        hitDepth: 8,
+        hitDepth: 4,
         tMax: 5000,
         maxSphereTracingSteps: 255,
-        resolution: 0.8
+        resolution: 0.5
     },
     camera: {
-        lookFrom: {x: 29.724, y: 28.685, z: 26.824},
-        lookAt: {x: 26.474, y: 27.095, z: 24.118},
+        lookFrom: {x: 61.498, y: 41.882, z: 43.520},
+        lookAt: {x: 58.248, y: 40.292, z: 40.814},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -60,6 +60,17 @@ scene({
                 //     name: 'check',
                 //     uvScale: 20
                 // }
+            }),
+        ),
+        sdf(
+            sdfEllipsoid({
+                material: 'clearcoat-test',
+                radius: {
+                    x: 5,
+                    y: 2,
+                    z: 10
+                },
+                position: {x: startPos + 80, y: 10, z: 0},
             }),
         ),
 

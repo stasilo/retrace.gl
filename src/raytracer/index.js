@@ -20,7 +20,8 @@ import {
     normedColor,
     normedColorStr,
     animationFrame,
-    range3d
+    range3d,
+    asyncExecute
 } from '../utils';
 
 import getStore from '../store';
@@ -37,6 +38,13 @@ async function raytraceApp({
 }) {
     const {glCanvas, glImgCanvas, gl, glApp} = getGlInstances();
     let store = getStore();
+
+    // const bgEl = document.getElementById('blob-bg');
+
+    // force dom update
+    await asyncExecute(() =>
+        store.sceneCompilationInProgress = true
+    );
 
     glImgCanvas.style.visibility = 'hidden';
 
@@ -253,6 +261,16 @@ async function raytraceApp({
         .createDrawCall(renderGlProgram, fullScreenQuadVertArray)
         .texture('traceTexture', traceFbo.colorAttachments[0]);
 
+    // force dom update
+    await asyncExecute(() =>
+        store.sceneCompilationInProgress = false
+    );
+
+    // setTimeout(() => {
+    //     store.sceneCompilationInProgress = false;
+    // }, 100);
+    // alert(store.sceneCompilationInProgress);
+
     const staticRender = () => {
         store.renderInProgress = true;
 
@@ -297,6 +315,14 @@ async function raytraceApp({
                 let imgCtx = glImgCanvas.getContext('2d');
                 imgCtx.drawImage(glCanvas, 0, 0);
 
+                // glImgCanvas.toBlob((blob) => {
+                //     const url = URL.createObjectURL(blob);
+                //
+                //     bgEl.style.backgroundImage = `url('${url}')`;
+                //     bgEl.style.visibility = 'visible';
+                //
+                // })
+
                 frame.cancel();
                 return;
             }
@@ -324,6 +350,10 @@ async function raytraceApp({
 
         return frame;
     }
+
+    // await asyncExecute(() =>
+    //     bgEl.style.visibility = 'hidden'
+    // );
 
     if(!realTime) {
         return staticRender();

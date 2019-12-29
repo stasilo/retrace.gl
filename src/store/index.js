@@ -12,6 +12,8 @@ import raytraceApp from '../raytracer';
 import exportSdfApp from '../sdf-exporter';
 import dynamicScene from '../dtos/dynamic-scene';
 
+import SceneStorage from '../scene-storage';
+
 import {createCamera} from '../camera';
 import {resetCanvas} from '../gl';
 
@@ -22,6 +24,8 @@ import {
 
 const shaderSampleCount = 1;
 const defaultMaxSampleCount = 10;
+
+import baseSceneSrc from '../assets/scenes/basic-scene/index.js.rtr';
 
 // const defaultSceneUrl = 'assets/scenes/basic-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/example-scene/index.js.rtr';
@@ -42,12 +46,15 @@ const defaultMaxSampleCount = 10;
 // const defaultSceneUrl = 'assets/scenes/sdf-test-scene-2/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-test-scene-3/index.js.rtr';
 
-const defaultSceneUrl = 'assets/scenes/sdf-example-scene-1/index.js.rtr';
 
-// const defaultSceneUrl = 'assets/scenes/sdf-geometries-test-scene/index.js.rtr';
+const defaultSceneUrl = 'assets/scenes/sdf-geometries-test-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-displacement-func-test-scene/index.js.rtr';
 
 // const defaultSceneUrl = 'assets/scenes/sdf-export-test/index.js.rtr';
+
+
+// const defaultSceneUrl = 'assets/scenes/sdf-example-scene-1/index.js.rtr';
+
 
 let instance = null;
 class Store {
@@ -71,8 +78,10 @@ class Store {
     @observable _editorVisible = true;
     @observable _editorFocused = false;
 
+    @observable _sceneName = null;
     @observable _sceneSrc = '';
 
+    @observable _sceneCompilationInProgress = false;
     @observable _hasSceneEvalError = false;
     @observable _sceneSrcEvalError = [];
 
@@ -83,12 +92,13 @@ class Store {
     @observable _currentMaxSampleCount = defaultMaxSampleCount;
     @observable _currentRenderTime = 0;
 
+    _isInitialRender = true;
     _activeRenderInstance = null;
     _camera = null;
 
     fpsTicker = null;
     currentrendererSettings = null;
-    _isInitialRender = true;
+    sceneStorage = null;
 
     constructor() {
         this.appArgs = queryString.parse(window.location.search);
@@ -97,6 +107,10 @@ class Store {
         this.fpsTicker.on('data', (frameRate) => {
             this._currentFps = frameRate.toFixed(3);
         });
+
+        this.sceneStorage = new SceneStorage();
+        console.log('SAVED SCENES: ', this.sceneStorage.getAllScenes());
+        console.log('LAST EDITED SCENE: ', this.sceneStorage.getLastEditedScene());
     }
 
     setupDefaultCamera() {
@@ -112,10 +126,27 @@ class Store {
     // actions
 
     @action
-    async loadScene() {
-        const sceneUrl = definedNotNull(this.appArgs.scene)
-            ? this.appArgs.scene
-            : defaultSceneUrl;
+    async loadScene(sceneName) {
+        this._isInitialRender = true;
+        this.sceneName = sceneName;
+        this.sceneSrc = await this.sceneStorage.getScene(sceneName);
+    }
+
+    @action
+    async loadSceneFromUrl(url) {
+        this._isInitialRender = true;
+
+        const sceneUrl = definedNotNull(url)
+            ? url
+            : definedNotNull(this.appArgs.scene)
+                ? this.appArgs.scene
+                : defaultSceneUrl;
+
+        // const sceneUrl = definedNotNull(this.appArgs.scene)
+        //     ? this.appArgs.scene
+        //     : definedNotNull(url)
+        //         ? url
+        //         : defaultSceneUrl;
 
         try {
             let resp = await fetch(sceneUrl, {cache: 'no-store'});
@@ -135,20 +166,34 @@ class Store {
     }
 
     @action
+    async newScene() {
+        this._isInitialRender = true;
+
+        this.sceneName = null;
+        this.sceneSrc = baseSceneSrc;
+
+        await this.compileScene();
+    }
+
+    @action
+    async saveCurrentScene(name) {
+        this.sceneName = name;
+        await this.sceneStorage.saveScene(name, this._sceneSrc);
+    }
+
+    @action
     async compileScene() {
         try {
             this._scene = await dynamicScene(this._sceneSrc);
             this.currentrendererSettings = this._scene.rendererSettings;
 
+            // init settings from scene on initial render
             if(this._isInitialRender) {
                 this._isInitialRender = false;
 
                 const sdfExportSettings = this._scene.sdfExportSettings;
                 if(defined(sdfExportSettings)) {
-                    console.log('sdfExportSettings: ', sdfExportSettings);
-
                     if(defined(sdfExportSettings.resolution)) {
-                        console.log('settings RESOLUTION!!!!!!!!!')
                         this.sdfExportSettings.resolution = sdfExportSettings.resolution;
                     }
 
@@ -159,8 +204,6 @@ class Store {
                     if(defined(sdfExportSettings.maxCoords)) {
                         this.sdfExportSettings.maxCoords = sdfExportSettings.maxCoords;
                     }
-
-                    console.log('setting sdf export settings to: ', this.sdfExportSettings);
                 }
 
                 this.renderMode = defined(this.currentrendererSettings.renderMode)
@@ -208,6 +251,11 @@ class Store {
 
             throw evalError;
         }
+    }
+
+    @action
+    async deleteCurrentScene() {
+        await this.sceneStorage.deleteScene(this.sceneName);
     }
 
     @action
@@ -262,14 +310,12 @@ class Store {
             realTime: this.realTimeMode,
             debug: false
         });
-
     }
 
     @action
     async regenerateScene() {
         await this.compileScene();
         this.currentMaxSampleCount = defaultMaxSampleCount;
-        // this.realTimeMode = true;
         this.trace();
     }
 
@@ -424,12 +470,34 @@ class Store {
     }
 
     @computed
+    get sceneName() {
+        return this._sceneName;
+    }
+
+    set sceneName(val) {
+        document.title = val
+            ? `retrace.gl - ${val}`
+            : 'retraice.gl';
+
+        this._sceneName = val;
+    }
+
+    @computed
     get sceneSrc() {
         return this._sceneSrc;
     }
 
     set sceneSrc(val) {
         this._sceneSrc = val;
+    }
+
+    @computed
+    get sceneCompilationInProgress() {
+        return this._sceneCompilationInProgress;
+    }
+
+    set sceneCompilationInProgress(val) {
+        this._sceneCompilationInProgress = val;
     }
 
     @computed
@@ -478,7 +546,7 @@ class Store {
     @computed
     get currentMaxSampleCount() {
         return this.renderMode == 'sdf'
-            ? 2
+            ? 8 //4 //2
             : this._currentMaxSampleCount;
     }
 

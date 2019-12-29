@@ -1,0 +1,13 @@
+.centered-notice {
+    position: absolute;
+    // top: 50%;
+    // left: 50%;
+    // transform: translate3d(-50%, -50%, 0);
+    // transform: translate3d(26px, 60px, 0);
+    top: 60px;
+    right: 26px; 
+
+    font-size: 14px;
+    color: white;
+    z-index: 10;
+}

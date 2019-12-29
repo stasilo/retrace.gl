@@ -60,7 +60,9 @@ const sdfGeometryTypes = {
     box: 2,
     cylinder: 3,
     torus: 4,
-    plane: 5
+    plane: 5,
+    ellipsoid: 6,
+    cone: 7
 };
 
 const standardSdfOpArrayDataOffset = 1;
@@ -171,7 +173,7 @@ const sdf = (...args) => {
         const hasDomainWarp = domainOp != sdfDomainOperations.noOp
             && domainOp != sdfDomainOperations.repeat;
 
-        let position, dimensions;
+        let position, dimensions, radius, height;
 
         switch(geoType) {
             case sdfGeometryTypes.sphere:
@@ -242,8 +244,8 @@ const sdf = (...args) => {
                     dataArray[offset + 11]
                 );
 
-                const radius = dataArray[offset + 6];
-                const height = dataArray[offset + 7];
+                radius = dataArray[offset + 6];
+                height = dataArray[offset + 7];
 
                 if(!hasRotation && !hasDomainWarp) {
                     dimensions = vec3.fromValues(
@@ -258,6 +260,54 @@ const sdf = (...args) => {
                     const s = Math.max(radius, height);
                     dimensions = vec3.fromValues(s, s, s);
                 }
+
+                vec3.sub(minCoords, position, dimensions);
+                vec3.add(maxCoords, position, dimensions);
+
+                break;
+
+            case sdfGeometryTypes.cone:
+                position = vec3.fromValues(
+                    dataArray[offset + 9],
+                    dataArray[offset + 10],
+                    dataArray[offset + 11]
+                );
+
+                radius = dataArray[offset + 6];
+                height = dataArray[offset + 7];
+
+                if(!hasRotation && !hasDomainWarp) {
+                    dimensions = vec3.fromValues(
+                        radius // radius
+                            * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
+                        height // height
+                            * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
+                        dataArray[offset + 6] // radius
+                            * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1)
+                    );
+                } else {
+                    const s = Math.max(radius, height);
+                    dimensions = vec3.fromValues(s, s, s);
+                }
+
+                vec3.sub(minCoords, position, dimensions);
+                vec3.add(maxCoords, position, dimensions);
+
+                break;
+
+            case sdfGeometryTypes.ellipsoid:
+                position = vec3.fromValues(
+                    dataArray[offset + 9],
+                    dataArray[offset + 10],
+                    dataArray[offset + 11]
+                );
+
+                // radius
+                dimensions = vec3.fromValues(
+                    dataArray[offset + 6],
+                    dataArray[offset + 7],
+                    dataArray[offset + 8]
+                );
 
                 vec3.sub(minCoords, position, dimensions);
                 vec3.add(maxCoords, position, dimensions);

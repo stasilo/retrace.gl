@@ -28,6 +28,7 @@ const ExportSdfControls = observer(() => {
         store.exportSdf();
     }
 
+    const sdfExportInProgress = store.sdfExportProgress !== -1;
     const progressLabel = (store.sdfExportProgress * 100).toFixed(1);
 
     return (
@@ -45,13 +46,13 @@ const ExportSdfControls = observer(() => {
                 isOpen={modalOpen}
                 contentLabel="Export sdf as mesh"
                 shouldCloseOnOverlayClick={true}
-                onRequestClose={toggleModal}
+                onRequestClose={!sdfExportInProgress ? toggleModal : () => {}}
                 className="modal"
             >
                 <form className="modal__inner" onSubmit={handleExportSdf}>
-                    <p>
+                    <h4>
                         export sdf scene content within bounds as an .stl mesh
-                    </p>
+                    </h4>
                     <p>
                         <label>resolution: </label>
                         <input
@@ -113,10 +114,10 @@ const ExportSdfControls = observer(() => {
                         />
                     </p>
                     <button onClick={handleExportSdf}>save as .stl</button>
-                        {store.sdfExportProgress !== -1 && (
-                            <p>
+                        {sdfExportInProgress && (
+                            <span>
                                 exporting: {progressLabel}%
-                            </p>
+                            </span>
                         )}
                 </form>
             </Modal>

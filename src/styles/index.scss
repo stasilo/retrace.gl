@@ -36,3 +36,13 @@ button {
 canvas#gl-canvas, canvas#gl-img-canvas {
     position: absolute;
 }
+
+#blob-bg {
+    position: absolute;
+    z-index: 9;
+    width: 100vw;
+    height: 100vh;
+
+    background-size: cover;
+    background-repeat: no-repeat;
+}

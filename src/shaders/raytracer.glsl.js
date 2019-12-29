@@ -85,6 +85,12 @@ const getSource = ({options, Scene}) =>
         ? '#define HAS_SDF_CYLINDER_GEOS' : ''}
     ${Scene.hasSdfTorusGeometries
         ? '#define HAS_SDF_TORUS_GEOS' : ''}
+    ${Scene.hasSdfEllipsoidGeometries
+        ? '#define HAS_SDF_ELLIPSOID_GEOS' : ''}
+    ${Scene.hasSdfXzPlaneGeometries
+        ? '#define HAS_SDF_XZ_PLANE_GEOS' : ''}
+    ${Scene.hasSdfConeGeometries
+        ? '#define HAS_SDF_CONE_GEOS' : ''}
 
     ${Scene.hasSdfUnionOpCode
         ? '#define HAS_SDF_OP_UNION' : ''}
@@ -1591,12 +1597,62 @@ const getSource = ({options, Scene}) =>
         	return d;
         }
 
-        // float sdCapsule( vec3 p, vec3 a, vec3 b, float r) {
-        //     vec3 pa = p - a, ba = b - a;
-        //     float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+        // http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
+        #define SDF_ELLIPSOID ${sdfGeometryTypes.ellipsoid}
+        float ellipsoidSdf(vec3 p, vec3 r) {
+            float k0 = length(p/r);
+            float k1 = length(p/(r*r));
+            return k0*(k0-1.0)/k1;
+        }
+
+        // http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
+        // #define SDF_PYRAMID ${sdfGeometryTypes.pyramid}
+        // float pyramidSdf(vec3 p, float h) {
+        //     float m2 = h*h + 0.25;
         //
-        //     return length( pa - ba*h ) - r;
+        //     p.xz = abs(p.xz);
+        //     p.xz = (p.z>p.x) ? p.zx : p.xz;
+        //     p.xz -= 0.5;
+        //
+        //     vec3 q = vec3( p.z, h*p.y - 0.5*p.x, h*p.x + 0.5*p.y);
+        //
+        //     float s = max(-q.x,0.0);
+        //     float t = clamp( (q.y-0.5*p.z)/(m2+0.25), 0.0, 1.0 );
+        //
+        //     float a = m2*(q.x+s)*(q.x+s) + q.y*q.y;
+        //     float b = m2*(q.x+0.5*t)*(q.x+0.5*t) + (q.y-m2*t)*(q.y-m2*t);
+        //
+        //     float d2 = min(q.y,-q.x*m2-q.y*0.5) > 0.0 ? 0.0 : min(a,b);
+        //
+        //     return sqrt( (d2+q.z*q.z)/m2 ) * sign(max(q.z,-p.y));
         // }
+
+        // source: hg_sdf
+        // cone with correct distances to tip and base circle.
+        // Y is up, 0 is in the middle of the base.
+
+        #define SDF_CONE ${sdfGeometryTypes.cone}
+
+        float coneSdf(vec3 p, float radius, float height) {
+        	vec2 q = vec2(length(p.xz), p.y);
+        	vec2 tip = q - vec2(0, height);
+        	vec2 mantleDir = normalize(vec2(height, radius));
+        	float mantle = dot(tip, mantleDir);
+        	float d = max(mantle, -q.y);
+        	float projected = dot(tip, vec2(mantleDir.y, -mantleDir.x));
+
+        	// distance to tip
+        	if ((q.y > height) && (projected < 0.)) {
+        		d = max(d, length(tip));
+        	}
+
+        	// distance to base ring
+        	if ((q.x > radius) && (projected > length(vec2(height, radius)))) {
+        		d = max(d, length(q - vec2(radius, 0)));
+        	}
+        	return d;
+        }
+
 
         // float roundedBoxSdf(vec3 p, vec3 b) {
         //     float r = 0.5;
@@ -1785,10 +1841,26 @@ const getSource = ({options, Scene}) =>
                     }
                 #endif
 
-                case SDF_PLANE: {
-                    d = planeSdf(p, /* up vector */ sdfData.dimensions);
-                    break;
-                }
+                #ifdef HAS_SDF_ELLIPSOID_GEOS
+                    case SDF_ELLIPSOID: {
+                        d = ellipsoidSdf(p, sdfData.dimensions);
+                        break;
+                    }
+                #endif
+
+                #ifdef HAS_SDF_CONE_GEOS
+                    case SDF_CONE: {
+                        d = coneSdf(p, sdfData.dimensions.x, sdfData.dimensions.y);
+                        break;
+                    }
+                #endif
+
+                #ifdef HAS_SDF_XZ_PLANE_GEOS
+                    case SDF_PLANE: {
+                        d = planeSdf(p, /* up vector */ sdfData.dimensions);
+                        break;
+                    }
+                #endif
 
                 default:
                     break;

@@ -11,7 +11,9 @@ import getStore from './store';
 document.addEventListener('DOMContentLoaded', async () => {
     const store = getStore();
 
-    await store.loadScene();
+    // await store.loadScene();
+    await store.loadSceneFromUrl();
+
     await store.compileScene();
 
     let loader = document.querySelector('.loader');

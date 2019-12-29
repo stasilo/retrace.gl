@@ -1,4 +1,12 @@
 scene({
+    rendererSettings: {
+        realtimeHitDepth: 2,
+        hitDepth: 4,
+        tMax: 5000,
+        maxSphereTracingSteps: 255,
+        resolution: 0.8,
+        renderMode: 'raytrace'
+    },
     background: ['#000', '#010101'],
     camera: {
         lookFrom: {x: -19.907, y: 4.125, z: 35.410},

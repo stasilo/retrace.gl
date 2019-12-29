@@ -144,6 +144,20 @@ class Scene {
                     g.geometryTypes.indexOf(sdfGeometryTypes.cylinder) > -1
                 ).length > 0;
 
+            this.hasSdfEllipsoidGeometries = this.sdfGeometries
+                .filter(g =>
+                    g.geometryTypes.indexOf(sdfGeometryTypes.ellipsoid) > -1
+                ).length > 0;
+
+            this.hasSdfConeGeometries = this.sdfGeometries
+                .filter(g =>
+                    g.geometryTypes.indexOf(sdfGeometryTypes.cone) > -1
+                ).length > 0;
+
+            this.hasSdfXzPlaneGeometries = this.sdfGeometries
+                .filter(g =>
+                    g.geometryTypes.indexOf(sdfGeometryTypes.plane) > -1
+                ).length > 0;
 
             console.log('this.sdfGeometries: ', this.sdfGeometries);
 

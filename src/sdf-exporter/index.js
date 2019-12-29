@@ -25,6 +25,7 @@ import {
     normedColorStr,
     animationFrame,
     range,
+    asyncExecute
 } from '../utils';
 
 import getStore from '../store';
@@ -325,6 +326,9 @@ async function sdfExportApp({
 
     let exportFailed = false;
     for(const [i, bounds] of boundsToRender.entries()) {
+        // force react dom update
+        await asyncExecute(() => store.sdfExportProgress = (i + 1) / (boundsToRender.length - 1));
+
         cubeMarchFbo.resize(bounds.exportSize, bounds.exportSize);
 
         glApp
@@ -403,15 +407,14 @@ async function sdfExportApp({
             alert('SDF export failed - could not find any geometry data within bounds!');
         }
 
-        // force react dom update
-        await new Promise(resolve =>
-            setTimeout(
-                () => {
-                    store.sdfExportProgress = i / boundsToRender.length;
-                    resolve();
-                }, 50
-            )
-        );
+        // await new Promise(resolve =>
+        //     setTimeout(
+        //         () => {
+        //             store.sdfExportProgress = i / (boundsToRender.length + 1);
+        //             resolve();
+        //         }, 10
+        //     )
+        // );
     }
 
     stlExporter.finishModel();

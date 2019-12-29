@@ -8,6 +8,16 @@ const isFn = fn => typeof fn === 'function';
 const isArray = a => Array.isArray(a);
 const isObj = obj => typeof obj === 'object';
 
+const asyncExecute = async (fn) =>
+    new Promise(resolve =>
+        setTimeout(
+            () => {
+                fn();
+                // store.sdfExportProgress = i / boundsToRender.length;
+                resolve();
+            }, 1
+        )
+    );
 // ranges
 
 const range = (...args) => {
@@ -292,6 +302,8 @@ export {
     isFn,
     isArray,
     isObj,
+
+    asyncExecute,
 
     range,
     range2d,

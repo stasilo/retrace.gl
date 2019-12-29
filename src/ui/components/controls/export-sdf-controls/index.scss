@@ -7,8 +7,8 @@
     outline: none;
     border: 1px solid white;
 
-    width: 450px;
-    height: 345px;
+    width: 500px;
+    height: 370px;
 
     &__inner {
         position: relative;
@@ -19,6 +19,18 @@
 
         background-color: black;
         text-align: center;
+
+        h4 {
+            font-weight: normal;
+            margin-top: 25px;
+        }
+
+        span {
+            margin-top: 20px; 
+            display: block;
+            font-size: 11px;
+        }
+
     }
 
     label {
@@ -29,7 +41,7 @@
     &__input {
         position: relative;
         display: inline-block;
-        width: 50px;
+        width: 80px;
 
         padding: 2px 5px 2px 5px;
 
@@ -42,7 +54,7 @@
 
         &--bounds {
             display: inline-block;
-            width: 40px;
+            width: 80px;
         }
     }
 
