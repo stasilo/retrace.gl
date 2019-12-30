@@ -28,6 +28,8 @@ const ExportSdfControls = observer(() => {
         store.exportSdf();
     }
 
+    store.sdfExportSettings;
+
     const sdfExportInProgress = store.sdfExportProgress !== -1;
     const progressLabel = (store.sdfExportProgress * 100).toFixed(1);
 

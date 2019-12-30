@@ -91,6 +91,11 @@ const getSource = ({options, Scene}) =>
         ? '#define HAS_SDF_XZ_PLANE_GEOS' : ''}
     ${Scene.hasSdfConeGeometries
         ? '#define HAS_SDF_CONE_GEOS' : ''}
+    ${Scene.hasSdfPyramidGeometries
+        ? '#define HAS_SDF_PYRAMID_GEOS' : ''}
+    ${Scene.hasSdfLineGeometries
+        ? '#define HAS_SDF_LINE_GEOS' : ''}
+
 
     ${Scene.hasSdfUnionOpCode
         ? '#define HAS_SDF_OP_UNION' : ''}
@@ -1342,9 +1347,11 @@ const getSource = ({options, Scene}) =>
             int displacementTexId;
             vec2 dispTexUvScale;
             float dispScale;
-            vec3 dimensions;
+            vec3 dimensions; // also "line end"
             vec3 position;
             vec3 rotation;
+            float lineRadius;
+            vec3 lineStart;
             SdfCsgDomainOpHeader domainOp;
         };
 
@@ -1389,6 +1396,10 @@ const getSource = ({options, Scene}) =>
             yOffset = floor((offset + 9.) * DATA_TEX_INV_SIZE);
             vec3 sdfData10 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
+            xOffset = mod(offset + 10., DATA_TEX_SIZE);
+            yOffset = floor((offset + 10.) * DATA_TEX_INV_SIZE);
+            vec3 sdfData11 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
             SdfCsgDomainOpHeader domainOp = SdfCsgDomainOpHeader(
                 int(sdfData6.x),
                 int(sdfData6.y),
@@ -1411,6 +1422,8 @@ const getSource = ({options, Scene}) =>
                 sdfData3, // dimensions
                 sdfData4, // position
                 sdfData7, // rotation
+                sdfData2.z,  // line radius
+                sdfData11, // line start
                 domainOp
             );
         }
@@ -1605,34 +1618,34 @@ const getSource = ({options, Scene}) =>
             return k0*(k0-1.0)/k1;
         }
 
-        // http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
-        // #define SDF_PYRAMID ${sdfGeometryTypes.pyramid}
-        // float pyramidSdf(vec3 p, float h) {
-        //     float m2 = h*h + 0.25;
-        //
-        //     p.xz = abs(p.xz);
-        //     p.xz = (p.z>p.x) ? p.zx : p.xz;
-        //     p.xz -= 0.5;
-        //
-        //     vec3 q = vec3( p.z, h*p.y - 0.5*p.x, h*p.x + 0.5*p.y);
-        //
-        //     float s = max(-q.x,0.0);
-        //     float t = clamp( (q.y-0.5*p.z)/(m2+0.25), 0.0, 1.0 );
-        //
-        //     float a = m2*(q.x+s)*(q.x+s) + q.y*q.y;
-        //     float b = m2*(q.x+0.5*t)*(q.x+0.5*t) + (q.y-m2*t)*(q.y-m2*t);
-        //
-        //     float d2 = min(q.y,-q.x*m2-q.y*0.5) > 0.0 ? 0.0 : min(a,b);
-        //
-        //     return sqrt( (d2+q.z*q.z)/m2 ) * sign(max(q.z,-p.y));
-        // }
+        // source: http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
+
+        #define SDF_PYRAMID ${sdfGeometryTypes.pyramid}
+        float pyramidSdf(vec3 p, float h) {
+            float m2 = h*h + 0.25;
+
+            p.xz = abs(p.xz);
+            p.xz = (p.z>p.x) ? p.zx : p.xz;
+            p.xz -= 0.5;
+
+            vec3 q = vec3( p.z, h*p.y - 0.5*p.x, h*p.x + 0.5*p.y);
+
+            float s = max(-q.x,0.0);
+            float t = clamp( (q.y-0.5*p.z)/(m2+0.25), 0.0, 1.0 );
+
+            float a = m2*(q.x+s)*(q.x+s) + q.y*q.y;
+            float b = m2*(q.x+0.5*t)*(q.x+0.5*t) + (q.y-m2*t)*(q.y-m2*t);
+
+            float d2 = min(q.y,-q.x*m2-q.y*0.5) > 0.0 ? 0.0 : min(a,b);
+
+            return sqrt( (d2+q.z*q.z)/m2 ) * sign(max(q.z,-p.y));
+        }
 
         // source: hg_sdf
         // cone with correct distances to tip and base circle.
         // Y is up, 0 is in the middle of the base.
 
         #define SDF_CONE ${sdfGeometryTypes.cone}
-
         float coneSdf(vec3 p, float radius, float height) {
         	vec2 q = vec2(length(p.xz), p.y);
         	vec2 tip = q - vec2(0, height);
@@ -1653,6 +1666,24 @@ const getSource = ({options, Scene}) =>
         	return d;
         }
 
+
+        #define SDF_LINE ${sdfGeometryTypes.line}
+        // #define saturate(x) clamp(x, 0., 1.)
+        // float sdfLine(vec3 p, vec3 a, vec3 b, float r) {
+        // 	vec3 ab = b - a;
+        // 	float t = saturate(dot(p - a, ab) / dot(ab, ab));
+        //
+        // 	return length((ab*t + a) - p);
+        // }
+
+        // http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
+
+        float sdfLine(vec3 p, vec3 a, vec3 b, float r) {
+            vec3 pa = p - a, ba = b - a;
+            float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+
+            return length(pa - ba*h) - r;
+        }
 
         // float roundedBoxSdf(vec3 p, vec3 b) {
         //     float r = 0.5;
@@ -1851,6 +1882,23 @@ const getSource = ({options, Scene}) =>
                 #ifdef HAS_SDF_CONE_GEOS
                     case SDF_CONE: {
                         d = coneSdf(p, sdfData.dimensions.x, sdfData.dimensions.y);
+                        break;
+                    }
+                #endif
+
+                #ifdef HAS_SDF_PYRAMID_GEOS
+                    case SDF_PYRAMID: {
+                        // http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/
+                        vec3 q = p / sdfData.dimensions.x;
+                        d = pyramidSdf(q, sdfData.dimensions.y / sdfData.dimensions.x) * sdfData.dimensions.x;
+
+                        break;
+                    }
+                #endif
+
+                #ifdef HAS_SDF_LINE_GEOS
+                    case SDF_LINE: {
+                        d = sdfLine(p, sdfData.lineStart, sdfData.dimensions, sdfData.lineRadius);
                         break;
                     }
                 #endif

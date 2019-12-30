@@ -7,11 +7,12 @@ scene({
         hitDepth: 4,
         tMax: 5000,
         maxSphereTracingSteps: 255,
-        resolution: 0.5
+        resolution: 0.4,
+        renderMode: 'sdf'
     },
     camera: {
-        lookFrom: {x: 61.498, y: 41.882, z: 43.520},
-        lookAt: {x: 58.248, y: 40.292, z: 40.814},
+        lookFrom: {x: -62.026, y: 64.214, z: 103.990},
+        lookAt: {x: -60.240, y: 62.102, z: 100.420},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -64,7 +65,7 @@ scene({
         ),
         sdf(
             sdfEllipsoid({
-                material: 'clearcoat-test',
+                material: `lambert-red`,
                 radius: {
                     x: 5,
                     y: 2,
@@ -74,6 +75,59 @@ scene({
             }),
         ),
 
+        // front row
+        sdf(
+            sdfCone({
+                material: 'clearcoat-test',
+                radius: 5,
+                height: 10,
+                position: {x: startPos, y: 5, z: 20},
+            }),
+        ),
+        sdf(
+            sdfPyramid({
+                material: `lambert-red`,
+                height: 10,
+                base: 10,
+                position: {x: startPos + 20, y: 5, z: 20},
+            }),
+        ),
+
+        // frame
+        sdf(
+            sdfLine({
+                material: 'clearcoat-test',
+                start: {x: startPos - 10, y: 10, z: -10}, //{x: startPos + 20, y: 5, z: 30},
+                end: {x: startPos - 10, y: 10, z: 35},
+                thickness: 0.55
+            })
+        ),
+        sdf(
+            sdfLine({
+                material: 'clearcoat-test',
+                start: {x: startPos - 10, y: 10, z: 35},
+                end: {x: startPos + 90, y: 10, z: 35},
+                thickness: 0.55
+            })
+        ),
+        sdf(
+            sdfLine({
+                material: 'clearcoat-test',
+                start: {x: startPos + 90, y: 10, z: 35},
+                end: {x: startPos + 90, y: 10, z: -10},
+                thickness: 0.55
+            })
+        ),
+        sdf(
+            sdfLine({
+                material: 'clearcoat-test',
+                start: {x: startPos + 90, y: 10, z: -10},
+                end: {x: startPos -10, y: 10, z: -10},
+                thickness: 0.55
+            })
+        ),
+
+        // floor & lights
         plane({
             material: 'floor-white',
             texture: {

@@ -192,6 +192,7 @@ class Store {
                 this._isInitialRender = false;
 
                 const sdfExportSettings = this._scene.sdfExportSettings;
+
                 if(defined(sdfExportSettings)) {
                     if(defined(sdfExportSettings.resolution)) {
                         this.sdfExportSettings.resolution = sdfExportSettings.resolution;
@@ -204,6 +205,12 @@ class Store {
                     if(defined(sdfExportSettings.maxCoords)) {
                         this.sdfExportSettings.maxCoords = sdfExportSettings.maxCoords;
                     }
+                } else {
+                    this.sdfExportSettings = {
+                        resolution: 100,
+                        minCoords: {x: 0, y: 0, z: 0},
+                        maxCoords: {x: 0, y: 0, z: 0}
+                    };
                 }
 
                 this.renderMode = defined(this.currentrendererSettings.renderMode)
@@ -278,6 +285,20 @@ class Store {
 
         // this._activeRenderInstance = await exportSdfApp({
         this.sdfExportProgress = 0;
+
+        this.sdfExportSettings = {
+            resolution: parseFloat(this.sdfExportSettings.resolution),
+            minCoords: {
+                x: parseFloat(this.sdfExportSettings.minCoords.x),
+                y: parseFloat(this.sdfExportSettings.minCoords.y),
+                z: parseFloat(this.sdfExportSettings.minCoords.z),
+            },
+            maxCoords: {
+                x: parseFloat(this.sdfExportSettings.maxCoords.x),
+                y: parseFloat(this.sdfExportSettings.maxCoords.y),
+                z: parseFloat(this.sdfExportSettings.maxCoords.z),
+            }
+        };
 
         await exportSdfApp({
             sdfExportSettings: this.sdfExportSettings,

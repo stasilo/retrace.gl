@@ -65,9 +65,20 @@ const FileControls = observer(() => {
     const handleOpenSceneFromUrl = async (e) => {
         e.preventDefault();
 
-        await store.loadSceneFromUrl(sceneUrl);
-        await store.compileScene();
-        store.trace();
+        if(store.sceneName
+            && confirm(`save scene '${store.sceneName}' before opening new scene?`))
+        {
+            await store.saveCurrentScene(store.sceneName);
+        }
+
+        if(!store.sceneName
+            && confirm(`current scene hasn't been saved - discard changes and load scene from url?`))
+        {
+            await store.loadSceneFromUrl(sceneUrl);
+            await store.compileScene();
+            
+            store.trace();
+        }
 
         toggleOpenModal();
     };
@@ -99,10 +110,22 @@ const FileControls = observer(() => {
             case 'open': {
                 const sceneName = args[0];
 
-                await store.loadScene(sceneName);
-                await store.compileScene();
+                if(store.sceneName
+                    && confirm(`save scene '${store.sceneName}' before opening new scene?`))
+                {
+                    await store.saveCurrentScene(store.sceneName);
+                }
 
-                store.trace();
+                if(!store.sceneName
+                    && confirm(`current scene hasn't been saved - discard changes and open '${sceneName}'?`))
+                {
+                    await store.loadScene(sceneName);
+                    await store.compileScene();
+
+                    store.trace();
+                } else {
+
+                }
 
                 break;
             }

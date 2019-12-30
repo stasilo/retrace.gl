@@ -6,6 +6,11 @@ scene({
         maxSphereTracingSteps: 255,
         resolution: 0.5
     },
+    sdfExportSettings: {
+        resolution: 400,
+        minCoords: {x: -10, y: -1, z: -10},
+        maxCoords: {x: 60, y: 70, z: 60}
+    },
     camera: {
         lookFrom: {x: -39.262, y: 10.335, z: -26.848},
         lookAt: {x: -35.947, y: 11.150, z: -23.892},

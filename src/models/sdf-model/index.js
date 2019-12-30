@@ -62,13 +62,15 @@ const sdfGeometryTypes = {
     torus: 4,
     plane: 5,
     ellipsoid: 6,
-    cone: 7
+    cone: 7,
+    pyramid: 8,
+    line: 9
 };
 
 const standardSdfOpArrayDataOffset = 1;
 const standardSdfDomainOpArrayDataOffset = 15;
 
-const standardSdfDataArrayLength = 30;
+const standardSdfDataArrayLength = 33; //30;
 const sdfHeaderOffsetSize = 6;
 
 const sdfOperation = (opCode, opArguments, ...geometries) => {
@@ -266,6 +268,27 @@ const sdf = (...args) => {
 
                 break;
 
+            case sdfGeometryTypes.pyramid:
+                position = vec3.fromValues(
+                    dataArray[offset + 9],
+                    dataArray[offset + 10],
+                    dataArray[offset + 11]
+                );
+
+                dimensions = vec3.fromValues(
+                    dataArray[offset + 6] // width
+                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
+                    dataArray[offset + 7] // height
+                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
+                    dataArray[offset + 6] // depth
+                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1)
+                );
+
+                vec3.sub(minCoords, position, dimensions);
+                vec3.add(maxCoords, position, dimensions);
+
+                break;
+
             case sdfGeometryTypes.cone:
                 position = vec3.fromValues(
                     dataArray[offset + 9],
@@ -311,6 +334,36 @@ const sdf = (...args) => {
 
                 vec3.sub(minCoords, position, dimensions);
                 vec3.add(maxCoords, position, dimensions);
+
+                break;
+
+            case sdfGeometryTypes.line:
+                // line end, dimension offset
+                dimensions = vec3.fromValues(
+                    dataArray[offset + 6],
+                    dataArray[offset + 7],
+                    dataArray[offset + 8]
+                );
+
+                // line start
+                position = vec3.fromValues(
+                    dataArray[offset + 30],
+                    dataArray[offset + 31],
+                    dataArray[offset + 32]
+                );
+
+                const r = 100;
+
+                const minX = Math.min(dimensions[0], position[0]);
+                const minY = Math.min(dimensions[1], position[1]);
+                const minZ = Math.min(dimensions[2], position[2]);
+
+                const maxX = Math.max(dimensions[0], position[0]);
+                const maxY = Math.max(dimensions[1], position[1]);
+                const maxZ = Math.max(dimensions[2], position[2]);
+
+                minCoords = vec3.fromValues(minX - r, minY - r, minZ - r);
+                maxCoords = vec3.fromValues(maxX + r, maxY + r, maxZ + r);
 
                 break;
 
@@ -441,6 +494,8 @@ class SdfModel {
         position,
         dimensions,
         rotation,
+        lineStart,
+        lineRadius,
         material,
         texture,
         displacementMap,
@@ -548,6 +603,19 @@ class SdfModel {
                 : [])
         };
 
+        this.lineStart = {
+            x: 0,
+            y: 0,
+            z: 0,
+            ...(defined(lineStart)
+                ? lineStart
+                : [])
+        };
+
+        this.lineRadius = defined(lineRadius)
+            ? lineRadius
+            : 1;
+
         this.domainOpBounds = {
             x: 0,
             y: 0,
@@ -566,7 +634,7 @@ class SdfModel {
 
             this.material, // 3
             this.texture, // 4
-            -1, // 5, not used
+            this.lineRadius, // 5, radius (thickness) for sdf line segment
 
             this.dimensions.x, // 6
             this.dimensions.y, // 7
@@ -604,7 +672,11 @@ class SdfModel {
 
             this.displacementMapScale, // 27
             this.displacementFunc, // 28
-            -1 // 29
+            -1, // 29
+
+            this.lineStart.x, // 30
+            this.lineStart.y, // 31
+            this.lineStart.z // 32
         ];
     }
 }

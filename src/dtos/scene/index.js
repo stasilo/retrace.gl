@@ -127,18 +127,22 @@ class Scene {
             // sdf geos
 
             this.hasSdfGeometries = this.sdfGeometries.length > 0;
+
             this.hasSdfSphereGeometries = this.sdfGeometries
                 .filter(g =>
                     g.geometryTypes.indexOf(sdfGeometryTypes.sphere) > -1
                 ).length > 0;
+
             this.hasSdfBoxGeometries = this.sdfGeometries
                 .filter(g =>
                     g.geometryTypes.indexOf(sdfGeometryTypes.box) > -1
                 ).length > 0;
+
             this.hasSdfTorusGeometries = this.sdfGeometries
                 .filter(g =>
                     g.geometryTypes.indexOf(sdfGeometryTypes.torus) > -1
                 ).length > 0;
+
             this.hasSdfCylinderGeometries = this.sdfGeometries
                 .filter(g =>
                     g.geometryTypes.indexOf(sdfGeometryTypes.cylinder) > -1
@@ -152,6 +156,16 @@ class Scene {
             this.hasSdfConeGeometries = this.sdfGeometries
                 .filter(g =>
                     g.geometryTypes.indexOf(sdfGeometryTypes.cone) > -1
+                ).length > 0;
+
+            this.hasSdfPyramidGeometries = this.sdfGeometries
+                .filter(g =>
+                    g.geometryTypes.indexOf(sdfGeometryTypes.pyramid) > -1
+                ).length > 0;
+
+            this.hasSdfLineGeometries = this.sdfGeometries
+                .filter(g =>
+                    g.geometryTypes.indexOf(sdfGeometryTypes.line) > -1
                 ).length > 0;
 
             this.hasSdfXzPlaneGeometries = this.sdfGeometries

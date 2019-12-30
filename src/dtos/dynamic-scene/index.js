@@ -41,6 +41,8 @@ import SdfCylinder from '../../models/sdf-cylinder';
 import SdfTorus from '../../models/sdf-torus';
 import SdfEllipsoid from '../../models/sdf-ellipsoid';
 import SdfCone from '../../models/sdf-cone';
+import SdfPyramid from '../../models/sdf-pyramid';
+import SdfLine from '../../models/sdf-line';
 import SdfXzPlane from '../../models/sdf-xz-plane';
 
 import  {
@@ -134,6 +136,10 @@ const sdfEllipsoid = (o) =>
     new SdfEllipsoid(o).geometryData();
 const sdfCone = (o) =>
     new SdfCone(o).geometryData();
+const sdfPyramid = (o) =>
+    new SdfPyramid(o).geometryData();
+const sdfLine = (o) =>
+    new SdfLine(o).geometryData();
 const sdfXzPlane = (o) =>
     new SdfXzPlane(o).geometryData();
 
