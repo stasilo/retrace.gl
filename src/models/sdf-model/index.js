@@ -64,7 +64,10 @@ const sdfGeometryTypes = {
     ellipsoid: 6,
     cone: 7,
     pyramid: 8,
-    line: 9
+    line: 9,
+    roundedCone: 10,
+    capsule: 11,
+    link: 12
 };
 
 const standardSdfOpArrayDataOffset = 1;
@@ -225,14 +228,20 @@ const sdf = (...args) => {
                     dataArray[offset + 11]
                 );
 
-                dimensions = vec3.fromValues(
-                    dataArray[offset + 6] // width
-                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
-                    dataArray[offset + 7] // height
-                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
-                    dataArray[offset + 6] // depth
-                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1)
-                );
+                if(!hasRotation && !hasDomainWarp) {
+                    dimensions = vec3.fromValues(
+                        dataArray[offset + 6],
+                        dataArray[offset + 7],
+                        dataArray[offset + 8]
+                    );
+                } else {
+                    const s = Math.max(
+                        dataArray[offset + 6],
+                        Math.max(dataArray[offset + 7], dataArray[offset + 8])
+                    ) * Math.sqrt(2);
+
+                    dimensions = vec3.fromValues(s, s, s);
+                }
 
                 vec3.sub(minCoords, position, dimensions);
                 vec3.add(maxCoords, position, dimensions);
@@ -251,15 +260,38 @@ const sdf = (...args) => {
 
                 if(!hasRotation && !hasDomainWarp) {
                     dimensions = vec3.fromValues(
+                        radius, // radius
+                        height, // height
                         radius // radius
-                            * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
-                        height // height
-                            * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
-                        dataArray[offset + 6] // radius
-                            * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1)
                     );
                 } else {
-                    const s = Math.max(radius, height);
+                    const s = Math.max(radius, height) * Math.sqrt(2);
+                    dimensions = vec3.fromValues(s, s, s);
+                }
+
+                vec3.sub(minCoords, position, dimensions);
+                vec3.add(maxCoords, position, dimensions);
+
+                break;
+
+            case sdfGeometryTypes.capsule:
+                position = vec3.fromValues(
+                    dataArray[offset + 9],
+                    dataArray[offset + 10],
+                    dataArray[offset + 11]
+                );
+
+                radius = dataArray[offset + 6];
+                height = dataArray[offset + 7];
+
+                if(!hasRotation && !hasDomainWarp) {
+                    dimensions = vec3.fromValues(
+                        radius, // radius
+                        height + radius, // height
+                        radius // radius
+                    );
+                } else {
+                    const s = Math.max(radius + height, height) * Math.sqrt(2);
                     dimensions = vec3.fromValues(s, s, s);
                 }
 
@@ -275,14 +307,16 @@ const sdf = (...args) => {
                     dataArray[offset + 11]
                 );
 
-                dimensions = vec3.fromValues(
-                    dataArray[offset + 6] // width
-                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
-                    dataArray[offset + 7] // height
-                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
-                    dataArray[offset + 6] // depth
-                        * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1)
-                );
+                if(!hasRotation && !hasDomainWarp) {
+                    dimensions = vec3.fromValues(
+                        dataArray[offset + 6], // base
+                        dataArray[offset + 7], // height
+                        dataArray[offset + 6] // base
+                    );
+                } else {
+                    const s = Math.max(dataArray[offset + 6], dataArray[offset + 7]);
+                    dimensions = vec3.fromValues(s, s, s);
+                }
 
                 vec3.sub(minCoords, position, dimensions);
                 vec3.add(maxCoords, position, dimensions);
@@ -301,15 +335,71 @@ const sdf = (...args) => {
 
                 if(!hasRotation && !hasDomainWarp) {
                     dimensions = vec3.fromValues(
+                        radius, // radius
+                        height, // height
                         radius // radius
-                            * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
-                        height // height
-                            * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1),
-                        dataArray[offset + 6] // radius
-                            * (hasRotation || hasDomainWarp ? Math.sqrt(2) : 1)
                     );
                 } else {
                     const s = Math.max(radius, height);
+                    dimensions = vec3.fromValues(s, s, s);
+                }
+
+                vec3.sub(minCoords, position, dimensions);
+                vec3.add(maxCoords, position, dimensions);
+
+                break;
+
+            case sdfGeometryTypes.roundedCone:
+                position = vec3.fromValues(
+                    dataArray[offset + 9],
+                    dataArray[offset + 10],
+                    dataArray[offset + 11]
+                );
+
+                radius = Math.max(dataArray[offset + 6], dataArray[offset + 8]);
+                height = dataArray[offset + 7] + radius*2;// * 1.3;
+
+                if(!hasRotation && !hasDomainWarp) {
+                    dimensions = vec3.fromValues(
+                        radius, // radius
+                        height, // height
+                        radius // radius
+                    );
+                } else {
+                    const s = Math.max(radius, height);
+                    dimensions = vec3.fromValues(s, s, s);
+                }
+
+                vec3.sub(minCoords, position, dimensions);
+                // minCoords = vec3.clone(position);
+                vec3.add(maxCoords, position, dimensions);
+
+                break;
+
+            case sdfGeometryTypes.link:
+                position = vec3.fromValues(
+                    dataArray[offset + 9],
+                    dataArray[offset + 10],
+                    dataArray[offset + 11]
+                );
+
+                // dataArray[offset + 6], - radius
+                // dataArray[offset + 7], - height
+                // dataArray[offset + 8] - thickness
+
+                // radius = Math.max(dataArray[offset + 6], dataArray[offset + 8]);
+                radius = dataArray[offset + 6] * 2;
+                height = dataArray[offset + 7] + radius;// * 1.3;
+                const thickness = dataArray[offset + 8] * 2;
+
+                if(!hasRotation && !hasDomainWarp) {
+                    dimensions = vec3.fromValues(
+                        radius, // radius
+                        height, // height
+                        thickness // radius
+                    );
+                } else {
+                    const s = Math.max(thickness, Math.max(radius, height)) * Math.sqrt(2);
                     dimensions = vec3.fromValues(s, s, s);
                 }
 
@@ -325,12 +415,20 @@ const sdf = (...args) => {
                     dataArray[offset + 11]
                 );
 
-                // radius
-                dimensions = vec3.fromValues(
-                    dataArray[offset + 6],
-                    dataArray[offset + 7],
-                    dataArray[offset + 8]
-                );
+                if(!hasRotation && !hasDomainWarp) {
+                    dimensions = vec3.fromValues(
+                        dataArray[offset + 6],
+                        dataArray[offset + 7],
+                        dataArray[offset + 8],
+                    );
+                } else {
+                    const s = Math.max(
+                        dataArray[offset + 6],
+                        Math.max(dataArray[offset + 7], dataArray[offset + 8])
+                    ) * Math.sqrt(2);
+
+                    dimensions = vec3.fromValues(s, s, s);
+                }
 
                 vec3.sub(minCoords, position, dimensions);
                 vec3.add(maxCoords, position, dimensions);

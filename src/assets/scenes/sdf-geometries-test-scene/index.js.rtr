@@ -11,8 +11,8 @@ scene({
         renderMode: 'sdf'
     },
     camera: {
-        lookFrom: {x: -62.026, y: 64.214, z: 103.990},
-        lookAt: {x: -60.240, y: 62.102, z: 100.420},
+        lookFrom: {x: 54.372, y: 74.408, z: 102.255},
+        lookAt: {x: 52.432, y: 71.913, z: 99.027},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -25,53 +25,45 @@ scene({
                 height: 5,
                 position: {x: startPos, y: 10, z: 0},
                 material: `lambert-red`,
-                // rotation: { x: degToRad(45) },
-                // material: 'clearcoat-test',
-                // texture: {
-                //     name: 'check',
-                //     uvScale: 0.1
-                // },
+                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             })
         ),
         sdf(
             sdfSphere({
-                // material: `lambert-red`,
                 material: 'clearcoat-test',
                 radius: 5,
                 position: {x: startPos + 20, y: 10, z: 0},
+                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             })
         ),
         sdf(
             sdfBox({
-                // material: 'clearcoat-test',
                 material: `lambert-red`,
                 dimensions: {x: 5, y: 5, z: 5},
                 position: {x: startPos + 40, y: 10, z: 0},
+                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             }),
         ),
         sdf(
             sdfTorus({
-                // material: 'lambert-red',
                 material: 'clearcoat-test',
-                // dimensions: {x: 5, y: 5, z: 5},
                 innerRadius: 2.5,
                 outerRadius: 5,
                 position: {x: startPos + 60, y: 10, z: 0},
-                // texture: {
-                //     name: 'check',
-                //     uvScale: 20
-                // }
+                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             }),
         ),
         sdf(
             sdfEllipsoid({
                 material: `lambert-red`,
+                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
                 radius: {
                     x: 5,
                     y: 2,
                     z: 10
                 },
                 position: {x: startPos + 80, y: 10, z: 0},
+                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             }),
         ),
 
@@ -82,6 +74,7 @@ scene({
                 radius: 5,
                 height: 10,
                 position: {x: startPos, y: 5, z: 20},
+                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             }),
         ),
         sdf(
@@ -90,6 +83,36 @@ scene({
                 height: 10,
                 base: 10,
                 position: {x: startPos + 20, y: 5, z: 20},
+                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
+            }),
+        ),
+        sdf(
+            sdfRoundedCone({
+                material: 'clearcoat-test',
+                bottomRadius: 5,
+                topRadius: 2,
+                height: 10,
+                position: {x: startPos + 40, y: 5, z: 20},
+                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
+            }),
+        ),
+        sdf(
+            sdfCapsule({
+                radius: 5,
+                height: 5,
+                position: {x: startPos + 60, y: 5, z: 20},
+                material: `lambert-red`,
+                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
+            })
+        ),
+        sdf(
+            sdfLink({
+                material: 'clearcoat-test',
+                radius: 2,
+                thickness: 1,
+                height: 4,
+                position: {x: startPos + 80, y: 5, z: 20},
+                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             }),
         ),
 
@@ -97,7 +120,7 @@ scene({
         sdf(
             sdfLine({
                 material: 'clearcoat-test',
-                start: {x: startPos - 10, y: 10, z: -10}, //{x: startPos + 20, y: 5, z: 30},
+                start: {x: startPos - 10, y: 10, z: -15},
                 end: {x: startPos - 10, y: 10, z: 35},
                 thickness: 0.55
             })
@@ -114,20 +137,20 @@ scene({
             sdfLine({
                 material: 'clearcoat-test',
                 start: {x: startPos + 90, y: 10, z: 35},
-                end: {x: startPos + 90, y: 10, z: -10},
+                end: {x: startPos + 90, y: 10, z: -15},
                 thickness: 0.55
             })
         ),
         sdf(
             sdfLine({
                 material: 'clearcoat-test',
-                start: {x: startPos + 90, y: 10, z: -10},
-                end: {x: startPos -10, y: 10, z: -10},
+                start: {x: startPos + 90, y: 10, z: -15},
+                end: {x: startPos -10, y: 10, z: -15},
                 thickness: 0.55
             })
         ),
 
-        // floor & lights
+        // floor
         plane({
             material: 'floor-white',
             texture: {
@@ -137,10 +160,12 @@ scene({
             scale: 1000,
             position: {
                 x: 0,
-                y: 0,
+                y: -8,
                 z: 0
             },
         }),
+
+        // lights
         plane({
             material: 'ceil-light',
             scale: 30,
@@ -188,26 +213,13 @@ scene({
             color: '#ff0000',
             albedo: [0.8, 0.8, 0.8]
         }),
-        // clearcoatMaterial({
-        //     name: 'lambert-red',
-        //     color: '#ff0000',
-        //     // color: '#101010',
-        //     refIdx: 1.8,
-        // }),
         emissiveMaterial({
             name: `ceil-light`,
             color: '#ffffff',
             intensity: 10
         }),
-        // dialectricMaterial({
-        //     name: 'dialectric-test',
-        //     // color: '#cccccc',
-        //     color: '#ffffff',
-        //     refIdx: 1.8,
-        // }),
         clearcoatMaterial({
             name: 'clearcoat-test',
-            // color: '#ffffff',
             color: '#101010',
             refIdx: 1.8,
         }),

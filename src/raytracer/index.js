@@ -99,7 +99,7 @@ async function raytraceApp({
         Scene: scene
     });
 
-    // console.log('shader: ', shader);
+    console.log('shader: ', shader);
 
     const rayTraceGlProgram = glApp.createProgram(vertShader, shader);
 

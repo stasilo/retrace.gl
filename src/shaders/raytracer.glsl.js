@@ -18,6 +18,7 @@ import simplexNoise from './lib/noise/simplex.glsl';
 const getSource = ({options, Scene}) =>
 `   #version 300 es
 
+    #pragma optimize(off)
     // precision highp float;
     // precision highp int;
     // precision highp sampler2D;
@@ -91,11 +92,16 @@ const getSource = ({options, Scene}) =>
         ? '#define HAS_SDF_XZ_PLANE_GEOS' : ''}
     ${Scene.hasSdfConeGeometries
         ? '#define HAS_SDF_CONE_GEOS' : ''}
+    ${Scene.hasSdfRoundedConeGeometries
+        ? '#define HAS_SDF_ROUNDED_CONE_GEOS' : ''}
     ${Scene.hasSdfPyramidGeometries
         ? '#define HAS_SDF_PYRAMID_GEOS' : ''}
     ${Scene.hasSdfLineGeometries
         ? '#define HAS_SDF_LINE_GEOS' : ''}
-
+    ${Scene.hasSdfCapsuleGeometries
+        ? '#define HAS_SDF_CAPSULE_GEOS' : ''}
+    ${Scene.hasSdfLinkGeometries
+        ? '#define HAS_SDF_LINK_GEOS' : ''}
 
     ${Scene.hasSdfUnionOpCode
         ? '#define HAS_SDF_OP_UNION' : ''}
@@ -1666,23 +1672,51 @@ const getSource = ({options, Scene}) =>
         	return d;
         }
 
+        // source: http://www.iquilezles.org/www/articles/distfunctions/distfunctions.html
+        #define SDF_ROUNDED_CONE ${sdfGeometryTypes.roundedCone}
+        float roundedConeSdf(vec3 p, float r1, float r2, float h) {
+            // adjust y position to match other geos
+            // p.y = p.y - (0.25*h);
 
-        #define SDF_LINE ${sdfGeometryTypes.line}
-        // #define saturate(x) clamp(x, 0., 1.)
-        // float sdfLine(vec3 p, vec3 a, vec3 b, float r) {
-        // 	vec3 ab = b - a;
-        // 	float t = saturate(dot(p - a, ab) / dot(ab, ab));
-        //
-        // 	return length((ab*t + a) - p);
-        // }
+            vec2 q = vec2(length(p.xz), p.y);
+
+            float b = (r1-r2)/h;
+            float a = sqrt(1.0-b*b);
+            float k = dot(q,vec2(-b,a));
+
+            if(k < 0.0) {
+                return length(q) - r1;
+            }
+
+            if(k > a*h) {
+                return length(q-vec2(0.0,h)) - r2;
+            }
+
+            return dot(q, vec2(a,b)) - r1;
+        }
 
         // http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
+        #define SDF_CAPSULE ${sdfGeometryTypes.capsule}
+        float sdfCapsule(vec3 p, float h, float r) {
+            p.y -= clamp( p.y, 0.0, h );
+            return length(p) - r;
+        }
 
+
+        // http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
+        #define SDF_LINE ${sdfGeometryTypes.line}
         float sdfLine(vec3 p, vec3 a, vec3 b, float r) {
             vec3 pa = p - a, ba = b - a;
             float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
 
             return length(pa - ba*h) - r;
+        }
+
+        // http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
+        #define SDF_LINK ${sdfGeometryTypes.link}
+        float sdfLink(vec3 p, float le, float r1, float r2) {
+          vec3 q = vec3( p.x, max(abs(p.y)-le,0.0), p.z );
+          return length(vec2(length(q.xy)-r1,q.z)) - r2;
         }
 
         // float roundedBoxSdf(vec3 p, vec3 b) {
@@ -1886,6 +1920,20 @@ const getSource = ({options, Scene}) =>
                     }
                 #endif
 
+                #ifdef HAS_SDF_ROUNDED_CONE_GEOS
+                    case SDF_ROUNDED_CONE: {
+                        d = roundedConeSdf(p, sdfData.dimensions.x, sdfData.dimensions.z, sdfData.dimensions.y);
+                        break;
+                    }
+                #endif
+
+                #ifdef HAS_SDF_LINK_GEOS
+                    case SDF_LINK: {
+                        d = sdfLink(p, sdfData.dimensions.y, sdfData.dimensions.x, sdfData.dimensions.z);
+                        break;
+                    }
+                #endif
+
                 #ifdef HAS_SDF_PYRAMID_GEOS
                     case SDF_PYRAMID: {
                         // http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/
@@ -1906,6 +1954,13 @@ const getSource = ({options, Scene}) =>
                 #ifdef HAS_SDF_XZ_PLANE_GEOS
                     case SDF_PLANE: {
                         d = planeSdf(p, /* up vector */ sdfData.dimensions);
+                        break;
+                    }
+                #endif
+
+                #ifdef HAS_SDF_CAPSULE_GEOS
+                    case SDF_CAPSULE: {
+                        d = sdfCapsule(p, sdfData.dimensions.y, sdfData.dimensions.x);
                         break;
                     }
                 #endif
@@ -2099,7 +2154,6 @@ const getSource = ({options, Scene}) =>
 
             csgHeader = getPackedSdfCsgDomainOpHeader(sdfDataTexOffset);
 
-            // TODO: if this could be unrolled there would be perf. gains :) (maybe 1/4 speed up!?)
             while(!finished) {
             // for(int i = 0; i < 20; i++) {
                 sdfData = getPackedSdf(sdfDataTexOffset + SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE);

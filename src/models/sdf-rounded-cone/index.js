@@ -2,23 +2,29 @@ import SdfModel, {
     sdfGeometryTypes
 } from '../sdf-model';
 
-class SdfBox extends SdfModel {
+class SdfRoundedCone extends SdfModel {
     constructor({
         domain,
-        dimensions,
         position,
         rotation,
+        bottomRadius,
+        topRadius,
+        height,
         material,
         texture,
         displacementMap,
         displacement
     }) {
         super({
-            geoType: sdfGeometryTypes.box,
+            geoType: sdfGeometryTypes.roundedCone,
             domain,
             position,
+            dimensions: {
+                x: bottomRadius,
+                y: height,
+                z: topRadius
+            },
             rotation,
-            dimensions,
             material,
             texture,
             displacementMap,
@@ -27,4 +33,4 @@ class SdfBox extends SdfModel {
     }
 }
 
-export default SdfBox;
+export default SdfRoundedCone;

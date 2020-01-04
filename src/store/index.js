@@ -40,6 +40,9 @@ import baseSceneSrc from '../assets/scenes/basic-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/model-test-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/material-test-scene/index.js.rtr';
 
+
+
+
 // const defaultSceneUrl = 'assets/scenes/sdf-displacement-map-scene/index.js.rtr';
 
 // const defaultSceneUrl = 'assets/scenes/sdf-test-scene-1/index.js.rtr';
@@ -47,14 +50,17 @@ import baseSceneSrc from '../assets/scenes/basic-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-test-scene-3/index.js.rtr';
 
 
-const defaultSceneUrl = 'assets/scenes/sdf-geometries-test-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-displacement-func-test-scene/index.js.rtr';
 
 // const defaultSceneUrl = 'assets/scenes/sdf-export-test/index.js.rtr';
 
+// const defaultSceneUrl = 'assets/scenes/sdf-example-scene-2/index.js.rtr';
 
-// const defaultSceneUrl = 'assets/scenes/sdf-example-scene-1/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sdf-sculpture-1/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sdf-sculpture-2/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sdf-sculpture-3/index.js.rtr';
 
+const defaultSceneUrl = 'assets/scenes/sdf-geometries-test-scene/index.js.rtr';
 
 let instance = null;
 class Store {
@@ -178,7 +184,7 @@ class Store {
     @action
     async saveCurrentScene(name) {
         this.sceneName = name;
-        await this.sceneStorage.saveScene(name, this._sceneSrc);
+        await this.sceneStorage.saveScene(name, this.sceneSrc);
     }
 
     @action

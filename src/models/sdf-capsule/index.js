@@ -2,10 +2,11 @@ import SdfModel, {
     sdfGeometryTypes
 } from '../sdf-model';
 
-class SdfBox extends SdfModel {
+class SdfCapsule extends SdfModel {
     constructor({
         domain,
-        dimensions,
+        radius,
+        height,
         position,
         rotation,
         material,
@@ -14,11 +15,15 @@ class SdfBox extends SdfModel {
         displacement
     }) {
         super({
-            geoType: sdfGeometryTypes.box,
+            geoType: sdfGeometryTypes.capsule,
             domain,
             position,
+            dimensions: {
+                x: radius,
+                y: height,
+                z: -1
+            },
             rotation,
-            dimensions,
             material,
             texture,
             displacementMap,
@@ -27,4 +32,4 @@ class SdfBox extends SdfModel {
     }
 }
 
-export default SdfBox;
+export default SdfCapsule;

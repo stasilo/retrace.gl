@@ -38,12 +38,15 @@ import AnisotropicVolumeMaterial from '../../materials/anisotropic-volume';
 import SdfSphere from '../../models/sdf-sphere';
 import SdfBox from '../../models/sdf-box';
 import SdfCylinder from '../../models/sdf-cylinder';
+import SdfCapsule from '../../models/sdf-capsule';
 import SdfTorus from '../../models/sdf-torus';
 import SdfEllipsoid from '../../models/sdf-ellipsoid';
 import SdfCone from '../../models/sdf-cone';
+import SdfRoundedCone from '../../models/sdf-rounded-cone';
 import SdfPyramid from '../../models/sdf-pyramid';
 import SdfLine from '../../models/sdf-line';
 import SdfXzPlane from '../../models/sdf-xz-plane';
+import SdfLink from '../../models/sdf-link';
 
 import  {
     sdf as _sdf,
@@ -136,12 +139,18 @@ const sdfEllipsoid = (o) =>
     new SdfEllipsoid(o).geometryData();
 const sdfCone = (o) =>
     new SdfCone(o).geometryData();
+const sdfRoundedCone = (o) =>
+    new SdfRoundedCone(o).geometryData();
 const sdfPyramid = (o) =>
     new SdfPyramid(o).geometryData();
 const sdfLine = (o) =>
     new SdfLine(o).geometryData();
 const sdfXzPlane = (o) =>
     new SdfXzPlane(o).geometryData();
+const sdfCapsule = (o) =>
+    new SdfCapsule(o).geometryData();
+const sdfLink = (o) =>
+    new SdfLink(o).geometryData();
 
 const sdf = _sdf;
 const opUnion = sdfOpUnion;

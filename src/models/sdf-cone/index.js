@@ -8,6 +8,7 @@ class SdfCone extends SdfModel {
         radius,
         height,
         position,
+        rotation,
         material,
         texture,
         displacementMap,
@@ -22,6 +23,7 @@ class SdfCone extends SdfModel {
                 y: height,
                 z: -1
             },
+            rotation,
             material,
             texture,
             displacementMap,

@@ -158,6 +158,11 @@ class Scene {
                     g.geometryTypes.indexOf(sdfGeometryTypes.cone) > -1
                 ).length > 0;
 
+            this.hasSdfRoundedConeGeometries = this.sdfGeometries
+                .filter(g =>
+                    g.geometryTypes.indexOf(sdfGeometryTypes.roundedCone) > -1
+                ).length > 0;
+
             this.hasSdfPyramidGeometries = this.sdfGeometries
                 .filter(g =>
                     g.geometryTypes.indexOf(sdfGeometryTypes.pyramid) > -1
@@ -171,6 +176,16 @@ class Scene {
             this.hasSdfXzPlaneGeometries = this.sdfGeometries
                 .filter(g =>
                     g.geometryTypes.indexOf(sdfGeometryTypes.plane) > -1
+                ).length > 0;
+
+            this.hasSdfCapsuleGeometries = this.sdfGeometries
+                .filter(g =>
+                    g.geometryTypes.indexOf(sdfGeometryTypes.capsule) > -1
+                ).length > 0;
+
+            this.hasSdfLinkGeometries = this.sdfGeometries
+                .filter(g =>
+                    g.geometryTypes.indexOf(sdfGeometryTypes.link) > -1
                 ).length > 0;
 
             console.log('this.sdfGeometries: ', this.sdfGeometries);

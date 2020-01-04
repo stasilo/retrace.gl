@@ -2,23 +2,29 @@ import SdfModel, {
     sdfGeometryTypes
 } from '../sdf-model';
 
-class SdfBox extends SdfModel {
+class SdfLink extends SdfModel {
     constructor({
         domain,
-        dimensions,
         position,
         rotation,
+        radius,
+        thickness,
+        height,
         material,
         texture,
         displacementMap,
         displacement
     }) {
         super({
-            geoType: sdfGeometryTypes.box,
+            geoType: sdfGeometryTypes.link,
             domain,
             position,
+            dimensions: {
+                x: radius,
+                y: height,
+                z: thickness
+            },
             rotation,
-            dimensions,
             material,
             texture,
             displacementMap,
@@ -27,4 +33,4 @@ class SdfBox extends SdfModel {
     }
 }
 
-export default SdfBox;
+export default SdfLink;

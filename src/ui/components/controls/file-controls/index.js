@@ -52,6 +52,7 @@ const FileControls = observer(() => {
 
         if(existingScene) {
             if(confirm(`scene '${sceneName}' already exists - overwrite it?`)) {
+                await store.sceneStorage.deleteScene(store.sceneName);
                 store.saveCurrentScene(sceneName);
                 toggleSaveModal();
             }
@@ -68,6 +69,7 @@ const FileControls = observer(() => {
         if(store.sceneName
             && confirm(`save scene '${store.sceneName}' before opening new scene?`))
         {
+            await store.sceneStorage.deleteScene(store.sceneName);
             await store.saveCurrentScene(store.sceneName);
         }
 
@@ -76,7 +78,7 @@ const FileControls = observer(() => {
         {
             await store.loadSceneFromUrl(sceneUrl);
             await store.compileScene();
-            
+
             store.trace();
         }
 
@@ -95,6 +97,7 @@ const FileControls = observer(() => {
 
             case 'save': {
                 if(store.sceneName) {
+                    await store.sceneStorage.deleteScene(store.sceneName);
                     store.saveCurrentScene(store.sceneName);
                     break;
                 }

@@ -22,6 +22,7 @@ class SdfPyramid extends SdfModel {
                 x: base,
                 y: height
             },
+            rotation,
             material,
             texture,
             displacementMap,

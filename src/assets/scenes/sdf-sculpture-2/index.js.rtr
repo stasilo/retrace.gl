@@ -1,0 +1,142 @@
+scene({
+    sdfExportSettings: {
+        resolution: 233,
+        minCoords: {
+            x: -10,
+            y: -2,
+            z: -10
+        },
+        maxCoords: {
+            x: 40,
+            y: 42,
+            z: 40
+        }
+    },
+    rendererSettings: {
+        realtimeHitDepth: 2,
+        hitDepth: 4,
+        tMax: 5000,
+        maxSphereTracingSteps: 255,
+        resolution: 0.4,
+        renderMode: 'sdf'
+    },
+    background: ['#000', '#010101'],
+    camera: {
+        lookFrom: {x: -26.274, y: 6.025, z: -22.944},
+        lookAt: {x: -22.922, y: 6.056, z: -19.898},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1
+    },
+    geometries: [
+        sdf(
+            opUnionRound({radius: 1.8 + random(1), colorBlendAmount: 0.3},
+                ...(range3d(2, 2, 2)
+                        .map(([x, y, z]) => [x * 4.5, y * 4, z * 6])
+                        .map(([x, y, z]) => (
+                            sdfEllipsoid({
+                                material: 'floor-white',
+                                position: {
+                                    x: x,
+                                    y: y + 3.5 + random(2.5),
+                                    z: z
+                                },
+                                rotation: {
+                                    x: degToRad(random(30) * randomSign()),
+                                    y: 0,
+                                    z: 0,
+                                },
+                                radius: {
+                                    x: 1.5 + random(2),
+                                    y: 0.5,
+                                    z: 1 + random(3)
+                                },
+                                domain: {
+                                    domainOp: 'bend',
+                                    size: (0.1 + random(0.1)) * randomSign()
+                                },
+                                // displacement: 'sinus-displacement',
+                            })
+                        ))
+                ),
+                ...(range3d(2, 1, 2)
+                        .map(([x, y, z]) => [x * 4.5, 3 + y * 3, z * 6])
+                        .map(([x, y, z]) => (
+                            sdfCylinder({
+                                position: {
+                                    x: x,
+                                    y: 3.6 + y,
+                                    z: z
+                                },
+                                height: 7 + random(1),
+                                radius: 0.5,
+                                material: 'floor-white',
+                                domain: {
+                                    domainOp: 'bend',
+                                    size: 0.05 * random(0.03) * randomSign()
+                                },
+                            })
+                        ))
+                )
+            ),
+        ),
+        // base
+        sdf(
+            sdfCylinder({
+                radius: 6,
+                height: 0.8,
+                position: {x: 2.2, y: -1, z: 3},
+                material: `lambert-red`,
+            })
+        ),
+        // floor
+        plane({
+            material: 'floor-white',
+            texture: {
+                name: 'check',
+                uvScale: 20
+            },
+            scale: 1000,
+            position: {
+                x: 0,
+                y: -3,
+                z: 0
+            },
+        }),
+        // lights
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: 0,
+                y: 80.0,
+                z: 0
+            },
+        })
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.3, 0.0, 0.0, 1.);
+                }
+            `
+        })
+    ],
+    materials: [
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        })
+    ]
+});

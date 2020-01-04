@@ -20,6 +20,7 @@ class SdfLine extends SdfModel {
             lineStart: start,
             dimensions: end,
             lineRadius: thickness,
+            rotation,
             material,
             texture,
             displacementMap,
