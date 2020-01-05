@@ -18,7 +18,8 @@ import simplexNoise from './lib/noise/simplex.glsl';
 const getSource = ({options, Scene}) =>
 `   #version 300 es
 
-    #pragma optimize(off)
+    // #pragma optimize(off)
+    
     // precision highp float;
     // precision highp int;
     // precision highp sampler2D;

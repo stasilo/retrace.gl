@@ -1,15 +1,15 @@
 scene({
     sdfExportSettings: {
-        resolution: 233,
+        resolution: 466,
         minCoords: {
             x: -10,
             y: -2,
             z: -10
         },
         maxCoords: {
-            x: 40,
-            y: 42,
-            z: 40
+            x: 25,
+            y: 22,
+            z: 25
         }
     },
     rendererSettings: {
@@ -22,8 +22,8 @@ scene({
     },
     background: ['#000', '#010101'],
     camera: {
-        lookFrom: {x: -26.274, y: 6.025, z: -22.944},
-        lookAt: {x: -22.922, y: 6.056, z: -19.898},
+        lookFrom: {x: 66.639, y: 18.684, z: 5.875},
+        lookAt: {x: 62.149, y: 18.164, z: 5.586},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1

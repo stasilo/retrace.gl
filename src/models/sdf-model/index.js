@@ -500,7 +500,7 @@ const sdf = (...args) => {
     let finalBounds;
     let geometryTypes = [], opCodes = [];
     let domainOpCodes = opts.domain && opts.domain.domainOp
-        ? [opts.domain.domainOp]
+        ? [sdfDomainOperations[opts.domain.domainOp]]
         : [];
 
     const noOfSdfsInCsg = dataArray.length / standardSdfDataArrayLength;
