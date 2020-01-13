@@ -44,7 +44,7 @@ scene({
                 const spacing = 50;
 
                 return sphere({
-                    material: `sphere-light-${randomIdx(20)}`,
+                    material: `sphere-light-${randomInt(20)}`,
                     radius,
                     position: {
                         x: -240 + x*radius + spacing*x + random(3) * randomSign(),

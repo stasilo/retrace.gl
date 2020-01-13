@@ -57,13 +57,13 @@ import  {
 } from '../../models/sdf-model';
 
 import {
-    random as _random,
-    randomIdx as _randomIdx,
-    randomBool as _randomBool,
-    randomSign as _randomSign,
-    maybe as _maybe,
-    pluckRandom as _pluckRandom,
-    takeRandom as _takeRandom,
+    deterministicRandom as _random,
+    deterministicRandomInt as _randomInt,
+    deterministicRandomBool as _randomBool,
+    deterministicRandomSign as _randomSign,
+    deterministicMaybe as _maybe,
+    deterministicPluckRandom as _pluckRandom,
+    deterministicTakeRandom as _takeRandom,
     range as _range,
     range2d as _range2d,
     range3d as _range3d,
@@ -85,14 +85,6 @@ import {
 
 const vec3 = _vec3;
 const vec2 = _vec2;
-
-const random = _random;
-const randomIdx = _randomIdx;
-const randomBool = _randomBool;
-const randomSign = _randomSign;
-const maybe = _maybe;
-const pluckRandom = _pluckRandom;
-const takeRandom = _takeRandom;
 
 const range = _range;
 const range2d = _range2d;
@@ -184,8 +176,18 @@ const anisotropicVolumeMaterial = (o) =>
 let cachedSrc = null;
 let transpiledSrc = null;
 
-export default async (src) => {
+const dynamicScene = async (src, randomSeed) => {
+    randomSeed = randomSeed || Math.random()*100000;
+
     const simplex = new SimplexNoise();
+
+    const random = _random(randomSeed);
+    const randomInt = _randomInt(randomSeed);
+    const randomBool = _randomBool(randomSeed);
+    const randomSign = _randomSign(randomSeed);
+    const maybe = _maybe(randomSeed);
+    const pluckRandom = _pluckRandom(randomSeed);
+    const takeRandom = _takeRandom(randomSeed);
 
     if(cachedSrc != src) {
         transpiledSrc = babel.transformSync(src, {
@@ -202,3 +204,5 @@ export default async (src) => {
 
     return eval(transpiledSrc.code);
 }
+
+export default dynamicScene;

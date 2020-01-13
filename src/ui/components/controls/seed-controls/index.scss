@@ -1,0 +1,39 @@
+.render-controls {
+    label {
+        margin-right: 10px;
+    }
+
+    input {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+
+        padding: 2px 5px 2px 5px;
+
+        background-color: black;
+        outline-color: red;
+        border: 1px solid white;
+
+        color: white;
+        text-align: center;
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+
+    button {
+        background: transparent;
+        margin-left: 5px;
+        color: white;
+        text-decoration: underline;
+        border: none;
+        cursor: pointer;
+
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+}

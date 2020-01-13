@@ -1,4 +1,5 @@
 import hexRgb from 'hex-rgb';
+import Prando from 'prando';
 
 // helpers
 
@@ -112,27 +113,85 @@ const random = (max = 1, min) => {
     return Math.random() * (max - min) + min;
 }
 
-const randomIdx = (max = 1, min = 0) =>
+const deterministicRandom = (seed) => {
+    const rng = new Prando(seed);
+
+    return (max = 1, min) => {
+        if(defined(min)) { 
+            [min, max] = [max, min];
+        } else { 
+            min = 0;
+        }
+
+        return rng.next() * (max - min) + min;
+    }
+}
+
+const randomInt = (max = 1, min = 0) =>
     Math.floor(random(max, min));
+
+const deterministicRandomInt = (seed) => {
+    const rng = new Prando(seed);
+
+    return (max = 1, min = 0) =>
+        rng.nextInt(min, max);
+}
 
 const randomSign = () =>
     random() < 0.5 ? -1 : 1;
 
+const deterministicRandomSign = (seed) => {
+    const rng = new Prando(seed);
+    return () =>
+        rng.next() < 0.5 ? -1 : 1;
+}
+
 const randomBool = () =>
     random() < 0.5 ? 0 : 1;
 
+const deterministicRandomBool = (seed) => {
+    const rng = new Prando(seed);
+    return () =>
+        rng.next() < 0.5 ? 0 : 1;
+}
+
 const pluckRandom = (arr) =>
     arr[parseInt(random(arr.length))];
+
+const deterministicPluckRandom = (seed) => {
+    const rng = new Prando(seed);
+
+    return (arr) =>
+        arr[parseInt(rng.next()*arr.length)];
+}
 
 const takeRandom = (arr, lim) =>
     typeof lim !== 'undefined'
         ? shuffle(arr).slice(0, lim)
         : arr.filter(randomBool);
 
+const deterministicTakeRandom = (seed) => {
+    const rng = new Prando(seed);
+
+    return (arr, lim) =>
+        typeof lim !== 'undefined'
+            ? shuffle(arr).slice(0, lim)
+            : arr.filter(deterministicRandomBool(seed)());
+}
+
 const maybe = (cb, p = 0.5) =>
     random() > p
         ? cb()
         : null;
+
+const deterministicMaybe = (seed) => {
+    const rng = new Prando(seed);
+
+    return (cb, p = 0.5) =>
+        rng.next() > p
+            ? cb()
+            : null;
+}
 
 // math stuff
 
@@ -317,12 +376,20 @@ export {
     unique,
 
     random,
-    randomIdx,
+    randomInt,
     randomSign,
     randomBool,
     maybe,
     pluckRandom,
     takeRandom,
+
+    deterministicRandom,
+    deterministicRandomInt,
+    deterministicRandomSign,
+    deterministicRandomBool,
+    deterministicMaybe,
+    deterministicPluckRandom,
+    deterministicTakeRandom,
 
     roundEven,
 

@@ -27,6 +27,7 @@
         "mobx": "^5.9.4",
         "mobx-react": "^5.4.3",
         "normalize.css": "^8.0.1",
+        "prando": "^5.1.2",
         "react-modal": "^3.11.1"
     },
     "devDependencies": {

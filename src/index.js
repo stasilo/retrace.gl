@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     await store.loadSceneFromUrl();
 
     await store.compileScene();
+    // await store.regenerateScene();
 
     let loader = document.querySelector('.loader');
     loader.remove();

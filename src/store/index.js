@@ -20,6 +20,7 @@ import {resetCanvas} from '../gl';
 import {
     defined,
     definedNotNull,
+    range
 } from '../utils';
 
 const shaderSampleCount = 1;
@@ -41,7 +42,7 @@ import baseSceneSrc from '../assets/scenes/basic-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/material-test-scene/index.js.rtr';
 
 
-const defaultSceneUrl = 'assets/scenes/sdf-test-scene-1/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sdf-test-scene-1/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-test-scene-2/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-test-scene-3/index.js.rtr';
 
@@ -53,6 +54,7 @@ const defaultSceneUrl = 'assets/scenes/sdf-test-scene-1/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-sculpture-1/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-sculpture-2/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-sculpture-3/index.js.rtr';
+const defaultSceneUrl = 'assets/scenes/sdf-sculpture-4/index.js.rtr';
 
 // const defaultSceneUrl = 'assets/scenes/sdf-geometries-test-scene/index.js.rtr';
 
@@ -91,6 +93,8 @@ class Store {
     @observable _currentFrameCount = 0;
     @observable _currentMaxSampleCount = defaultMaxSampleCount;
     @observable _currentRenderTime = 0;
+    @observable _currentRandomSeed = 0;
+    @observable _lastRenderedRandomSeed = 0;
 
     _isInitialRender = true;
     _activeRenderInstance = null;
@@ -183,8 +187,20 @@ class Store {
 
     @action
     async compileScene() {
+        // handle random seed if this is the initial render
+        if(this._isInitialRender) {
+            const seedRegex = /(scene\(\{.*initialRandomSeed:)\s*([\d.]*)/gs;
+            const matches = seedRegex.exec(this.sceneSrc);
+
+            if(matches && matches[2] && this._isInitialRender) {
+                this.currentRandomSeed = matches[2];
+            } else {
+                this.currentRandomSeed = parseInt(Math.random() * 100000);
+            }
+        }
+
         try {
-            this._scene = await dynamicScene(this._sceneSrc);
+            this._scene = await dynamicScene(this.sceneSrc, this.currentRandomSeed);
             this.currentrendererSettings = this._scene.rendererSettings;
 
             // init settings from scene on initial render
@@ -266,13 +282,23 @@ class Store {
     }
 
     @action
-    render() {
+    async render() {
+        if(this.lastRenderedRandomSeed !== this.currentRandomSeed) {
+            alert('compiling scene!')
+            await this.compileScene();
+        }
+
         this.realTimeMode = false;
         this.trace();
     }
 
     @action
-    realTime() {
+    async realTime() {
+        if(this.lastRenderedRandomSeed !== this.currentRandomSeed) {
+            alert('compiling scene!')
+            await this.compileScene();
+        }
+
         this.realTimeMode = true;
         this.trace();
     }
@@ -331,10 +357,14 @@ class Store {
             realTime: this.realTimeMode,
             debug: false
         });
+
+        this.lastRenderedRandomSeed = this.currentRandomSeed;
     }
 
     @action
     async regenerateScene() {
+        this.currentRandomSeed = parseInt(Math.random() * 100000);
+
         await this.compileScene();
         this.currentMaxSampleCount = defaultMaxSampleCount;
         this.trace();
@@ -586,6 +616,24 @@ class Store {
 
     set currentRenderTime(val) {
         this._currentRenderTime = val;
+    }
+
+    @computed
+    get currentRandomSeed() {
+        return this._currentRandomSeed;
+    }
+
+    set currentRandomSeed(val) {
+        this._currentRandomSeed = Number(val);
+    }
+
+    @computed
+    get lastRenderedRandomSeed() {
+        return this._lastRenderedRandomSeed;
+    }
+
+    set lastRenderedRandomSeed(val) {
+        this._lastRenderedRandomSeed = Number(val);
     }
 
     @computed

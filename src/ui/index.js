@@ -8,6 +8,7 @@ import {Header} from './layout';
 
 import RenderStatus from './components/controls/render-status';
 import RenderControls from './components/controls/render-controls';
+import SeedControls from './components/controls/seed-controls';
 import RealtimeControls from './components/controls/realtime-controls';
 
 import SceneControls from './components/controls/scene-controls';
@@ -36,6 +37,7 @@ const UI = observer(() => {
                 <FileControls/>
                 <RenderStatus/>
                 <RenderModeControls/>
+                <SeedControls/>
                 <RenderControls/>
                 <RealtimeControls/>
                 <SceneControls/>

@@ -38,6 +38,10 @@ const FileControls = observer(() => {
     const toggleSaveModal = () =>
         setSaveModalOpen(!saveModalOpen);
 
+    const [renameModalOpen, setRenameModalOpen] = useState(false);
+    const toggleRenameModal = () =>
+        setRenameModalOpen(!renameModalOpen);
+
     useEffect(() => {
         (async () => {
             const scenes = await store.sceneStorage.getAvailableScenes();
@@ -61,6 +65,12 @@ const FileControls = observer(() => {
             toggleSaveModal();
         }
 
+    };
+
+    const handleSceneRename = async (e) => {
+        e.preventDefault();
+        store.saveCurrentScene(sceneName);
+        toggleSaveModal();
     };
 
     const handleOpenSceneFromUrl = async (e) => {
@@ -110,6 +120,13 @@ const FileControls = observer(() => {
                 break;
             }
 
+            case 'rename': {
+                await store.sceneStorage.deleteScene(store.sceneName);
+                toggleSaveModal();
+
+                break;
+            }
+
             case 'open': {
                 const sceneName = args[0];
 
@@ -117,6 +134,10 @@ const FileControls = observer(() => {
                     && confirm(`save scene '${store.sceneName}' before opening new scene?`))
                 {
                     await store.saveCurrentScene(store.sceneName);
+                    await store.loadScene(sceneName);
+                    await store.compileScene();
+
+                    store.trace();
                 }
 
                 if(!store.sceneName
@@ -126,8 +147,6 @@ const FileControls = observer(() => {
                     await store.compileScene();
 
                     store.trace();
-                } else {
-
                 }
 
                 break;
@@ -155,7 +174,7 @@ const FileControls = observer(() => {
                 });
 
                 const sceneName = store.sceneName
-                    ? `${store.sceneName}.rtr.js`
+                    ? `${store.sceneName}-${store.currentRandomSeed}.rtr.js`
                     : 'retrace-scene.rtr.js';
 
                 fileSaver.saveAs(blob, sceneName);
@@ -180,6 +199,12 @@ const FileControls = observer(() => {
                     </button>
                     <button onClick={() => handleDropdownMenuClick('saveas')}>
                         save as
+                    </button>
+                    <button
+                        disabled={!store.sceneName}
+                        onClick={() => handleDropdownMenuClick('rename')}
+                    >
+                        rename scene
                     </button>
                     <div className="dropdown dropdown--inner">
                         <button>open</button>
@@ -236,6 +261,32 @@ const FileControls = observer(() => {
                     </button>
                 </form>
             </Modal>
+
+            <Modal
+                isOpen={renameModalOpen}
+                shouldCloseOnOverlayClick={true}
+                onRequestClose={toggleRenameModal}
+                onAfterOpen={() => sceneNameRef.current.focus()}
+                className="save-modal"
+            >
+                <form className="save-modal__inner" onSubmit={handleSceneRename}>
+                    <label htmlFor="scenename">
+                        new scene name:
+                    </label>
+                    <input
+                        className="save-modal__input"
+                        type="text"
+                        name="scenename"
+                        onChange={handleSceneNameInputChange}
+                        value={sceneName}
+                        ref={sceneNameRef}
+                    />
+                    <button onClick={handleSceneRename}>
+                        save
+                    </button>
+                </form>
+            </Modal>
+
 
             <Modal
                 isOpen={openModalOpen}

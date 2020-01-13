@@ -1,15 +1,16 @@
 scene({
+    initialRandomSeed: 52888,
     sdfExportSettings: {
-        resolution: 466,
+        resolution: 473,
         minCoords: {
             x: -10,
             y: -2,
             z: -10
         },
         maxCoords: {
-            x: 25,
+            x: 35,
             y: 22,
-            z: 25
+            z: 35
         }
     },
     rendererSettings: {
