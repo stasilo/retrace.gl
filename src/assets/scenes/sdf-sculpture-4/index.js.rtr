@@ -32,7 +32,7 @@ const createLineIntervals = () =>
         });
 
 scene({
-    initialRandomSeed: 41294,
+    initialRandomSeed: 86055, //88839, //41294,
     rendererSettings: {
         realtimeHitDepth: 2,
         hitDepth: 4,
@@ -65,7 +65,7 @@ scene({
             //     ...createLineIntervals(),
             //     ...createLineIntervals(),
             // )
-            opUnionRound({radius: 1.3, colorBlendAmount: 0.3},
+            opUnionChamfer({radius: 0.5 + random(0.3), colorBlendAmount: 0.3},
                 ...createLineIntervals(),
                 ...createLineIntervals(),
                 ...createLineIntervals(),

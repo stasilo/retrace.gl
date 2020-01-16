@@ -284,7 +284,6 @@ class Store {
     @action
     async render() {
         if(this.lastRenderedRandomSeed !== this.currentRandomSeed) {
-            alert('compiling scene!')
             await this.compileScene();
         }
 
@@ -295,7 +294,6 @@ class Store {
     @action
     async realTime() {
         if(this.lastRenderedRandomSeed !== this.currentRandomSeed) {
-            alert('compiling scene!')
             await this.compileScene();
         }
 

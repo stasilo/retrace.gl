@@ -19,7 +19,7 @@ const getSource = ({options, Scene}) =>
 `   #version 300 es
 
     // #pragma optimize(off)
-    
+
     // precision highp float;
     // precision highp int;
     // precision highp sampler2D;
@@ -108,6 +108,8 @@ const getSource = ({options, Scene}) =>
         ? '#define HAS_SDF_OP_UNION' : ''}
     ${Scene.hasSdfUnionRoundOpCode
         ? '#define HAS_SDF_OP_UNIONROUND' : ''}
+    ${Scene.hasSdfUnionChamferOpCode
+        ? '#define HAS_SDF_OP_UNIONCHAMFER' : ''}
     ${Scene.hasSdfSubtractOpCode
         ? '#define HAS_SDF_OP_SUBTRACT' : ''}
     ${Scene.hasSdfIntersectOpCode
@@ -1493,6 +1495,11 @@ const getSource = ({options, Scene}) =>
             return max(r, min (a, b)) - length(u);
         }
 
+        #define SDF_UNION_CHAMFER ${sdfOperators.unionChamfer}
+        float opUnionChamfer(float a, float b, float r) {
+        	return min(min(a, b), (a - r + b)*sqrt(0.5));
+        }
+
         #define SDF_SUBTRACT ${sdfOperators.subtract}
         float opSubtraction( float d1, float d2) {
             return max(-d1, d2);
@@ -2221,6 +2228,39 @@ const getSource = ({options, Scene}) =>
                         #ifdef HAS_SDF_OP_UNIONROUND
                             case SDF_UNION_ROUND: {
                                 d1 = opUnionRound(d1, d2, opRadius);
+                                Material sdfMaterial = getPackedMaterial(sdfData.materialId);
+
+                                vec3 newColor;
+                                if(sdfData.textureId > -1) {
+                                    newColor = getTriplanarMappedTextureColor(sdfData, p);
+                                } else {
+                                    newColor = sdfMaterial.color;
+                                }
+
+                                color = mix(
+                                    color,
+                                    newColor,
+                                    clamp(
+                                        (prevDist - d1 - d2) * colorBlendAmount,
+                                        0.0,
+                                        1.0
+                                    )
+                                );
+
+                                // "incorrect" but cool blend?
+                                // color = mix(color, newColor, clamp(prevDist - d1, 0.0, 1.0));
+
+                                if(prevDist > d2 && prevDist > d1) {
+                                    materialId = sdfData.materialId;
+                                }
+
+                                break;
+                            }
+                        #endif
+
+                        #ifdef HAS_SDF_OP_UNIONCHAMFER
+                            case SDF_UNION_CHAMFER: {
+                                d1 = opUnionChamfer(d1, d2, opRadius);
                                 Material sdfMaterial = getPackedMaterial(sdfData.materialId);
 
                                 vec3 newColor;

@@ -15,8 +15,8 @@ scene({
         maxCoords: {x: 2, y: 8, z: 2}
     },
     camera: {
-        lookFrom: {x: -19.886, y: 1.748, z: -22.470},
-        lookAt: {x: -17.134, y: 2.276, z: -18.934},
+        lookFrom: {x: 7.290, y: 4.696, z: 8.632},
+        lookAt: {x: 4.080, y: 4.399, z: 5.475},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -34,7 +34,7 @@ scene({
                                 displacement: 'torus-displacement',
                                 position: {
                                     x: -9 + x*2.5,
-                                    y: 1.3 + y*1.5 - 1,
+                                    y: 1.3 + y*1.5 /*- 1*/,
                                     z: -9 + z*2.5
                                 },
                                 rotation: {
@@ -50,33 +50,33 @@ scene({
                 sdfSphere({
                     material: 'clearcoat-test',
                     radius: 3,
-                    position: {x: -6, y: 3.5 - 1, z: -6},
+                    position: {x: -6, y: 3.5 /*- 1*/, z: -6},
                 })
             )
         ),
         sdf(
             // cylindrical base
-            sdfCylinder({
-                radius: 2,
-                height: 0.35,
-                position: {x: -7, y: -0.2, z: -6.6},
-                material: 'clearcoat-test',
-            })
-            // rectangular base
-            // sdfBox({
+            // sdfCylinder({
+            //     radius: 2,
+            //     height: 0.35,
+            //     position: {x: -7, y: -0.2, z: -6.6},
             //     material: 'clearcoat-test',
-            //     // material: `lambert-red`,
-            //     dimensions: {x: 2.7, y: 0.5, z: 2.7},
-            //     position: {x: -7, y: 0.2, z: -6.6},
             // })
-            // |> opUnionRound({radius: 0.5 }, #,
-            //     sdfBox({
-            //         material: 'clearcoat-test',
-            //         // material: `lambert-red`,
-            //         dimensions: {x: 2.0, y: 0.25, z: 2.0},
-            //         position: {x: -7, y: 0.8, z: -6.6},
-            //     }),
-            // )
+            // rectangular base
+            sdfBox({
+                material: 'clearcoat-test',
+                // material: `lambert-red`,
+                dimensions: {x: 2.7, y: 0.5, z: 2.7},
+                position: {x: -7, y: 0.2, z: -6.6},
+            })
+            |> opUnionRound({radius: 0.5 }, #,
+                sdfBox({
+                    material: 'clearcoat-test',
+                    // material: `lambert-red`,
+                    dimensions: {x: 2.0, y: 0.25, z: 2.0},
+                    position: {x: -7, y: 0.8, z: -6.6},
+                }),
+            )
         ),
         // regular plane floor
         plane({

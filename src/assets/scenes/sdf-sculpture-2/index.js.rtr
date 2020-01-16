@@ -1,14 +1,14 @@
 scene({
-    initialRandomSeed: 52888,
+    initialRandomSeed: 10176, //83149, //11385, //52888,
     sdfExportSettings: {
-        resolution: 473,
+        resolution: 399, // 333
         minCoords: {
             x: -10,
             y: -2,
             z: -10
         },
         maxCoords: {
-            x: 35,
+            x: 25,
             y: 22,
             z: 35
         }
@@ -23,8 +23,8 @@ scene({
     },
     background: ['#000', '#010101'],
     camera: {
-        lookFrom: {x: 66.639, y: 18.684, z: 5.875},
-        lookAt: {x: 62.149, y: 18.164, z: 5.586},
+        lookFrom: {x: 41.910, y: 18.887, z: 26.342},
+        lookAt: {x: 38.205, y: 17.590, z: 24.083},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1

@@ -13,7 +13,8 @@ const sdfOperators = {
     union: 1,
     unionRound: 2,
     subtract: 3,
-    intersect: 4
+    intersect: 4,
+    unionChamfer: 5
 };
 
 const sdfAxes = {
@@ -96,6 +97,7 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
         geoData[offset] = opCode;
 
         switch(opCode) {
+            case sdfOperators.unionChamfer:
             case sdfOperators.unionRound:
                 if('radius' in opArguments) {
                     geoData[offset + 1] = defined(opArguments.radius)
@@ -128,6 +130,9 @@ const sdfOpUnion = (...geometries) =>
 
 const sdfOpUnionRound = ({radius, colorBlendAmount}, ...geometries) =>
     sdfOperation(sdfOperators.unionRound, {radius, colorBlendAmount}, ...geometries);
+
+const sdfOpUnionChamfer = ({radius, colorBlendAmount}, ...geometries) =>
+    sdfOperation(sdfOperators.unionChamfer, {radius, colorBlendAmount}, ...geometries);
 
 const sdfOpSubtract = (...geometries) =>
     sdfOperation(sdfOperators.subtract, {}, ...geometries);
@@ -794,6 +799,7 @@ export {
 
     sdfOpUnion,
     sdfOpUnionRound,
+    sdfOpUnionChamfer,
     sdfOpSubtract,
     sdfOpIntersect,
 };
