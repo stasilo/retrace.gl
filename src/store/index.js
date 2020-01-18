@@ -51,10 +51,10 @@ import baseSceneSrc from '../assets/scenes/basic-scene/index.js.rtr';
 
 // const defaultSceneUrl = 'assets/scenes/sdf-export-test/index.js.rtr';
 
-// const defaultSceneUrl = 'assets/scenes/sdf-sculpture-1/index.js.rtr';
+const defaultSceneUrl = 'assets/scenes/sdf-sculpture-1/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-sculpture-2/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-sculpture-3/index.js.rtr';
-const defaultSceneUrl = 'assets/scenes/sdf-sculpture-4/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sdf-sculpture-4/index.js.rtr';
 
 // const defaultSceneUrl = 'assets/scenes/sdf-geometries-test-scene/index.js.rtr';
 

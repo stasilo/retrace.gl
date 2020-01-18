@@ -110,6 +110,10 @@ const getSource = ({options, Scene}) =>
         ? '#define HAS_SDF_OP_UNIONROUND' : ''}
     ${Scene.hasSdfUnionChamferOpCode
         ? '#define HAS_SDF_OP_UNIONCHAMFER' : ''}
+    ${Scene.hasSdfUnionStairsOpCode
+        ? '#define HAS_SDF_OP_UNIONSTAIRS' : ''}
+    ${Scene.hasSdfUnionColumnsOpCode
+        ? '#define HAS_SDF_OP_UNIONCOLUMNS' : ''}
     ${Scene.hasSdfSubtractOpCode
         ? '#define HAS_SDF_OP_SUBTRACT' : ''}
     ${Scene.hasSdfIntersectOpCode
@@ -391,8 +395,13 @@ const getSource = ({options, Scene}) =>
             : 0.;
     }
 
-     // deterministic rand
-     // http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
+    // Shortcut for 45-degrees rotation
+    void pR45(inout vec2 p) {
+    	p = (p + vec2(p.y, -p.x))*sqrt(0.5);
+    }
+
+    // deterministic rand
+    // http://byteblacksmith.com/improvements-to-the-canonical-one-liner-glsl-rand-for-opengl-es-2-0/
 
      float random(vec2 co) {
          highp float a = 12.9898;
@@ -1348,6 +1357,7 @@ const getSource = ({options, Scene}) =>
             int geoType;
             int opType;
             float opRadius;
+            float opArg1;
             float colorBlendAmount;
             int materialId;
             int textureId;
@@ -1409,6 +1419,10 @@ const getSource = ({options, Scene}) =>
             yOffset = floor((offset + 10.) * DATA_TEX_INV_SIZE);
             vec3 sdfData11 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
 
+            xOffset = mod(offset + 11., DATA_TEX_SIZE);
+            yOffset = floor((offset + 11.) * DATA_TEX_INV_SIZE);
+            vec3 sdfData12 = texelFetch(uSdfDataTexture, ivec2(xOffset, yOffset), 0).xyz;
+
             SdfCsgDomainOpHeader domainOp = SdfCsgDomainOpHeader(
                 int(sdfData6.x),
                 int(sdfData6.y),
@@ -1419,8 +1433,9 @@ const getSource = ({options, Scene}) =>
             return SdfGeometry(
                 int(sdfData1.x), // geo type
                 int(sdfData1.y), // op type
-                float(sdfData1.z), //  op radius
-                float(sdfData5.x), // color blend amount
+                sdfData1.z, // op radius
+                sdfData12.x, // op argument 1 (i.e. steps)
+                sdfData5.x, // color blend amount
                 int(sdfData2.x), // material id
                 int(sdfData2.y), // texture id
                 vec2(sdfData5.y, sdfData5.z), // texture uv scale
@@ -1473,44 +1488,6 @@ const getSource = ({options, Scene}) =>
         }
 
         /**
-         * SDF CSG operations
-         *
-         * Most of these are from the webgl port of the Mercury hg_sdf library by jcowles:
-         * https://github.com/jcowles/hg_sdf
-         *
-         * A few are (of course :)) by iq:
-         * http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
-         */
-
-        #define SDF_NOOP ${sdfOperators.noOp}
-
-        #define SDF_UNION ${sdfOperators.union}
-        float opUnion(float d1, float d2) {
-            return min(d1,d2);
-        }
-
-        #define SDF_UNION_ROUND ${sdfOperators.unionRound}
-        float opUnionRound(float a, float b, float r) {
-            vec2 u = max(vec2(r - a,r - b), vec2(0));
-            return max(r, min (a, b)) - length(u);
-        }
-
-        #define SDF_UNION_CHAMFER ${sdfOperators.unionChamfer}
-        float opUnionChamfer(float a, float b, float r) {
-        	return min(min(a, b), (a - r + b)*sqrt(0.5));
-        }
-
-        #define SDF_SUBTRACT ${sdfOperators.subtract}
-        float opSubtraction( float d1, float d2) {
-            return max(-d1, d2);
-        }
-
-        #define SDF_INTERSECT ${sdfOperators.intersect}
-        float opIntersection(float d1, float d2) {
-            return max(d1, d2);
-        }
-
-        /**
          * SDF domain operations
          */
 
@@ -1519,10 +1496,10 @@ const getSource = ({options, Scene}) =>
 
         #define SDF_DOM_OP_PMOD1 ${sdfDomainOperations.repeat}
         float pMod1(inout float p, float size) {
-        	float halfsize = size*0.5;
-        	float c = floor((p + halfsize)/size);
-        	p = mod(p + halfsize, size) - halfsize;
-        	return c;
+            float halfsize = size*0.5;
+            float c = floor((p + halfsize)/size);
+            p = mod(p + halfsize, size) - halfsize;
+            return c;
         }
 
         // https://www.shadertoy.com/view/3syGzz
@@ -1564,20 +1541,96 @@ const getSource = ({options, Scene}) =>
 
         #define SDF_DOM_OP_POLAR ${sdfDomainOperations.repeatPolar}
         float pModPolar(inout vec2 p, float repetitions) {
-        	float angle = 2.*PI/repetitions;
-        	float a = atan(p.y, p.x) + angle/2.;
-        	float r = length(p);
-        	float c = floor(a/angle);
+            float angle = 2.*PI/repetitions;
+            float a = atan(p.y, p.x) + angle/2.;
+            float r = length(p);
+            float c = floor(a/angle);
 
             a = mod(a,angle) - angle/2.;
-        	p = vec2(cos(a), sin(a))*r;
+            p = vec2(cos(a), sin(a))*r;
 
-        	// For an odd number of repetitions, fix cell index of the cell in -x direction
-        	// (cell index would be e.g. -5 and 5 in the two halves of the cell):
-        	if (abs(c) >= (repetitions/2.)) c = abs(c);
+            // For an odd number of repetitions, fix cell index of the cell in -x direction
+            // (cell index would be e.g. -5 and 5 in the two halves of the cell):
+            if (abs(c) >= (repetitions/2.)) c = abs(c);
 
             return c;
         }
+
+
+        /**
+         * SDF CSG operations
+         *
+         * Most of these are from the webgl port of the Mercury hg_sdf library by jcowles:
+         * https://github.com/jcowles/hg_sdf
+         *
+         * A few are (of course :)) by iq:
+         * http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
+         */
+
+        #define SDF_NOOP ${sdfOperators.noOp}
+
+        #define SDF_UNION ${sdfOperators.union}
+        float opUnion(float d1, float d2) {
+            return min(d1,d2);
+        }
+
+        #define SDF_UNION_ROUND ${sdfOperators.unionRound}
+        float opUnionRound(float a, float b, float r) {
+            vec2 u = max(vec2(r - a,r - b), vec2(0));
+            return max(r, min (a, b)) - length(u);
+        }
+
+        #define SDF_UNION_CHAMFER ${sdfOperators.unionChamfer}
+        float opUnionChamfer(float a, float b, float r) {
+        	return min(min(a, b), (a - r + b)*sqrt(0.5));
+        }
+
+        #define SDF_UNION_STAIRS ${sdfOperators.unionStairs}
+        float opUnionStairs(float a, float b, float r, float n) {
+        	float s = r/n;
+        	float u = b-r;
+
+        	return min(
+                min(a,b),
+                0.5 * (u + a + abs ((mod (u - a + s, 2. * s)) - s))
+            );
+        }
+
+        // The "Columns" flavour makes n-1 circular columns at a 45 degree angle:
+        #define SDF_UNION_COLUMNS ${sdfOperators.unionColumns}
+        float opUnionColumns(float a, float b, float r, float n) {
+        	if ((a < r) && (b < r)) {
+        		vec2 p = vec2(a, b);
+        		float columnradius = r*sqrt(2.)/((n-1.)*2.+sqrt(2.));
+        		pR45(p);
+        		p.x -= sqrt(2.)/2.*r;
+        		p.x += columnradius*sqrt(2.);
+        		if (mod(n,2.) == 1.) {
+        			p.y += columnradius;
+        		}
+        		// At this point, we have turned 45 degrees and moved at a point on the
+        		// diagonal that we want to place the columns on.
+        		// Now, repeat the domain along this direction and place a circle.
+        		pMod1(p.y, columnradius*2.);
+        		float result = length(p) - columnradius;
+        		result = min(result, p.x);
+        		result = min(result, a);
+        		return min(result, b);
+        	} else {
+        		return min(a, b);
+        	}
+        }
+
+        #define SDF_SUBTRACT ${sdfOperators.subtract}
+        float opSubtraction( float d1, float d2) {
+            return max(-d1, d2);
+        }
+
+        #define SDF_INTERSECT ${sdfOperators.intersect}
+        float opIntersection(float d1, float d2) {
+            return max(d1, d2);
+        }
+
 
 
         /**
@@ -2158,6 +2211,7 @@ const getSource = ({options, Scene}) =>
 
             int opType = SDF_NOOP;
             float opRadius = -1.;
+            float opArg1 = -1.;
             float colorBlendAmount = 1.;
 
             csgHeader = getPackedSdfCsgDomainOpHeader(sdfDataTexOffset);
@@ -2174,6 +2228,7 @@ const getSource = ({options, Scene}) =>
                 if(geoIndex == 0) {
                     opType = sdfData.opType;
                     opRadius = sdfData.opRadius;
+                    opArg1 = sdfData.opArg1;
 
                     sdfGeometryDistance(sdfData, p, /* => out */ d1);
                     if(sdfData.displacementFuncId > -1) {
@@ -2291,6 +2346,74 @@ const getSource = ({options, Scene}) =>
                             }
                         #endif
 
+                        #ifdef HAS_SDF_OP_UNIONSTAIRS
+                            case SDF_UNION_STAIRS: {
+                                // d1 = opUnionChamfer(d1, d2, opRadius);
+                                d1 = opUnionStairs(d1, d2, opRadius, opArg1);
+                                Material sdfMaterial = getPackedMaterial(sdfData.materialId);
+
+                                vec3 newColor;
+                                if(sdfData.textureId > -1) {
+                                    newColor = getTriplanarMappedTextureColor(sdfData, p);
+                                } else {
+                                    newColor = sdfMaterial.color;
+                                }
+
+                                color = mix(
+                                    color,
+                                    newColor,
+                                    clamp(
+                                        (prevDist - d1 - d2) * colorBlendAmount,
+                                        0.0,
+                                        1.0
+                                    )
+                                );
+
+                                // "incorrect" but cool blend?
+                                // color = mix(color, newColor, clamp(prevDist - d1, 0.0, 1.0));
+
+                                if(prevDist > d2 && prevDist > d1) {
+                                    materialId = sdfData.materialId;
+                                }
+
+                                break;
+                            }
+                        #endif
+
+
+                        #ifdef HAS_SDF_OP_UNIONCOLUMNS
+                            case SDF_UNION_COLUMNS: {
+                                d1 = opUnionColumns(d1, d2, opRadius, opArg1);
+                                Material sdfMaterial = getPackedMaterial(sdfData.materialId);
+
+                                vec3 newColor;
+                                if(sdfData.textureId > -1) {
+                                    newColor = getTriplanarMappedTextureColor(sdfData, p);
+                                } else {
+                                    newColor = sdfMaterial.color;
+                                }
+
+                                color = mix(
+                                    color,
+                                    newColor,
+                                    clamp(
+                                        (prevDist - d1 - d2) * colorBlendAmount,
+                                        0.0,
+                                        1.0
+                                    )
+                                );
+
+                                // "incorrect" but cool blend?
+                                // color = mix(color, newColor, clamp(prevDist - d1, 0.0, 1.0));
+
+                                if(prevDist > d2 && prevDist > d1) {
+                                    materialId = sdfData.materialId;
+                                }
+
+                                break;
+                            }
+                        #endif
+
                         #ifdef HAS_SDF_OP_SUBTRACT
                             case SDF_SUBTRACT: {
                                 d1 = opSubtraction(d2, d1);
@@ -2328,6 +2451,7 @@ const getSource = ({options, Scene}) =>
 
                 opType = sdfData.opType;
                 opRadius = sdfData.opRadius;
+                opArg1 = sdfData.opArg1;
                 colorBlendAmount = sdfData.colorBlendAmount;
 
                 sdfDataTexOffset += SDF_DATA_TEX_OFFSET_SIZE;

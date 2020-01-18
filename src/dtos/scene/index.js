@@ -204,6 +204,14 @@ class Scene {
                 .filter(g =>
                     g.opCodes.indexOf(sdfOperators.unionChamfer) > -1
                 ).length > 0;
+            this.hasSdfUnionStairsOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.unionStairs) > -1
+                ).length > 0;
+            this.hasSdfUnionColumnsOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.unionColumns) > -1
+                ).length > 0;
             this.hasSdfSubtractOpCode = this.sdfGeometries
                 .filter(g =>
                     g.opCodes.indexOf(sdfOperators.subtract) > -1

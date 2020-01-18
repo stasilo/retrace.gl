@@ -14,7 +14,9 @@ const sdfOperators = {
     unionRound: 2,
     subtract: 3,
     intersect: 4,
-    unionChamfer: 5
+    unionChamfer: 5,
+    unionStairs: 6,
+    unionColumns: 7
 };
 
 const sdfAxes = {
@@ -74,7 +76,7 @@ const sdfGeometryTypes = {
 const standardSdfOpArrayDataOffset = 1;
 const standardSdfDomainOpArrayDataOffset = 15;
 
-const standardSdfDataArrayLength = 33; //30;
+const standardSdfDataArrayLength = 36; //33; //30;
 const sdfHeaderOffsetSize = 6;
 
 const sdfOperation = (opCode, opArguments, ...geometries) => {
@@ -99,15 +101,29 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
         switch(opCode) {
             case sdfOperators.unionChamfer:
             case sdfOperators.unionRound:
-                if('radius' in opArguments) {
-                    geoData[offset + 1] = defined(opArguments.radius)
-                        ? opArguments.radius
-                        : 1;
+                geoData[offset + 1] = defined(opArguments.radius)
+                    ? opArguments.radius
+                    : 1;
 
-                    geoData[offset + 11] = defined(opArguments.colorBlendAmount)
-                        ? 1/(opArguments.colorBlendAmount*10)
-                        : 1;
-                }
+                geoData[offset + 11] = defined(opArguments.colorBlendAmount)
+                    ? 1/(opArguments.colorBlendAmount*10)
+                    : 1;
+
+                break;
+
+            case sdfOperators.unionStairs:
+            case sdfOperators.unionColumns:
+                geoData[offset + 1] = defined(opArguments.radius)
+                    ? opArguments.radius
+                    : 1;
+
+                geoData[offset + 11] = defined(opArguments.colorBlendAmount)
+                    ? 1/(opArguments.colorBlendAmount*10)
+                    : 1;
+
+                geoData[offset + 32] = defined(opArguments.steps)
+                    ? opArguments.steps
+                    : 2;
 
                 break;
 
@@ -133,6 +149,12 @@ const sdfOpUnionRound = ({radius, colorBlendAmount}, ...geometries) =>
 
 const sdfOpUnionChamfer = ({radius, colorBlendAmount}, ...geometries) =>
     sdfOperation(sdfOperators.unionChamfer, {radius, colorBlendAmount}, ...geometries);
+
+const sdfOpUnionStairs = ({radius, steps, colorBlendAmount}, ...geometries) =>
+    sdfOperation(sdfOperators.unionStairs, {radius, steps, colorBlendAmount}, ...geometries);
+
+const sdfOpUnionColumns = ({radius, steps, colorBlendAmount}, ...geometries) =>
+    sdfOperation(sdfOperators.unionColumns, {radius, steps, colorBlendAmount}, ...geometries);
 
 const sdfOpSubtract = (...geometries) =>
     sdfOperation(sdfOperators.subtract, {}, ...geometries);
@@ -779,7 +801,11 @@ class SdfModel {
 
             this.lineStart.x, // 30
             this.lineStart.y, // 31
-            this.lineStart.z // 32
+            this.lineStart.z, // 32,
+
+            -1, // 33 // opSteps, mutated by operation call (where applicable)
+            -1, // 34,
+            -1, // 35
         ];
     }
 }
@@ -800,6 +826,8 @@ export {
     sdfOpUnion,
     sdfOpUnionRound,
     sdfOpUnionChamfer,
+    sdfOpUnionStairs,
+    sdfOpUnionColumns,
     sdfOpSubtract,
     sdfOpIntersect,
 };

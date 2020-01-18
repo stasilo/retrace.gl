@@ -53,6 +53,8 @@ import  {
     sdfOpUnion,
     sdfOpUnionRound,
     sdfOpUnionChamfer,
+    sdfOpUnionStairs,
+    sdfOpUnionColumns,
     sdfOpSubtract,
     sdfOpIntersect
 } from '../../models/sdf-model';
@@ -148,7 +150,9 @@ const sdfLink = (o) =>
 const sdf = _sdf;
 const opUnion = sdfOpUnion;
 const opUnionRound = sdfOpUnionRound;
-const opUnionChamfer = sdfOpUnionChamfer; 
+const opUnionChamfer = sdfOpUnionChamfer;
+const opUnionStairs = sdfOpUnionStairs;
+const opUnionColumns = sdfOpUnionColumns;
 const opSubtract = sdfOpSubtract;
 const opIntersect = sdfOpIntersect;
 
