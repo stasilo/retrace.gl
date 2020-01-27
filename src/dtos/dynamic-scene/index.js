@@ -55,8 +55,18 @@ import  {
     sdfOpUnionChamfer,
     sdfOpUnionStairs,
     sdfOpUnionColumns,
+
     sdfOpSubtract,
-    sdfOpIntersect
+    sdfOpSubtractRound,
+    sdfOpSubtractChamfer,
+    sdfOpSubtractStairs,
+    sdfOpSubtractColumns,
+
+    sdfOpIntersect,
+    sdfOpIntersectRound,
+    sdfOpIntersectStairs,
+    sdfOpIntersectColumns,
+    sdfOpIntersectChamfer
 } from '../../models/sdf-model';
 
 import {
@@ -148,13 +158,24 @@ const sdfLink = (o) =>
     new SdfLink(o).geometryData();
 
 const sdf = _sdf;
+
 const opUnion = sdfOpUnion;
 const opUnionRound = sdfOpUnionRound;
 const opUnionChamfer = sdfOpUnionChamfer;
 const opUnionStairs = sdfOpUnionStairs;
 const opUnionColumns = sdfOpUnionColumns;
+
 const opSubtract = sdfOpSubtract;
+const opSubtractStairs = sdfOpSubtractStairs;
+const opSubtractChamfer = sdfOpSubtractChamfer;
+const opSubtractRound = sdfOpSubtractRound;
+const opSubtractColumns = sdfOpSubtractColumns;
+
 const opIntersect = sdfOpIntersect;
+const opIntersectRound = sdfOpIntersectRound;
+const opIntersectChamfer = sdfOpIntersectChamfer;
+const opIntersectStairs = sdfOpIntersectStairs;
+const opIntersectColumns = sdfOpIntersectColumns;
 
 const texture = (o) =>
     new Texture(o);

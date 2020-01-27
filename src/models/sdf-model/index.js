@@ -10,13 +10,24 @@ import {
 
 const sdfOperators = {
     noOp: 0,
+
     union: 1,
     unionRound: 2,
-    subtract: 3,
-    intersect: 4,
-    unionChamfer: 5,
-    unionStairs: 6,
-    unionColumns: 7
+    unionChamfer: 3,
+    unionStairs: 4,
+    unionColumns: 5,
+
+    subtract: 6,
+    subtractRound: 7,
+    subtractChamfer: 8,
+    subtractStairs: 9,
+    subtractColumns: 10,
+
+    intersect: 11,
+    intersectRound: 12,
+    intersectChamfer: 13,
+    intersectStairs: 14,
+    intersectColumns: 15,
 };
 
 const sdfAxes = {
@@ -76,7 +87,7 @@ const sdfGeometryTypes = {
 const standardSdfOpArrayDataOffset = 1;
 const standardSdfDomainOpArrayDataOffset = 15;
 
-const standardSdfDataArrayLength = 36; //33; //30;
+const standardSdfDataArrayLength = 36;
 const sdfHeaderOffsetSize = 6;
 
 const sdfOperation = (opCode, opArguments, ...geometries) => {
@@ -99,8 +110,8 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
         geoData[offset] = opCode;
 
         switch(opCode) {
-            case sdfOperators.unionChamfer:
             case sdfOperators.unionRound:
+            case sdfOperators.unionChamfer:
                 geoData[offset + 1] = defined(opArguments.radius)
                     ? opArguments.radius
                     : 1;
@@ -108,6 +119,20 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
                 geoData[offset + 11] = defined(opArguments.colorBlendAmount)
                     ? 1/(opArguments.colorBlendAmount*10)
                     : 1;
+
+                break;
+
+            case sdfOperators.subtractRound:
+            case sdfOperators.subtractChamfer:
+            case sdfOperators.intersectRound:
+            case sdfOperators.intersectChamfer:
+                geoData[offset + 1] = defined(opArguments.radius)
+                    ? opArguments.radius
+                    : 1;
+
+                // geoData[offset + 11] = defined(opArguments.colorBlendAmount)
+                //     ? 1/(opArguments.colorBlendAmount*10)
+                //     : 1;
 
                 break;
 
@@ -120,6 +145,24 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
                 geoData[offset + 11] = defined(opArguments.colorBlendAmount)
                     ? 1/(opArguments.colorBlendAmount*10)
                     : 1;
+
+                geoData[offset + 32] = defined(opArguments.steps)
+                    ? opArguments.steps
+                    : 2;
+
+                    break;
+
+            case sdfOperators.subtractStairs:
+            case sdfOperators.subtractColumns:
+            case sdfOperators.intersectStairs:
+            case sdfOperators.intersectColumns:
+                geoData[offset + 1] = defined(opArguments.radius)
+                    ? opArguments.radius
+                    : 1;
+
+                // geoData[offset + 11] = defined(opArguments.colorBlendAmount)
+                //     ? 1/(opArguments.colorBlendAmount*10)
+                //     : 1;
 
                 geoData[offset + 32] = defined(opArguments.steps)
                     ? opArguments.steps
@@ -156,11 +199,37 @@ const sdfOpUnionStairs = ({radius, steps, colorBlendAmount}, ...geometries) =>
 const sdfOpUnionColumns = ({radius, steps, colorBlendAmount}, ...geometries) =>
     sdfOperation(sdfOperators.unionColumns, {radius, steps, colorBlendAmount}, ...geometries);
 
+
 const sdfOpSubtract = (...geometries) =>
     sdfOperation(sdfOperators.subtract, {}, ...geometries);
 
+const sdfOpSubtractRound = ({radius}, ...geometries) =>
+    sdfOperation(sdfOperators.subtractRound, {radius}, ...geometries);
+
+const sdfOpSubtractChamfer = ({radius}, ...geometries) =>
+    sdfOperation(sdfOperators.subtractChamfer, {radius}, ...geometries);
+
+const sdfOpSubtractStairs = ({radius, steps}, ...geometries) =>
+    sdfOperation(sdfOperators.subtractStairs, {radius, steps}, ...geometries);
+
+const sdfOpSubtractColumns = ({radius, steps}, ...geometries) =>
+    sdfOperation(sdfOperators.subtractColumns, {radius, steps}, ...geometries);
+
+
 const sdfOpIntersect = (...geometries) =>
     sdfOperation(sdfOperators.intersect, {}, ...geometries);
+
+const sdfOpIntersectRound = ({radius}, ...geometries) =>
+    sdfOperation(sdfOperators.intersectRound, {radius}, ...geometries);
+
+const sdfOpIntersectChamfer = ({radius}, ...geometries) =>
+    sdfOperation(sdfOperators.intersectChamfer, {radius}, ...geometries);
+
+const sdfOpIntersectStairs = ({radius, steps}, ...geometries) =>
+    sdfOperation(sdfOperators.intersectStairs, {radius, steps}, ...geometries);
+
+const sdfOpIntersectColumns = ({radius, steps}, ...geometries) =>
+    sdfOperation(sdfOperators.intersectColumns, {radius, steps}, ...geometries);
 
 const sdf = (...args) => {
     const opts = args.length == 1
@@ -828,6 +897,16 @@ export {
     sdfOpUnionChamfer,
     sdfOpUnionStairs,
     sdfOpUnionColumns,
+
     sdfOpSubtract,
+    sdfOpSubtractRound,
+    sdfOpSubtractChamfer,
+    sdfOpSubtractStairs,
+    sdfOpSubtractColumns,
+
     sdfOpIntersect,
+    sdfOpIntersectRound,
+    sdfOpIntersectChamfer,
+    sdfOpIntersectStairs,
+    sdfOpIntersectColumns,
 };

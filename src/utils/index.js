@@ -176,7 +176,7 @@ const deterministicTakeRandom = (seed) => {
     return (arr, lim) =>
         typeof lim !== 'undefined'
             ? shuffle(arr).slice(0, lim)
-            : arr.filter(deterministicRandomBool(seed)());
+            : arr.filter(deterministicRandomBool(seed));
 }
 
 const maybe = (cb, p = 0.5) =>

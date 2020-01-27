@@ -138,7 +138,7 @@ scene({
                         ? glassCube({
                             ...props,
                             normalMap: undefined,
-                            texture: `pattern-${randomInt(6)}`,
+                            texture: `pattern-${randomInt(5)}`,
                             glassDistance: 0.05,
                         })
                         : material === 'box-black'

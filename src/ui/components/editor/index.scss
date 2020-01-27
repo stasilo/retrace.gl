@@ -24,7 +24,8 @@
         width: 50vw;
         height: 80vh;
 
-        filter: grayscale(100%);
+        // filter: grayscale(100%);
+        filter: saturate(100);
     }
 }
 

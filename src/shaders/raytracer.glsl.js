@@ -104,20 +104,40 @@ const getSource = ({options, Scene}) =>
     ${Scene.hasSdfLinkGeometries
         ? '#define HAS_SDF_LINK_GEOS' : ''}
 
+
     ${Scene.hasSdfUnionOpCode
         ? '#define HAS_SDF_OP_UNION' : ''}
     ${Scene.hasSdfUnionRoundOpCode
-        ? '#define HAS_SDF_OP_UNIONROUND' : ''}
+        ? '#define HAS_SDF_OP_UNION_ROUND' : ''}
     ${Scene.hasSdfUnionChamferOpCode
-        ? '#define HAS_SDF_OP_UNIONCHAMFER' : ''}
+        ? '#define HAS_SDF_OP_UNION_CHAMFER' : ''}
     ${Scene.hasSdfUnionStairsOpCode
-        ? '#define HAS_SDF_OP_UNIONSTAIRS' : ''}
+        ? '#define HAS_SDF_OP_UNION_STAIRS' : ''}
     ${Scene.hasSdfUnionColumnsOpCode
-        ? '#define HAS_SDF_OP_UNIONCOLUMNS' : ''}
+        ? '#define HAS_SDF_OP_UNION_COLUMNS' : ''}
+
     ${Scene.hasSdfSubtractOpCode
         ? '#define HAS_SDF_OP_SUBTRACT' : ''}
+    ${Scene.hasSdfSubtractRoundOpCode
+        ? '#define HAS_SDF_OP_SUBTRACT_ROUND' : ''}
+    ${Scene.hasSdfSubtractChamferOpCode
+        ? '#define HAS_SDF_OP_SUBTRACT_CHAMFER' : ''}
+    ${Scene.hasSdfSubtractStairsOpCode
+        ? '#define HAS_SDF_OP_SUBTRACT_STAIRS' : ''}
+    ${Scene.hasSdfSubtractColumnsOpCode
+        ? '#define HAS_SDF_OP_SUBTRACT_COLUMNS' : ''}
+
     ${Scene.hasSdfIntersectOpCode
         ? '#define HAS_SDF_OP_INTERSECT' : ''}
+    ${Scene.hasSdfIntersectRoundOpCode
+        ? '#define HAS_SDF_OP_INTERSECT_ROUND' : ''}
+    ${Scene.hasSdfIntersectChamferOpCode
+        ? '#define HAS_SDF_OP_INTERSECT_CHAMFER' : ''}
+    ${Scene.hasSdfIntersectStairsOpCode
+        ? '#define HAS_SDF_OP_INTERSECT_STAIRS' : ''}
+    ${Scene.hasSdfIntersectColumnsOpCode
+        ? '#define HAS_SDF_OP_INTERSECT_COLUMNS' : ''}
+
 
     ${Scene.hasSdfRepeatOpCode
         ? '#define HAS_SDF_OP_REPEAT' : ''}
@@ -993,11 +1013,9 @@ const getSource = ({options, Scene}) =>
 
                     ray.origin = hitRecord.hitPoint;
                     color = clamp(color, 0.0, 0.5);
-                    color *= hitRecord.material.albedo;// * hitRecord.color;
+                    color *= hitRecord.material.albedo;
 
                     hitRecord.material.type = -1;
-
-                    // return true;
                 }
 
                 return true;
@@ -1560,7 +1578,7 @@ const getSource = ({options, Scene}) =>
         /**
          * SDF CSG operations
          *
-         * Most of these are from the webgl port of the Mercury hg_sdf library by jcowles:
+         * Most of these are from the webgl/glsl es port of the Mercury hg_sdf glsl library by jcowles:
          * https://github.com/jcowles/hg_sdf
          *
          * A few are (of course :)) by iq:
@@ -1621,17 +1639,87 @@ const getSource = ({options, Scene}) =>
         	}
         }
 
-        #define SDF_SUBTRACT ${sdfOperators.subtract}
-        float opSubtraction( float d1, float d2) {
-            return max(-d1, d2);
-        }
-
         #define SDF_INTERSECT ${sdfOperators.intersect}
         float opIntersection(float d1, float d2) {
             return max(d1, d2);
         }
 
+        // iq's version: http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
+        #define SDF_INTERSECT_ROUND ${sdfOperators.intersectRound}
+        float opIntersectionRound(float d1, float d2, float k ) {
+            float h = clamp( 0.5 - 0.5*(d2-d1)/k, 0.0, 1.0 );
+            return mix( d2, d1, h ) + k*h*(1.0-h);
+        }
 
+        #define SDF_INTERSECT_STAIRS ${sdfOperators.intersectStairs}
+        float opIntersectionStairs(float a, float b, float r, float n) {
+        	return -opUnionStairs(-a, -b, r, n);
+        }
+
+        // Intersection has to deal with what is normally the inside of the resulting object
+        // when using union, which we normally don't care about too much. Thus, intersection
+        // implementations sometimes differ from union implementations.
+        #define SDF_INTERSECT_CHAMFER ${sdfOperators.intersectChamfer}
+        float opIntersectionChamfer(float a, float b, float r) {
+        	return max(max(a, b), (a + r + b)*sqrt(0.5));
+        }
+
+        #define SDF_SUBTRACT ${sdfOperators.subtract}
+        float opSubtraction(float d1, float d2) {
+            return max(-d1, d2);
+        }
+
+        #define SDF_SUBTRACT_ROUND ${sdfOperators.subtractRound}
+        float opSubtractionRound(float a, float b, float r) {
+        	return opIntersectionRound(a, -b, r);
+        }
+
+        // Difference can be built from Intersection or Union:
+        #define SDF_SUBTRACT_CHAMFER ${sdfOperators.subtractChamfer}
+        float opSubtractionChamfer(float a, float b, float r) {
+        	return opIntersectionChamfer(a, -b, r);
+        }
+
+        #define SDF_SUBTRACT_STAIRS ${sdfOperators.subtractStairs}
+        float opSubtractionStairs(float a, float b, float r, float n) {
+            return -opUnionStairs(-a, b, r, n);
+        }
+
+        #define SDF_SUBTRACT_COLUMNS ${sdfOperators.subtractColumns}
+        float opSubtractionColumns(float a, float b, float r, float n) {
+        	a = -a;
+        	float m = min(a, b);
+        	//avoid the expensive computation where not needed (produces discontinuity though)
+        	if ((a < r) && (b < r)) {
+        		vec2 p = vec2(a, b);
+        		float columnradius = r*sqrt(2.)/n/2.0;
+        		columnradius = r*sqrt(2.)/((n-1.)*2.+sqrt(2.));
+
+        		pR45(p);
+        		p.y += columnradius;
+        		p.x -= sqrt(2.)/2.*r;
+        		p.x += -columnradius*sqrt(2.)/2.;
+
+        		if (mod(n,2.) == 1.) {
+        			p.y += columnradius;
+        		}
+        		pMod1(p.y,columnradius*2.);
+
+        		float result = -length(p) + columnradius;
+        		result = max(result, p.x);
+        		result = min(result, a);
+        		return -min(result, b);
+        	} else {
+        		return -m;
+        	}
+        }
+
+        #define SDF_INTERSECT_COLUMNS ${sdfOperators.intersectColumns}
+        float opIntersectionColumns(float a, float b, float r, float n) {
+            // return opSubtractionColumns(a, b,r, n);
+            return opSubtractionColumns(a, -b, r, n);
+            // return -opUnionColumns(-a, b, r, n);
+        }
 
         /**
          * Signed distance functions
@@ -1686,7 +1774,6 @@ const getSource = ({options, Scene}) =>
         }
 
         // source: http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
-
         #define SDF_PYRAMID ${sdfGeometryTypes.pyramid}
         float pyramidSdf(vec3 p, float h) {
             float m2 = h*h + 0.25;
@@ -1711,7 +1798,6 @@ const getSource = ({options, Scene}) =>
         // source: hg_sdf
         // cone with correct distances to tip and base circle.
         // Y is up, 0 is in the middle of the base.
-
         #define SDF_CONE ${sdfGeometryTypes.cone}
         float coneSdf(vec3 p, float radius, float height) {
         	vec2 q = vec2(length(p.xz), p.y);
@@ -1798,53 +1884,6 @@ const getSource = ({options, Scene}) =>
 
                 #ifdef HAS_SDF_OP_REPEAT
                     case SDF_DOM_OP_PMOD1: {
-                        // if(opHeader.axis == SDF_XYZ_AXIS) {
-                        //     pMod1(/* => out */ p.x, opHeader.size);
-                        //     pMod1(/* => out */ p.y, opHeader.size);
-                        //     pMod1(/* => out */ p.z, opHeader.size);
-                        //
-                        //     break;
-                        // }
-                        //
-                        // if(opHeader.axis == SDF_XY_AXIS) {
-                        //     pMod1(/* => out */ p.x, opHeader.size);
-                        //     pMod1(/* => out */ p.y, opHeader.size);
-                        //
-                        //     break;
-                        // }
-                        //
-                        // if(opHeader.axis == SDF_XZ_AXIS) {
-                        //     pMod1(/* => out */ p.x, opHeader.size);
-                        //     pMod1(/* => out */ p.z, opHeader.size);
-                        //
-                        //     break;
-                        // }
-                        //
-                        // if(opHeader.axis == SDF_YZ_AXIS) {
-                        //     pMod1(/* => out */ p.y, opHeader.size);
-                        //     pMod1(/* => out */ p.z, opHeader.size);
-                        //
-                        //     break;
-                        // }
-                        //
-                        // if(opHeader.axis == SDF_X_AXIS) {
-                        //     pMod1(/* => out */ p.x, opHeader.size);
-                        //
-                        //     break;
-                        // }
-                        //
-                        // if(opHeader.axis == SDF_Y_AXIS) {
-                        //     pMod1(/* => out */ p.y, opHeader.size);
-                        //
-                        //     break;
-                        // }
-                        //
-                        // if(opHeader.axis == SDF_Z_AXIS) {
-                        //     pMod1(/* => out */ p.z, opHeader.size);
-                        //
-                        //     break;
-                        // }
-
                         if(opHeader.axis == SDF_XYZ_AXIS) {
                             pMod1(/* => out */ p.x, opHeader.size);
                             pMod1(/* => out */ p.y, opHeader.size);
@@ -1917,7 +1956,9 @@ const getSource = ({options, Scene}) =>
             }
         }
 
+        // TODO: optimize
         void applySdfRotation(vec3 rotation, inout vec3 p) {
+            // NOTE: faster than doing this conditionally?
             p *= rotateX(rotation.x);
             p *= rotateY(rotation.y);
             p *= rotateZ(rotation.z);
@@ -2068,126 +2109,6 @@ const getSource = ({options, Scene}) =>
             return (triMapSamples * abs(sdfNormal)).x * sdfData.dispScale;
         }
 
-        // float sceneSdf(vec3 samplePoint, out int materialId) {
-        //     int csgIndex = 0;
-        //     int geoIndex = 0;
-        //
-        //     bool encounteredNewCsg = false;
-        //
-        //     float d1 = 0.;
-        //     float d2 = 0.;
-        //
-        //     materialId = 0;
-        //
-        //     SdfGeometry sdfData;
-        //     SdfCsgDomainOpHeader csgHeader;
-        //
-        //     int opType = SDF_NOOP;
-        //     float opRadius = -1.;
-        //
-        //     csgHeader = getPackedSdfCsgDomainOpHeader(csgIndex, geoIndex);
-        //
-        //     while(true) {
-        //         sdfData = getPackedSdf(csgIndex, geoIndex);
-        //         if(sdfData.geoType == -1) {
-        //             break;
-        //         }
-        //
-        //         vec3 p = samplePoint - sdfData.position;
-        //
-        //         if(encounteredNewCsg) {
-        //             opType = SDF_UNION;
-        //             // materialId = sdfData.materialId;
-        //             csgHeader = getPackedSdfCsgDomainOpHeader(csgIndex, geoIndex);
-        //             encounteredNewCsg = false;
-        //         }
-        //
-        //         applySdfDomainOperation(csgHeader, /* => out */ p);
-        //
-        //         if(geoIndex == 0) {
-        //             opType = sdfData.opType;
-        //             opRadius = sdfData.opRadius;
-        //
-        //             sdfGeometryDistance(sdfData, p, /* => out */ d1);
-        //             materialId = sdfData.materialId;
-        //
-        //             // single sdf geo, no csg operation, or,
-        //             // the end of the current csg
-        //
-        //             if(opType == SDF_NOOP) {
-        //                 sdfData.opType = SDF_UNION;
-        //                 encounteredNewCsg = true;
-        //
-        //                 csgIndex += 1;
-        //                 geoIndex += 1;
-        //             }
-        //         } else {
-        //             sdfGeometryDistance(sdfData, p, /* => out */ d2);
-        //             float prevDist = d1;
-        //
-        //             switch(opType) {
-        //                 case SDF_UNION: {
-        //                     d1 = opUnion(d1, d2);
-        //                     if(prevDist > d1) {
-        //                         materialId = sdfData.materialId;
-        //                     }
-        //
-        //                     break;
-        //                 }
-        //
-        //                 case SDF_UNION_ROUND: {
-        //                     d1 = opUnionRound(d1, d2, opRadius);
-        //                     if(prevDist > d2 && prevDist > d1) {
-        //                         materialId = sdfData.materialId;
-        //                     }
-        //                     break;
-        //                 }
-        //
-        //                 case SDF_SUBTRACT: {
-        //                     d1 = opSubtraction(d2, d1);
-        //                     break;
-        //                 }
-        //
-        //                 case SDF_INTERSECT: {
-        //                     d1 = opIntersection(d1, d2);
-        //                     break;
-        //                 }
-        //
-        //                 // a no op means we have no more
-        //                 // SDF's in this csg or have encountered a new csg "object"
-        //
-        //                 case SDF_NOOP:
-        //                     encounteredNewCsg = true;
-        //                     csgIndex += 1;
-        //
-        //                     break;
-        //
-        //                 default:
-        //                     break;
-        //             }
-        //
-        //         }
-        //
-        //         // if(d1 > T_MAX) {
-        //         //     return d1;
-        //         // }
-        //
-        //         if(!encounteredNewCsg) {
-        //             opType = sdfData.opType;
-        //             opRadius = sdfData.opRadius;
-        //             geoIndex += 1;
-        //         }
-        //     }
-        //
-        //
-        //     return d1;
-        // }
-        //
-        // float sceneSdf(vec3 p) {
-        //     int materialId;
-        //     return sceneSdf(p, materialId);
-        // }
-
         float bvhSceneSdf(
             vec3 samplePoint,
             float sdfDataTexOffset,
@@ -2280,7 +2201,7 @@ const getSource = ({options, Scene}) =>
                             }
                         #endif
 
-                        #ifdef HAS_SDF_OP_UNIONROUND
+                        #ifdef HAS_SDF_OP_UNION_ROUND
                             case SDF_UNION_ROUND: {
                                 d1 = opUnionRound(d1, d2, opRadius);
                                 Material sdfMaterial = getPackedMaterial(sdfData.materialId);
@@ -2313,7 +2234,7 @@ const getSource = ({options, Scene}) =>
                             }
                         #endif
 
-                        #ifdef HAS_SDF_OP_UNIONCHAMFER
+                        #ifdef HAS_SDF_OP_UNION_CHAMFER
                             case SDF_UNION_CHAMFER: {
                                 d1 = opUnionChamfer(d1, d2, opRadius);
                                 Material sdfMaterial = getPackedMaterial(sdfData.materialId);
@@ -2346,7 +2267,7 @@ const getSource = ({options, Scene}) =>
                             }
                         #endif
 
-                        #ifdef HAS_SDF_OP_UNIONSTAIRS
+                        #ifdef HAS_SDF_OP_UNION_STAIRS
                             case SDF_UNION_STAIRS: {
                                 // d1 = opUnionChamfer(d1, d2, opRadius);
                                 d1 = opUnionStairs(d1, d2, opRadius, opArg1);
@@ -2381,7 +2302,7 @@ const getSource = ({options, Scene}) =>
                         #endif
 
 
-                        #ifdef HAS_SDF_OP_UNIONCOLUMNS
+                        #ifdef HAS_SDF_OP_UNION_COLUMNS
                             case SDF_UNION_COLUMNS: {
                                 d1 = opUnionColumns(d1, d2, opRadius, opArg1);
                                 Material sdfMaterial = getPackedMaterial(sdfData.materialId);
@@ -2421,9 +2342,69 @@ const getSource = ({options, Scene}) =>
                             }
                         #endif
 
+                        #ifdef HAS_SDF_OP_SUBTRACT_STAIRS
+                            case SDF_SUBTRACT_STAIRS: {
+                                d1 = opSubtractionStairs(d1, d2, opRadius, opArg1);
+                                break;
+                            }
+                        #endif
+
+                        #ifdef HAS_SDF_OP_SUBTRACT_ROUND
+                            case SDF_SUBTRACT_ROUND: {
+                                d1 = opSubtractionRound(d1, d2, opRadius);
+                                break;
+                            }
+                        #endif
+
+                        #ifdef HAS_SDF_OP_SUBTRACT_CHAMFER
+                            case SDF_SUBTRACT_CHAMFER: {
+                                d1 = opSubtractionChamfer(d1, d2, opRadius);
+                                break;
+                            }
+                        #endif
+
+                        #ifdef HAS_SDF_OP_SUBTRACT_COLUMNS
+                            case SDF_SUBTRACT_COLUMNS: {
+                                d1 = opSubtractionColumns(d1, d2, opRadius, opArg1);
+                                break;
+                            }
+                        #endif
+
+
                         #ifdef HAS_SDF_OP_INTERSECT
                             case SDF_INTERSECT: {
                                 d1 = opIntersection(d1, d2);
+                                break;
+                            }
+                        #endif
+
+                        #ifdef HAS_SDF_OP_INTERSECT_ROUND
+                            case SDF_INTERSECT_ROUND: {
+                                d1 = opIntersectionRound(d1, d2, opRadius);
+                                break;
+                            }
+                        #endif
+
+                        #ifdef HAS_SDF_OP_INTERSECT_CHAMFER
+                            case SDF_INTERSECT_CHAMFER: {
+                                // TODO: why does this work!?
+                                d1 = opIntersectionChamfer(d1, d2, opRadius) * 0.7;
+                                break;
+                            }
+                        #endif
+
+                        #ifdef HAS_SDF_OP_INTERSECT_STAIRS
+                            case SDF_INTERSECT_STAIRS: {
+                                d1 = opIntersectionStairs(d1, d2, opRadius, opArg1);
+                                break;
+                            }
+                        #endif
+
+                        #ifdef HAS_SDF_OP_INTERSECT_COLUMNS
+                            case SDF_INTERSECT_COLUMNS: {
+                                // TODO: why does this work!?
+                                d1 = opIntersectionColumns(d1, d2, opRadius, opArg1) * 0.7;
+
                                 break;
                             }
                         #endif
@@ -2493,28 +2474,6 @@ const getSource = ({options, Scene}) =>
                 )
             );
         }
-
-        // float sphereTraceDistance(Ray ray, float start, float end, out int materialId) {
-        //     float depth = start;
-        //
-        //     for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
-        //         float dist = sceneSdf(ray.origin + depth * ray.dir, /* => out */ materialId);
-        //         if(materialId == DIALECTRIC_MATERIAL_TYPE) {
-        //             dist = abs(dist);
-        //         }
-        //
-        //         if (dist < EPSILON) {
-        //             return depth;
-        //         }
-        //
-        //         depth += dist;
-        //         if (depth >= end) {
-        //             return end;
-        //         }
-        //     }
-        //
-        //     return end;
-        // }
 
         float bvhSphereTraceDistance(
             Ray ray,
@@ -3329,32 +3288,6 @@ const getSource = ({options, Scene}) =>
                 break;
         }
 
-        // https://www.sebastiansylvan.com/post/ray-tracing-signed-distance-functions/
-        // int lookupSdfMaterialId;
-
-        // // float dist = sphereTraceDistance(ray, 0., T_MAX, /* => out */ lookupSdfMaterialId);
-        // float dist = bvhSphereTraceDistance(ray, 0., T_MAX, /* => out */ lookupSdfMaterialId, 0.);
-        // if(dist < record.hitT &&
-        //     dist < (T_MAX - EPSILON) && dist > T_MIN)
-        // {
-        //     record.hasHit = true;
-        //     record.hitT = dist;
-        //
-        //     record.hitPoint = pointOnRay(ray, record.hitT);
-        //     // record.normal = estimateSdfNormal(record.hitPoint);
-        //     record.normal = estimateBvhSdfSceneNormal(record.hitPoint, 0.);
-        //
-        //     record.material = getPackedMaterial(lookupSdfMaterialId);
-        //
-        //     if(record.material.type != DIALECTRIC_MATERIAL_TYPE) {
-        //         record.hitPoint = record.hitPoint + EPSILON * record.normal;
-        //     }
-        //
-        //     // record.hitPoint = record.hitPoint + EPSILON * record.normal;
-        //
-        //     record.color = record.material.color;
-        // }
-
         hitRecord = record;
     }
 
@@ -3426,6 +3359,7 @@ const getSource = ({options, Scene}) =>
             hitWorld(ray, tMax, /* out => */ hitRecord);
             if(hitRecord.hasHit && hitRecord.sphereTracedIterCount > 0) {
                 color.x = float(hitRecord.sphereTracedIterCount) / float(MAX_MARCHING_STEPS);
+                color.x *= 2.0;
             } else if(hitRecord.hasHit) {
                 float bwNormal = ((0.3 * abs(hitRecord.normal.r))
                     + (0.59 * abs(hitRecord.normal.g))
@@ -3478,7 +3412,7 @@ const getSource = ({options, Scene}) =>
         camera;
 
         // set initial seed for stateful rng
-        gRandSeed = uSeed * uv;///vec2(0.1, 0.1); //uSeed + 20.; //uv + uSeed;
+        gRandSeed = uSeed * uv;
 
         #ifdef GLSL_CAMERA
             // // regular camera

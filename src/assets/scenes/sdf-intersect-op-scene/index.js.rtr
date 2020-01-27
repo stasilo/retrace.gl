@@ -1,0 +1,210 @@
+const startPos = 0;
+
+scene({
+    rendererSettings: {
+        realtimeHitDepth: 2,
+        hitDepth: 4,
+        tMax: 5000,
+        maxSphereTracingSteps: 255,
+        resolution: 0.5,
+        renderMode: 'sdf'
+    },
+    background: ['#000', '#010101'],
+    camera: {
+        lookFrom: {x: -17.289, y: 2.692, z: 10.867},
+        lookAt: {x: -12.771, y: 2.636, z: 10.755},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1
+    },
+    geometries: [
+        // intersect
+        sdf(
+            sdfSphere({
+                radius: 2,
+                position: {
+                    x: startPos,
+                    y: 2,
+                    z: startPos
+                },
+                material: 'floor-white'
+
+            })
+            |> opIntersect(#,
+                sdfBox({
+                    dimensions: {
+                        x: 1,
+                        y: 3,
+                        z: 1,
+                    },
+                    position: {
+                        x: startPos + 1,
+                        y: 2,
+                        z: startPos
+                    },
+                    material: 'floor-white'
+                })
+            ),
+        ),
+        // intersect round
+        sdf(
+            sdfSphere({
+                radius: 2,
+                position: {
+                    x: startPos,
+                    y: 2,
+                    z: startPos + 5
+                },
+                material: 'floor-white'
+
+            })
+            |> opIntersectRound({radius: 0.5}, #,
+                sdfBox({
+                    dimensions: {
+                        x: 1,
+                        y: 3,
+                        z: 1,
+                    },
+                    position: {
+                        x: startPos + 1,
+                        y: 2,
+                        z: startPos + 5
+                    },
+                    material: 'floor-white'
+                })
+            ),
+        ),
+        // intersect chamfer
+        sdf(
+            sdfSphere({
+                radius: 2,
+                position: {
+                    x: startPos,
+                    y: 2,
+                    z: startPos + 10
+                },
+                material: 'floor-white'
+
+            })
+            |> opIntersectChamfer({radius: 0.5}, #,
+                sdfBox({
+                    dimensions: {
+                        x: 1,
+                        y: 3,
+                        z: 1,
+                    },
+                    position: {
+                        x: startPos + 1,
+                        y: 2,
+                        z: startPos + 10
+                    },
+                    material: 'floor-white'
+                })
+            ),
+        ),
+        // intersect stairs
+        sdf(
+            sdfSphere({
+                radius: 2,
+                position: {
+                    x: startPos,
+                    y: 2,
+                    z: startPos + 15
+                },
+                material: 'floor-white'
+
+            })
+            |> opIntersectStairs(({radius: 0.5, steps: 3}), #,
+                sdfBox({
+                    dimensions: {
+                        x: 1,
+                        y: 3,
+                        z: 1,
+                    },
+                    position: {
+                        x: startPos + 1,
+                        y: 2,
+                        z: startPos + 15
+                    },
+                    material: 'floor-white'
+                })
+            ),
+        ),
+        // intersect columns
+        sdf(
+            sdfSphere({
+                radius: 2,
+                position: {
+                    x: startPos,
+                    y: 2,
+                    z: startPos + 20
+                },
+                material: 'floor-white'
+
+            })
+            |> opIntersectColumns(({radius: 0.5, steps: 3}), #,
+                sdfBox({
+                    dimensions: {
+                        x: 1,
+                        y: 3,
+                        z: 1,
+                    },
+                    position: {
+                        x: startPos + 1,
+                        y: 2,
+                        z: startPos + 20
+                    },
+                    material: 'floor-white'
+                })
+            ),
+        ),
+
+        plane({
+            material: 'floor-white',
+            texture: {
+                name: 'check',
+                uvScale: 40
+            },
+            scale: 1000,
+            position: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: 0,
+                y: 80.0,
+                z: 0
+            },
+        })
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.3, 0.0, 0.0, 1.);
+                }
+            `
+        })
+    ],
+    materials: [
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        })
+    ]
+});

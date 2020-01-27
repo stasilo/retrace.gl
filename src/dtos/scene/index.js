@@ -212,14 +212,49 @@ class Scene {
                 .filter(g =>
                     g.opCodes.indexOf(sdfOperators.unionColumns) > -1
                 ).length > 0;
+
             this.hasSdfSubtractOpCode = this.sdfGeometries
                 .filter(g =>
                     g.opCodes.indexOf(sdfOperators.subtract) > -1
                 ).length > 0;
+            this.hasSdfSubtractRoundOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.subtractRound) > -1
+                ).length > 0;
+            this.hasSdfSubtractChamferOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.subtractChamfer) > -1
+                ).length > 0;
+            this.hasSdfSubtractStairsOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.subtractStairs) > -1
+                ).length > 0;
+            this.hasSdfSubtractColumnsOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.subtractColumns) > -1
+                ).length > 0;
+
             this.hasSdfIntersectOpCode = this.sdfGeometries
                 .filter(g =>
                     g.opCodes.indexOf(sdfOperators.intersect) > -1
                 ).length > 0;
+            this.hasSdfIntersectRoundOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.intersectRound) > -1
+                ).length > 0;
+            this.hasSdfIntersectChamferOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.intersectChamfer) > -1
+                ).length > 0;
+            this.hasSdfIntersectStairsOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.intersectStairs) > -1
+                ).length > 0;
+            this.hasSdfIntersectColumnsOpCode = this.sdfGeometries
+                .filter(g =>
+                    g.opCodes.indexOf(sdfOperators.intersectColumns) > -1
+                ).length > 0;
+
 
             // sdf domain op codes
 
