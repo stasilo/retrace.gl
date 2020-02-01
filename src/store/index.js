@@ -43,7 +43,10 @@ import baseSceneSrc from '../assets/scenes/basic-scene/index.js.rtr';
 
 
 // const defaultSceneUrl = 'assets/scenes/sdf-test-scene-1/index.js.rtr';
-const defaultSceneUrl = 'assets/scenes/sdf-test-scene-2/index.js.rtr';
+
+// first created scene + union demo
+// const defaultSceneUrl = 'assets/scenes/sdf-test-scene-2/index.js.rtr';
+
 // const defaultSceneUrl = 'assets/scenes/sdf-test-scene-3/index.js.rtr';
 
 // const defaultSceneUrl = 'assets/scenes/sdf-displacement-map-scene/index.js.rtr';
@@ -62,6 +65,8 @@ const defaultSceneUrl = 'assets/scenes/sdf-test-scene-2/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-subtract-op-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-intersect-op-scene/index.js.rtr';
 
+// const defaultSceneUrl = 'assets/scenes/sdf-repeat-op-scene/index.js.rtr';
+const defaultSceneUrl = 'assets/scenes/sdf-domain-op-scene/index.js.rtr';
 
 
 let instance = null;

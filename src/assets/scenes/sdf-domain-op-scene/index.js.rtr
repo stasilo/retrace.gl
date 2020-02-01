@@ -1,0 +1,89 @@
+scene({
+    rendererSettings: {
+        realtimeHitDepth: 2,
+        hitDepth: 10,
+        tMax: 5000,
+        maxSphereTracingSteps: 255,
+        resolution: 0.5,
+        renderMode: 'sdf'
+    },
+    background: ['#000', '#010101'],
+    camera: {
+        lookFrom: {x: -4.997, y: 7.947, z: 21.563},
+        lookAt: {x: -2.916, y: 7.533, z: 17.568},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1
+    },
+    geometries: [
+        sdf(
+            sdfBox({
+                domain: {
+                    domainOp: 'twist',
+                    size: 0.15
+                },
+                material: `lambert-red`,
+                dimensions: {x: 2, y: 2, z: 2},
+                position: {x: 0, y: 5, z: 0}
+            })
+        ),
+        sdf(
+            sdfBox({
+                domain: {
+                    domainOp: 'bend',
+                    size: 0.15
+                },
+                material: `lambert-red`,
+                dimensions: {x: 2, y: 2, z: 2},
+                position: {x: 10, y: 5, z: 0}
+            })
+        ),
+        plane({
+            material: 'floor-white',
+            texture: {
+                name: 'check',
+                uvScale: 20
+            },
+            scale: 1000,
+            position: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: 0,
+                y: 80.0,
+                z: 0
+            },
+        })
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.3, 0.0, 0.0, 1.);
+                }
+            `
+        })
+    ],
+    materials: [
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        })
+    ]
+});

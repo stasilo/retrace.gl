@@ -2439,8 +2439,11 @@ const getSource = ({options, Scene}) =>
                 geoIndex += 1;
             }
 
-
-            return d1;
+            // bend/twist and maybe certain other ops 
+            // give artefacts (not sure why - maybe float size is maxed?)
+            // multiplying with a smaller factor  fixes it.
+            return d1*0.7;
+            // return d1;
         }
 
         float bvhSceneSdf(vec3 p, float sdfDataTexOffset) {

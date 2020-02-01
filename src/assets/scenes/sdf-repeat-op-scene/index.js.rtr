@@ -1,0 +1,172 @@
+scene({
+    rendererSettings: {
+        realtimeHitDepth: 2,
+        hitDepth: 10,
+        tMax: 5000,
+        maxSphereTracingSteps: 255,
+        resolution: 0.5,
+        renderMode: 'sdf'
+    },
+    background: ['#000', '#010101'],
+    camera: {
+        lookFrom: {x: -15.252, y: 4.639, z: 52.200},
+        lookAt: {x: -12.489, y: 5.098, z: 48.651},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1
+    },
+    geometries: [
+        sdf(
+            {
+                // bounding box has to be set manually when doing all kinds of repetitions,
+                // even bounded reps (currently)
+
+                boundingBox: {
+                    minCoords: {x: -5, y: 0, z: -5},
+                    maxCoords: {x: 5, y: 15, z: 5}
+                }
+            },
+            sdfSphere({
+                domain: {
+                    domainOp: 'repeatBounded',
+                    size: 2,
+                    bounds: {
+                        x: 2,
+                        y: 2,
+                        z: 2
+                    }
+                },
+                material: 'floor-white',
+                // dimensions: {x: 0.5, y: 0.5, z: 0.5},
+                radius: 0.8,
+                position: {x: 0, y: 5, z: 0}
+            }),
+        ),
+        sdf(
+            // another way to do bounded repetitions
+            // is to use a intersection operation as a "bounding volume"
+            // this can be useful as the finicky bounded rep. operation can be hard to tweak and "get right"
+            // i'm pretty sure this doesn't result in a correct distance bound though (but that usually doesn't matter)
+            //
+            // note that you can skip the explicit bounding box when doing this
+            // (as the box is calculated from the intersecting geometry, which is the whole point :))
+
+            sdfBox({
+                domain: {
+                    domainOp: 'repeat',
+                    axis: 'yz',
+                    size: 2
+                },
+                material: `lambert-red`,
+                dimensions: {x: 0.5, y: 0.5, z: 0.5},
+                position: {x: 10, y: 5, z: 0}
+            })
+            |> opIntersect(#,
+                sdfBox({
+                    material: `lambert-red`,
+                    dimensions: {x: 2, y: 5, z: 5},
+                    position: {x: 10, y: 5, z: 0}
+                })
+            )
+        ),
+
+
+        sdf(
+            {
+                // bounding box has to be set manually
+                // when doing repetitions
+                //
+                // as you can see regular infinite modulo repetitions are best suited for
+                // when the repetitions are truly "infinite" - using a small bound
+                // for infinite reps will cause view point artefacts
+
+                boundingBox: {
+                    minCoords: {x: 15, y: -10, z: -10},
+                    maxCoords: {x: 25, y: 10, z: 10}
+                }
+            },
+            sdfSphere({
+                domain: {
+                    domainOp: 'repeat',
+                    axis: 'yz',
+                    size: 2
+                },
+                material: `lambert-red`,
+                dimensions: {x: 0.5, y: 0.5, z: 0.5},
+                radius: 1,
+                position: {x: 20, y: 5, z: 0}
+            }),
+        ),
+
+        sdf(
+            {
+                // same example as above, but lookin' good with a big explicit bounding box
+                // the bb doesn't need to be that big actually - the important part is that
+                // the camera pos. is inside the bb which will not cause (well, limit) view point artefacts
+
+                boundingBox: {
+                    minCoords: {x: 25, y: 0, z: -100},
+                    maxCoords: {x: 35, y: 100, z: 100}
+                }
+            },
+            sdfBox({
+                domain: {
+                    domainOp: 'repeat',
+                    axis: 'yz',
+                    size: 2
+                },
+                material: `lambert-red`,
+                dimensions: {x: 0.5, y: 0.5, z: 0.5},
+                position: {x: 30, y: 5, z: 0}
+            }),
+        ),
+
+        plane({
+            material: 'floor-white',
+            texture: {
+                name: 'check',
+                uvScale: 20
+            },
+            scale: 1000,
+            position: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: 0,
+                y: 80.0,
+                z: 0
+            },
+        })
+    ],
+    textures: [
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(0.3, 0.0, 0.0, 1.);
+                }
+            `
+        })
+    ],
+    materials: [
+        lambertMaterial({
+            name: `floor-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        })
+    ]
+});

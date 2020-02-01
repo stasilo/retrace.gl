@@ -160,10 +160,6 @@ const sdfOperation = (opCode, opArguments, ...geometries) => {
                     ? opArguments.radius
                     : 1;
 
-                // geoData[offset + 11] = defined(opArguments.colorBlendAmount)
-                //     ? 1/(opArguments.colorBlendAmount*10)
-                //     : 1;
-
                 geoData[offset + 32] = defined(opArguments.steps)
                     ? opArguments.steps
                     : 2;
