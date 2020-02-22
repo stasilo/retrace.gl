@@ -41,7 +41,7 @@ const defaultSceneRendererSettings = {
     tMax: 5000,
     maxSphereTracingSteps: 255,
     resolution: 0.5,
-    renderMode: 'regular'
+    renderMode: 'raytrace'
 };
 
 class Scene {

@@ -1,7 +1,13 @@
 import React, {Fragment, useEffect} from 'react';
 import brace from 'brace';
 import 'brace/mode/javascript';
-import 'brace/theme/twilight';
+
+// https://tmtheme-editor.herokuapp.com/#!/editor/local/Abdal%20Black%20Hackers%202
+import 'brace/theme/red';
+// import '../../../assets/editor-themes/red.js';
+
+// import 'brace/theme/twilight';
+
 import AceEditor from 'react-ace';
 
 import {reaction} from 'mobx';
@@ -36,8 +42,9 @@ const Editor = observer((props) => {
                     name="retrace-editor"
                     editorProps={{$blockScrolling: true}}
                     style={editorWindowStyle}
-                    mode="glsl"
-                    theme="twilight"
+                    // mode="glsl"
+                    mode="javascript"
+                    theme="red"
 
                     value={store.sceneSrc}
 

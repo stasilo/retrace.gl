@@ -1,0 +1,19 @@
+{
+    "source": {
+        "recurseDepth": 10,
+        "includePattern": ".+\\.js(doc|x)?$",
+        "include": "./src"
+    },
+    "opts": {
+        "destination": "./docs/retrace",
+        "template": "./docs/template/jsdoc-template"
+    },
+    "templates": {
+        "referenceTitle": "retrace.gl scene api docs",
+        "disableSort": false,
+        "collapse": true
+    },
+    "tags": {
+        "allowUnknownTags": ["category"]
+    }
+}

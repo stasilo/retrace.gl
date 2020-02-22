@@ -19,6 +19,7 @@ const asyncExecute = async (fn) =>
             }, 1
         )
     );
+
 // ranges
 
 const range = (...args) => {
@@ -35,7 +36,7 @@ const range2d = (...args) => {
     let [xStart, xEnd, yStart, yEnd] = args.length == 4
         ? args
         : args.length == 2
-            ? [args[0], args[1], args[0], args[1]]
+            ? [0, args[0], 0, args[1]]
             : [0, args[0], 0, args[0]];
 
     let combos = [];

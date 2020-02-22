@@ -9,7 +9,9 @@
         "build": "webpack --config webpack.prod.js --mode production",
         "preview": "npm run build && http-server dist",
         "deploy": "scp -i ~/stasilo.pem -r dist/* ec2-user@labb.stasilo.se:/var/www/lighttpd/raytracer/",
-        "release": "npm run build; cp -Rp dist/* ../raytracer-pages/ ; cd ../raytracer-pages/ ; git stage . ; git commit -m 'Update demo' ; git push ; cd ../raytracer"
+        "release": "npm run build; cp -Rp dist/* ../raytracer-pages/ ; cd ../raytracer-pages/ ; git stage . ; git commit -m 'Update demo' ; git push ; cd -",
+        "docs": "jsdoc -R docs/README.md -c jsdoc.json -r",
+        "watch:docs": "npx watch 'npm run docs' src/" 
     },
     "repository": {
         "type": "git",
@@ -43,6 +45,7 @@
         "ajv": "^6.10.0",
         "autoprefixer": "^9.5.0",
         "babel-loader": "^8.0.0",
+        "better-docs": "^1.4.7",
         "brace": "^0.11.1",
         "class-names": "^1.0.0",
         "clean-webpack-plugin": "^0.1.19",

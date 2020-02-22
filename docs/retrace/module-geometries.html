@@ -1,0 +1,9132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>
+      geometries - Documentation
+  </title>
+
+  <link href="https://www.braintreepayments.com/images/favicon-ccda0b14.png" rel="icon" type="image/png">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.0/jquery.min.js"></script>
+
+  <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+  <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+  
+  <link type="text/css" rel="stylesheet" href="styles/collapse.css">
+  
+
+  
+
+  <!-- start Mixpanel -->
+  <script type="text/javascript">(function(e,a){if(!a.__SV){var b=window;try{var c,l,i,j=b.location,g=j.hash;c=function(a,b){return(l=a.match(RegExp(b+"=([^&]*)")))?l[1]:null};g&&c(g,"state")&&(i=JSON.parse(decodeURIComponent(c(g,"state"))),"mpeditor"===i.action&&(b.sessionStorage.setItem("_mpcehash",g),history.replaceState(i.desiredHash||"",e.title,j.pathname+j.search)))}catch(m){}var k,h;window.mixpanel=a;a._i=[];a.init=function(b,c,f){function e(b,a){var c=a.split(".");2==c.length&&(b=b[c[0]],a=c[1]);b[a]=function(){b.push([a].concat(Array.prototype.slice.call(arguments,
+  0)))}}var d=a;"undefined"!==typeof f?d=a[f]=[]:f="mixpanel";d.people=d.people||[];d.toString=function(b){var a="mixpanel";"mixpanel"!==f&&(a+="."+f);b||(a+=" (stub)");return a};d.people.toString=function(){return d.toString(1)+".people (stub)"};k="disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config reset people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+  for(h=0;h<k.length;h++)e(d,k[h]);a._i.push([b,c,f])};a.__SV=1.2;b=e.createElement("script");b.type="text/javascript";b.async=!0;b.src="undefined"!==typeof MIXPANEL_CUSTOM_LIB_URL?MIXPANEL_CUSTOM_LIB_URL:"file:"===e.location.protocol&&"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//)?"https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js":"//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js";c=e.getElementsByTagName("script")[0];c.parentNode.insertBefore(b,c)}})(document,window.mixpanel||[]);
+  mixpanel.init("1919205b2da72e4da3b9b6639b444d59");</script>
+  <!-- end Mixpanel -->
+</head>
+
+<body>
+  <svg style="display: none;">
+    <defs>
+      <symbol id="linkIcon" fill="#706d77" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 0h24v24H0z" fill="none"/>
+          <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+  <label for="nav-trigger" class="navicon-button x">
+    <div class="navicon"></div>
+  </label>
+
+  <label for="nav-trigger" class="overlay"></label>
+
+  <div class="top-nav-wrapper">
+    <ul>
+      <li >
+        <a href="index.html">
+          
+            <svg fill="#6D6D6D" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+              <path d="M0 0h24v24H0z" fill="none"/>
+            </svg>
+          
+          
+        </a>
+      </li>
+
+      
+
+    </ul>
+  </div>
+
+  <nav>
+    <h3 class="reference-title">
+      retrace.gl scene api docs
+    </h3>
+
+    
+
+    <h3>Modules</h3><ul><li id="geometries-nav"><a href="module-geometries.html">geometries</a><ul class='methods'><li data-type="method" id="geometries-cube-nav"><a href="module-geometries.html#.cube">cube</a></li><li data-type="method" id="geometries-diamond-nav"><a href="module-geometries.html#.diamond">diamond</a></li><li data-type="method" id="geometries-objModel-nav"><a href="module-geometries.html#.objModel">objModel</a></li><li data-type="method" id="geometries-plane-nav"><a href="module-geometries.html#.plane">plane</a></li><li data-type="method" id="geometries-sdf-nav"><a href="module-geometries.html#.sdf">sdf</a></li><li data-type="method" id="geometries-sdfBox-nav"><a href="module-geometries.html#.sdfBox">sdfBox</a></li><li data-type="method" id="geometries-sdfCapsule-nav"><a href="module-geometries.html#.sdfCapsule">sdfCapsule</a></li><li data-type="method" id="geometries-sdfCone-nav"><a href="module-geometries.html#.sdfCone">sdfCone</a></li><li data-type="method" id="geometries-sdfCylinder-nav"><a href="module-geometries.html#.sdfCylinder">sdfCylinder</a></li><li data-type="method" id="geometries-sdfEllipsoid-nav"><a href="module-geometries.html#.sdfEllipsoid">sdfEllipsoid</a></li><li data-type="method" id="geometries-sdfLine-nav"><a href="module-geometries.html#.sdfLine">sdfLine</a></li><li data-type="method" id="geometries-sdfLink-nav"><a href="module-geometries.html#.sdfLink">sdfLink</a></li><li data-type="method" id="geometries-sdfPyramid-nav"><a href="module-geometries.html#.sdfPyramid">sdfPyramid</a></li><li data-type="method" id="geometries-sdfRoundedCone-nav"><a href="module-geometries.html#.sdfRoundedCone">sdfRoundedCone</a></li><li data-type="method" id="geometries-sdfSphere-nav"><a href="module-geometries.html#.sdfSphere">sdfSphere</a></li><li data-type="method" id="geometries-sdfTorus-nav"><a href="module-geometries.html#.sdfTorus">sdfTorus</a></li><li data-type="method" id="geometries-sphere-nav"><a href="module-geometries.html#.sphere">sphere</a></li><li data-type="method" id="geometries-volume-nav"><a href="module-geometries.html#.volume">volume</a></li></ul></li><li id="materials-nav"><a href="module-materials.html">materials</a><ul class='methods'><li data-type="method" id="materials-anisotropicVolumeMaterial-nav"><a href="module-materials.html#.anisotropicVolumeMaterial">anisotropicVolumeMaterial</a></li><li data-type="method" id="materials-clearcoatMaterial-nav"><a href="module-materials.html#.clearcoatMaterial">clearcoatMaterial</a></li><li data-type="method" id="materials-coatedEmissiveMaterial-nav"><a href="module-materials.html#.coatedEmissiveMaterial">coatedEmissiveMaterial</a></li><li data-type="method" id="materials-dialectricMaterial-nav"><a href="module-materials.html#.dialectricMaterial">dialectricMaterial</a></li><li data-type="method" id="materials-emissiveMaterial-nav"><a href="module-materials.html#.emissiveMaterial">emissiveMaterial</a></li><li data-type="method" id="materials-isotropicVolumeMaterial-nav"><a href="module-materials.html#.isotropicVolumeMaterial">isotropicVolumeMaterial</a></li><li data-type="method" id="materials-lambertMaterial-nav"><a href="module-materials.html#.lambertMaterial">lambertMaterial</a></li><li data-type="method" id="materials-metalMaterial-nav"><a href="module-materials.html#.metalMaterial">metalMaterial</a></li></ul></li><li id="random-nav"><a href="module-random.html">random</a><ul class='methods'><li data-type="method" id="random-maybe-nav"><a href="module-random.html#.maybe">maybe</a></li><li data-type="method" id="random-pluckRandom-nav"><a href="module-random.html#.pluckRandom">pluckRandom</a></li><li data-type="method" id="random-random-nav"><a href="module-random.html#.random">random</a></li><li data-type="method" id="random-randomBool-nav"><a href="module-random.html#.randomBool">randomBool</a></li><li data-type="method" id="random-randomInt-nav"><a href="module-random.html#.randomInt">randomInt</a></li><li data-type="method" id="random-randomSign-nav"><a href="module-random.html#.randomSign">randomSign</a></li><li data-type="method" id="random-takeRandom-nav"><a href="module-random.html#.takeRandom">takeRandom</a></li></ul></li><li id="sdf-operations-nav"><a href="module-sdf-operations.html">sdf-operations</a><ul class='methods'><li data-type="method" id="sdf-operations-opIntersect-nav"><a href="module-sdf-operations.html#.opIntersect">opIntersect</a></li><li data-type="method" id="sdf-operations-opIntersectChamfer-nav"><a href="module-sdf-operations.html#.opIntersectChamfer">opIntersectChamfer</a></li><li data-type="method" id="sdf-operations-opIntersectColumns-nav"><a href="module-sdf-operations.html#.opIntersectColumns">opIntersectColumns</a></li><li data-type="method" id="sdf-operations-opIntersectRound-nav"><a href="module-sdf-operations.html#.opIntersectRound">opIntersectRound</a></li><li data-type="method" id="sdf-operations-opIntersectStairs-nav"><a href="module-sdf-operations.html#.opIntersectStairs">opIntersectStairs</a></li><li data-type="method" id="sdf-operations-opSubtract-nav"><a href="module-sdf-operations.html#.opSubtract">opSubtract</a></li><li data-type="method" id="sdf-operations-opSubtractChamfer-nav"><a href="module-sdf-operations.html#.opSubtractChamfer">opSubtractChamfer</a></li><li data-type="method" id="sdf-operations-opSubtractColumns-nav"><a href="module-sdf-operations.html#.opSubtractColumns">opSubtractColumns</a></li><li data-type="method" id="sdf-operations-opSubtractRound-nav"><a href="module-sdf-operations.html#.opSubtractRound">opSubtractRound</a></li><li data-type="method" id="sdf-operations-opSubtractStairs-nav"><a href="module-sdf-operations.html#.opSubtractStairs">opSubtractStairs</a></li><li data-type="method" id="sdf-operations-opUnion-nav"><a href="module-sdf-operations.html#.opUnion">opUnion</a></li><li data-type="method" id="sdf-operations-opUnionChamfer-nav"><a href="module-sdf-operations.html#.opUnionChamfer">opUnionChamfer</a></li><li data-type="method" id="sdf-operations-opUnionColumns-nav"><a href="module-sdf-operations.html#.opUnionColumns">opUnionColumns</a></li><li data-type="method" id="sdf-operations-opUnionRound-nav"><a href="module-sdf-operations.html#.opUnionRound">opUnionRound</a></li><li data-type="method" id="sdf-operations-opUnionStairs-nav"><a href="module-sdf-operations.html#.opUnionStairs">opUnionStairs</a></li></ul></li><li id="textures-nav"><a href="module-textures.html">textures</a><ul class='methods'><li data-type="method" id="textures-texture-nav"><a href="module-textures.html#.texture">texture</a></li><li data-type="method" id="textures-volumeTexture-nav"><a href="module-textures.html#.volumeTexture">volumeTexture</a></li></ul></li><li id="utils-nav"><a href="module-utils.html">utils</a><ul class='methods'><li data-type="method" id="utils-clamp-nav"><a href="module-utils.html#.clamp">clamp</a></li><li data-type="method" id="utils-degToRad-nav"><a href="module-utils.html#.degToRad">degToRad</a></li><li data-type="method" id="utils-glslFloat-nav"><a href="module-utils.html#.glslFloat">glslFloat</a></li><li data-type="method" id="utils-lerp-nav"><a href="module-utils.html#.lerp">lerp</a></li><li data-type="method" id="utils-normedColorStr-nav"><a href="module-utils.html#.normedColorStr">normedColorStr</a></li><li data-type="method" id="utils-radToDeg-nav"><a href="module-utils.html#.radToDeg">radToDeg</a></li><li data-type="method" id="utils-range-nav"><a href="module-utils.html#.range">range</a></li><li data-type="method" id="utils-range2d-nav"><a href="module-utils.html#.range2d">range2d</a></li><li data-type="method" id="utils-range3d-nav"><a href="module-utils.html#.range3d">range3d</a></li><li data-type="method" id="utils-subRange-nav"><a href="module-utils.html#.subRange">subRange</a></li><li data-type="method" id="utils-tileSeamless3d-nav"><a href="module-utils.html#.tileSeamless3d">tileSeamless3d</a></li><li data-type="method" id="utils-vec2-nav"><a href="module-utils.html#.vec2">vec2</a></li><li data-type="method" id="utils-vec3-nav"><a href="module-utils.html#.vec3">vec3</a></li></ul></li></ul><h3 id="global-nav">Global</h3><ul><li><a href="global.html#scene">scene</a></li></ul>
+  </nav>
+
+  <div id="main">
+    
+      <h1 class="page-title">
+        geometries
+      </h1>
+    
+
+    
+
+<section>
+  <header>
+    
+      
+  </header>
+
+  <article>
+    <div class="container-overview">
+      
+        
+
+        
+      
+    </div>
+
+    
+
+    
+
+    
+
+     
+
+    
+
+    
+
+    
+      <h3 class="subsection-title">Methods</h3>
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.cube">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".cube">
+      <span class="type-signature">(static) </span>cube<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    Shortcut for a simple cube .obj model
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Model options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>scale</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    |
+
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A vec3 representing scale per axis or a single number by which to scale all directions with.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>smoothShading</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      bool
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          If true use smooth shading instead of flat. Defaults to true.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>doubleSided</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      bool
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Shade both sides of each triangle (you probably want this if your model has "holes"). Defaults to false.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryNormalMap">module:textures~geometryNormalMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a normal map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line262">line 262</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.diamond">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".diamond">
+      <span class="type-signature">(static) </span>diamond<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    Shortcut for a diamond .obj model
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Model options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>scale</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    |
+
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A vec3 representing scale per axis or a single number by which to scale all directions with.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>smoothShading</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      bool
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          If true use smooth shading instead of flat. Defaults to true.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>doubleSided</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      bool
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Shade both sides of each triangle (you probably want this if your model has "holes"). Defaults to false.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryNormalMap">module:textures~geometryNormalMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a normal map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line295">line 295</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.objModel">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".objModel">
+      <span class="type-signature">(static) </span>objModel<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    Wavefront .obj model geometry (no MTL support!)
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Model options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>url</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Model url
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>scale</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    |
+
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A vec3 representing scale per axis or a single number by which to scale all directions with.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>smoothShading</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      bool
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          If true use smooth shading instead of flat.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>doubleSided</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      bool
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Shade both sides of each triangle (you probably want this if your model has "holes"). Defaults to false.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>flipNormals</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      bool
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Flip model normals
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryNormalMap">module:textures~geometryNormalMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a normal map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line226">line 226</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.plane">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".plane">
+      <span class="type-signature">(static) </span>plane<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    Shortcut for a simple plane .obj model
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Model options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>scale</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    |
+
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A vec3 representing scale per axis or a single number by which to scale all directions with.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>smoothShading</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      bool
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          If true use smooth shading instead of flat. Defaults to true.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>doubleSided</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      bool
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Shade both sides of each triangle (you probably want this if your model has "holes"). Defaults to false.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryNormalMap">module:textures~geometryNormalMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a normal map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line244">line 244</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.sdf">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".sdf">
+      <span class="type-signature">(static) </span>sdf<span class="signature">(domain<span class="signature-attributes">opt</span>, sdfData)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    SDF geometry wrapper. All sdf geometries & operations need to be wrapped by this function call.
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>domain</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      domain
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Optional domain operation to apply to the whole final geometry
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>sdfData</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      sdfGeometry
+    </span>
+
+    |
+
+    <span class="param-type">
+      sdfOperation
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          An sdf geometry or sdf operation consisting of multiple geometries.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line368">line 368</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#sdf-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="sdf-examples">Examples</h5>
+    
+
+  <pre class="prettyprint"><code>geometries = [
+    sdf(
+        sdfSphere({
+            material: 'mat1',
+            radius: 2,
+            position: {x: 0, y: 0, z: 0}
+        })
+    ),
+    // ...
+];</code></pre>
+
+
+  <pre class="prettyprint"><code>geometries = [
+    sdf(
+        sdfSphere({
+            radius: 2,
+            material: 'mat1'
+            position: {x: 0, y: 0, z: 0}
+
+        })
+        |> opUnionRound(({radius: 0.5}), #,
+            sdfBox({
+                dimensions: {
+                    x: 2,
+                    y: 3,
+                    z: 1,
+                },
+                position: {x: 1, y: 0, z: 4},
+                material: 'mat1'
+            })
+        )
+    ),
+    // ...
+];</code></pre>
+
+
+  </div>
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.sdfBox">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".sdfBox">
+      <span class="type-signature">(static) </span>sdfBox<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    SDF box geometry
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Box options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>dimensions</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Box dimensions
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Box rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>domain</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-geometries.html#~domain">module:geometries~domain</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A domain operation that should be applied on this geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryDisplacementMap">module:textures~geometryDisplacementMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a displacement map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementFunc</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of a in this scene defined displacement func to use as displacement data.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line448">line 448</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.sdfCapsule">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".sdfCapsule">
+      <span class="type-signature">(static) </span>sdfCapsule<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    SDF capsule geometry
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Capsule options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>radius</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Capsule radius
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>height</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Capsule height
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Capsule rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>domain</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-geometries.html#~domain">module:geometries~domain</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A domain operation that should be applied on this geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryDisplacementMap">module:textures~geometryDisplacementMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a displacement map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementFunc</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of a in this scene defined displacement func to use as displacement data.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line604">line 604</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.sdfCone">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".sdfCone">
+      <span class="type-signature">(static) </span>sdfCone<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    SDF cone geometry
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Cone options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>radius</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Cone radius
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>height</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Cone height
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Cone rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>domain</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-geometries.html#~domain">module:geometries~domain</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A domain operation that should be applied on this geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryDisplacementMap">module:textures~geometryDisplacementMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a displacement map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementFunc</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of a in this scene defined displacement func to use as displacement data.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line523">line 523</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.sdfCylinder">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".sdfCylinder">
+      <span class="type-signature">(static) </span>sdfCylinder<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    SDF cylinder geometry
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Cylinder options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>radius</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Cylinder radius
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>height</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Cylinder height
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Cylinder rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>domain</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-geometries.html#~domain">module:geometries~domain</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A domain operation that should be applied on this geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryDisplacementMap">module:textures~geometryDisplacementMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a displacement map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementFunc</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of a in this scene defined displacement func to use as displacement data.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line467">line 467</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.sdfEllipsoid">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".sdfEllipsoid">
+      <span class="type-signature">(static) </span>sdfEllipsoid<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    SDF ellipsoid geometry
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Ellipsoid options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>radius</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Ellipsoid radii per axis
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Ellipsoid rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>domain</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-geometries.html#~domain">module:geometries~domain</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A domain operation that should be applied on this geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryDisplacementMap">module:textures~geometryDisplacementMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a displacement map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementFunc</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of a in this scene defined displacement func to use as displacement data.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line504">line 504</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.sdfLine">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".sdfLine">
+      <span class="type-signature">(static) </span>sdfLine<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    SDF line segment between two points
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Line options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>start</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Line starting point
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>end</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Line end point
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>thickness</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The thickness of the line
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Pyramid rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>domain</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-geometries.html#~domain">module:geometries~domain</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A domain operation that should be applied on this geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryDisplacementMap">module:textures~geometryDisplacementMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a displacement map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementFunc</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of a in this scene defined displacement func to use as displacement data.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line582">line 582</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.sdfLink">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".sdfLink">
+      <span class="type-signature">(static) </span>sdfLink<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    SDF chain link geometry
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Chain link options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>radius</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Chain link end radius
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>height</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Chain link height
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>thickness</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The thickness of the link
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Capsule rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>domain</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-geometries.html#~domain">module:geometries~domain</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A domain operation that should be applied on this geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryDisplacementMap">module:textures~geometryDisplacementMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a displacement map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementFunc</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of a in this scene defined displacement func to use as displacement data.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line624">line 624</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.sdfPyramid">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".sdfPyramid">
+      <span class="type-signature">(static) </span>sdfPyramid<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    SDF pyramid geometry
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Pyramid options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>base</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Pyramid bottom base dimension
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>height</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Pyramid height
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Pyramid rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>domain</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-geometries.html#~domain">module:geometries~domain</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A domain operation that should be applied on this geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryDisplacementMap">module:textures~geometryDisplacementMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a displacement map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementFunc</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of a in this scene defined displacement func to use as displacement data.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line562">line 562</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.sdfRoundedCone">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".sdfRoundedCone">
+      <span class="type-signature">(static) </span>sdfRoundedCone<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    SDF cone geometry
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Cone options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>bottomRadius</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Cone bottom radius
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>topRadius</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Cone radius
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>height</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Cone height
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Cone rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>domain</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-geometries.html#~domain">module:geometries~domain</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A domain operation that should be applied on this geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryDisplacementMap">module:textures~geometryDisplacementMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a displacement map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementFunc</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of a in this scene defined displacement func to use as displacement data.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line543">line 543</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.sdfSphere">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".sdfSphere">
+      <span class="type-signature">(static) </span>sdfSphere<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    SDF sphere geometry
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Sphere options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>radius</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The sphere radius
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>domain</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-geometries.html#~domain">module:geometries~domain</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A domain operation that should be applied on this geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryDisplacementMap">module:textures~geometryDisplacementMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a displacement map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementFunc</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of a in this scene defined displacement func to use as displacement data.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line430">line 430</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.sdfTorus">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".sdfTorus">
+      <span class="type-signature">(static) </span>sdfTorus<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    SDF torus geometry
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Torus options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>innerRadius</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Torus inner radius
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>outerRadius</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Torus outer radius
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>rotation</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Torus rotation per axis in radians.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>domain</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-geometries.html#~domain">module:geometries~domain</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A domain operation that should be applied on this geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryDisplacementMap">module:textures~geometryDisplacementMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a displacement map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementFunc</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of a in this scene defined displacement func to use as displacement data.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line486">line 486</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.sphere">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".sphere">
+      <span class="type-signature">(static) </span>sphere<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    A sphere geometry
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Sphere options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>position</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Position
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>radius</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Sphere radius
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of the material to use. If omitted the geometry will default to the first declared material.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryTexture">module:textures~geometryTexture</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture to apply on the geometry. Textures on SDF geometries are applied using triplanar mapping.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>displacementMap</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="module-textures.html#~geometryNormalMap">module:textures~geometryNormalMap</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          A texture used as a normal map for the geometry.
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line277">line 277</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      
+        
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#.volume">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id=".volume">
+      <span class="type-signature">(static) </span>volume<span class="signature">(options)</span><span class="type-signature"></span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    Volume bound geometry.
+Used in conjunction with a volume material
+(<a href="module-materials.html#.isotropicVolumeMaterial">isotropicVolumeMaterial</a>
+  or <a href="module-materials.html#.anisotropicVolumeMaterial">anisotropicVolumeMaterial</a>),
+and, optionally, a <a href="module-textures.html#.volumeTexture">volume texture</a>).
+  </div>
+
+
+
+
+
+
+
+  <h5>Parameters:</h5>
+  
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>options</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      object
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+
+        
+
+        <td class="description last">
+          Volume options
+          
+            <h6>Properties</h6>
+            
+
+<table class="params">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+      <tr>
+        
+          <td class="name"><code>material</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          The name of a defined <a href="module-materials.html#.isotropicVolumeMaterial">isotropicVolumeMaterial</a>
+                                     or <a href="module-materials.html#.anisotropicVolumeMaterial">anisotropicVolumeMaterial</a>.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>texture</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      string
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          An optional <a href="module-textures.html#.volumeTexture">volume texture</a> to sample from if using an
+                                     <a href="module-materials.html#.anisotropicVolumeMaterial">anisotropic material</a>. If no texture is supplied
+                                     the volume will be automatically sampled from a standard noise function.
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>minCoords</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Min coords of the bound
+          
+        </td>
+      </tr>
+
+    
+      <tr>
+        
+          <td class="name"><code>maxCoords</code></td>
+        
+
+        <td class="type">
+          
+            
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+          
+        </td>
+
+        
+          <td class="attributes">
+            
+
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Max coords of the bound
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+          
+        </td>
+      </tr>
+
+    
+  </tbody>
+</table>
+
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line349">line 349</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  <div class="example-container">
+    <a class="link-icon" href="#volume-examples">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h5 id="volume-examples">Examples</h5>
+    
+
+  <pre class="prettyprint"><code>volume({
+    material: 'iso-volume',
+    minCoords: {
+        x: 0,
+        y: 0,
+        z: 0
+    },
+    maxCoords: {
+        x: 20,
+        y: 20,
+        z: 20
+    },
+});</code></pre>
+
+
+  <pre class="prettyprint"><code>volume({
+    material: 'aniso-volume-material',
+    texture: 'volume-texture',
+    minCoords: {
+        x: -155,
+        y: 0.0,
+        z: -155
+    },
+    maxCoords: {
+        x: 155,
+        y: 80.0,
+        z: 155
+    }
+});</code></pre>
+
+
+  </div>
+
+
+      
+    
+
+    
+      <h3 class="subsection-title">Type Definitions</h3>
+
+      
+          
+
+
+  
+
+  <span class='name-container'>
+    <a class="link-icon" href="#~domain">
+      <svg height="20" width="20" style="fill: black;">
+        <use xlink:href="#linkIcon"></use>
+      </svg>
+    </a>
+    <h4 class="name" id="~domain">
+      <span class="type-signature"></span>domain<span class="type-signature"> :object</span>
+    </h4>
+  </span>
+
+  
+
+
+
+  <div class="description">
+    Represents an SDF domain operation:
+'repeat', 'repeatBounded', 'bend' or 'twist'
+
+<a href="https://iquilezles.org/www/articles/distfunctions/distfunctions.htm">Read more in inigo quilez' 3d sdf article</a>
+  </div>
+
+
+
+
+
+
+
+
+
+
+  <h5 class="subsection-title">Properties:</h5>
+
+  
+
+<table class="props">
+  <thead>
+    <tr>
+      
+        <th>Name</th>
+      
+
+      <th>Type</th>
+
+      
+        <th>Attributes</th>
+      
+
+      
+
+      <th class="last">Description</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    
+
+    <tr>
+      
+        <td class="name"><code>domainOp</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      'repeat'
+    </span>
+
+    |
+
+    <span class="param-type">
+      'repeatBounded'
+    </span>
+
+    |
+
+    <span class="param-type">
+      'bend'
+    </span>
+
+    |
+
+    <span class="param-type">
+      'twist'
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Operation type
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>size</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      number
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          Size of the side of the cube of space to apply the operation on if repeating. The magnitude of the operation otherwise.
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>bounds</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      <a href="global.html#vec3">vec3</a>
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          NOTE: only required for bounded repetitions. Number of repetitions along each axis. Should be renamed :)
+          </td>
+    </tr>
+
+  
+
+    <tr>
+      
+        <td class="name"><code>axis</code></td>
+      
+
+      <td class="type">
+        
+          
+    <span class="param-type">
+      'x'
+    </span>
+
+    |
+
+    <span class="param-type">
+      'y'
+    </span>
+
+    |
+
+    <span class="param-type">
+      'z'
+    </span>
+
+    |
+
+    <span class="param-type">
+      'xy'
+    </span>
+
+    |
+
+    <span class="param-type">
+      'xz'
+    </span>
+
+    |
+
+    <span class="param-type">
+      'yz'
+    </span>
+
+    |
+
+    <span class="param-type">
+      'xyz'
+    </span>
+
+    
+
+
+        
+      </td>
+
+        
+          <td class="attributes">
+            
+              &lt;optional><br>
+            
+
+            
+          </td>
+        
+
+        
+
+        <td class="description last">
+          NOTE: only required for repeat operations. Along which axes to repeat.
+          </td>
+    </tr>
+
+  
+  </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source">
+      <ul class="dummy">
+        <li>
+          <a href="index.js.html">index.js</a>, <a href="index.js.html#line353">line 353</a>
+        </li>
+      </ul>
+    </dd>
+  
+
+  
+
+  
+
+  
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+
+    
+  </article>
+</section>
+
+
+
+
+  </div>
+
+  <br class="clear">
+
+  <footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.6.3</a>
+  </footer>
+
+  <script src="scripts/linenumber.js"></script>
+  <script src="scripts/pagelocation.js"></script>
+
+  
+
+</body>
+</html>

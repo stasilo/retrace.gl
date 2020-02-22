@@ -65,8 +65,8 @@ import baseSceneSrc from '../assets/scenes/basic-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-subtract-op-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-intersect-op-scene/index.js.rtr';
 
-// const defaultSceneUrl = 'assets/scenes/sdf-repeat-op-scene/index.js.rtr';
-const defaultSceneUrl = 'assets/scenes/sdf-domain-op-scene/index.js.rtr';
+const defaultSceneUrl = 'assets/scenes/sdf-repeat-op-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sdf-domain-op-scene/index.js.rtr';
 
 
 let instance = null;

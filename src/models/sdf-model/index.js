@@ -1,3 +1,4 @@
+
 import {vec3} from 'gl-matrix';
 
 import {
@@ -202,11 +203,11 @@ const sdfOpSubtract = (...geometries) =>
 const sdfOpSubtractRound = ({radius}, ...geometries) =>
     sdfOperation(sdfOperators.subtractRound, {radius}, ...geometries);
 
-const sdfOpSubtractChamfer = ({radius}, ...geometries) =>
-    sdfOperation(sdfOperators.subtractChamfer, {radius}, ...geometries);
-
 const sdfOpSubtractStairs = ({radius, steps}, ...geometries) =>
     sdfOperation(sdfOperators.subtractStairs, {radius, steps}, ...geometries);
+
+const sdfOpSubtractChamfer = ({radius}, ...geometries) =>
+    sdfOperation(sdfOperators.subtractChamfer, {radius}, ...geometries);
 
 const sdfOpSubtractColumns = ({radius, steps}, ...geometries) =>
     sdfOperation(sdfOperators.subtractColumns, {radius, steps}, ...geometries);
