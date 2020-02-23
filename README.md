@@ -131,7 +131,7 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 
 *Note: to ray trace this scene, change render mode in the app ui*
 
-[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-domain-op-scene/index.js.rtr)
+[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-export-test/index.js.rtr)
 
 [Example exported .STL file from the above scene](https://github.com/stasilo/retrace.gl/tree/master/docs/assets/sdf-export-example.stl)
 
@@ -141,7 +141,7 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 
 *Note: to ray trace this scene, change render mode in the app ui*
 
-[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-export-test/index.js.rtr)
+[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-displacement-func-test-scene/index.js.rtr)
 
 
 #### SDF displacement map example
@@ -149,7 +149,7 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 
 *Note: to ray trace this scene, change render mode in the app ui*
 
-[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-displacement-func-test-scene/index.js.rtr)
+[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-displacement-map-scene/index.js.rtr)
 
 #### SDF domain op example
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-domain-op-example.png)
@@ -188,7 +188,7 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 #### Volume texture FBM
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/volume-fbm-texture-scene.jpg)
 
-Please note that this scene may take up to 20s to load as the 3d texture is generated on the fly in the main thread.
+*NOTE: this scene may take up to 20s to load as the 3d texture is generated on the fly in the main thread.*
 
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/example-volume-fbm-scene/index.js.rtr)
 

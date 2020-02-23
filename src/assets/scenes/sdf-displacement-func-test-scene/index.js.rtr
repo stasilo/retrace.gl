@@ -7,7 +7,8 @@ scene({
         hitDepth: 8,
         tMax: 5000,
         maxSphereTracingSteps: 255,
-        resolution: 0.5
+        resolution: 0.5,
+        renderMode: 'sdf'
     },
     camera: {
         lookFrom: {x: -2.358, y: 32.625, z: 15.931},
@@ -28,7 +29,7 @@ scene({
             }),
         ),
         plane({
-            material: 'floor-white',
+            material: 'lambert-white',
             texture: {
                 name: 'check',
                 uvScale: 20
@@ -71,10 +72,6 @@ scene({
     ],
     textures: [
         texture({
-            name: 'aluminum',
-            url: 'assets/images/displacementMapTest.png'
-        }),
-        texture({
             name: 'check',
             src: `
                 float s = sin(50.*uv.x)*sin(50.*uv.y);
@@ -88,7 +85,7 @@ scene({
     ],
     materials: [
         lambertMaterial({
-            name: `floor-white`,
+            name: `lambert-white`,
             color: '#ffffff',
             albedo: [0.8, 0.8, 0.8]
         }),
