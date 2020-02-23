@@ -1,6 +1,7 @@
 import React, {Fragment, useEffect} from 'react';
 import brace from 'brace';
 import 'brace/mode/javascript';
+import 'brace/mode/glsl';
 
 // https://tmtheme-editor.herokuapp.com/#!/editor/local/Abdal%20Black%20Hackers%202
 import 'brace/theme/red';
@@ -43,7 +44,9 @@ const Editor = observer((props) => {
                     editorProps={{$blockScrolling: true}}
                     style={editorWindowStyle}
                     // mode="glsl"
-                    mode="javascript"
+                    mode="glsl"
+                    // theme="twilight"
+                    // mode="javascript"
                     theme="red"
 
                     value={store.sceneSrc}

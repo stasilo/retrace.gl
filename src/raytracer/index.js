@@ -1,7 +1,7 @@
 import PicoGL from 'picogl';
 import {vec3, vec2} from 'gl-matrix';
 
-import spector from 'spectorjs';
+// import spector from 'spectorjs';
 import queryString from 'query-string';
 
 import {getGlInstances} from '../gl';
@@ -48,10 +48,10 @@ async function raytraceApp({
 
     glImgCanvas.style.visibility = 'hidden';
 
-    if(debug) {
-        let spectorGlDebug = new spector.Spector();
-        spectorGlDebug.displayUI();
-    }
+    // if(debug) {
+    //     let spectorGlDebug = new spector.Spector();
+    //     spectorGlDebug.displayUI();
+    // }
 
     const materialData = scene.materials.getMaterialData();
     const sceneTextures = scene.textures.getTextures();

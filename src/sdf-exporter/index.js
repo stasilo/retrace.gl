@@ -2,7 +2,6 @@ import PicoGL from 'picogl';
 import {vec3, vec2} from 'gl-matrix';
 
 import unpackFloat from 'glsl-read-float';
-import spector from 'spectorjs';
 import queryString from 'query-string';
 
 import march from '../cubemarch';

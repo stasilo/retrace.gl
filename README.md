@@ -180,6 +180,7 @@ Please note that this scene may take up to 20s to load as the 3d texture is gene
 
 
 ## Todo/feature ideas
+  - Fix syntax highlighting
   - Automatic bounds calculation for SDF exports
   - Rasterization rendering mode (export SDF content etc. as meshes automatically before rendering everything). Would allow for more complex SDF CSG's.
   - Handle animations? Maybe a scene definition per frame or something.
