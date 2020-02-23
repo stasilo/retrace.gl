@@ -29,7 +29,7 @@ The scene API is fully documented [here](https://stasilo.github.io/retrace-docs/
 More info coming shortly.
 
 The most important part to note about the editor is the random seed value which determines the outcome
-of the [random family of functions in the API](https://stasilo.github.io/retrace-docs/module-random.html). This enables you to recreate a generated / random scene - just use the same seed value! See the SDF examples below for more details.
+of the [random family of functions in the API](https://stasilo.github.io/retrace-docs/module-random.html). This enables you to recreate a generated / random scene - just use the same seed value! See the SDF example in the header for more details.
 
 ## Features
   - GPU implementation via webgl2

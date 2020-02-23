@@ -15,8 +15,8 @@ scene({
         maxCoords: {x: 2, y: 8, z: 2}
     },
     camera: {
-        lookFrom: {x: 7.290, y: 4.696, z: 8.632},
-        lookAt: {x: 4.080, y: 4.399, z: 5.475},
+        lookFrom: {x: 9.889, y: 4.499, z: 1.720},
+        lookAt: {x: 6.679, y: 4.202, z: -1.437},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -54,11 +54,10 @@ scene({
                 })
             )
         ),
+        // base
         sdf(
-            // rectangular base
             sdfBox({
                 material: 'clearcoat-dark',
-                // material: `lambert-red`,
                 dimensions: {x: 2.7, y: 0.5, z: 2.7},
                 position: {x: -7, y: 0.2, z: -6.6},
             })
@@ -70,7 +69,6 @@ scene({
                 }),
             )
         ),
-        // regular plane floor
         plane({
           material: 'lambert-white',
           texture: {
@@ -103,8 +101,8 @@ scene({
                 z: 0
             },
         })
-        ],
-        displacements: [
+    ],
+    displacements: [
         {
           name: 'torus-displacement',
           src: `
@@ -133,20 +131,15 @@ scene({
           color: '#909090',
           albedo: [0.8, 0.8, 0.8]
         }),
-        lambertMaterial({
-          name: `lambert-red`,
-          color: '#ff0000',
-          albedo: [0.8, 0.8, 0.8]
+        emissiveMaterial({
+          name: `ceil-light`,
+          color: '#ffffff',
+          intensity: 10
         }),
         clearcoatMaterial({
             name: 'clearcoat-red',
             color: '#ff0000',
             refIdx: 1.8,
-        }),
-        emissiveMaterial({
-          name: `ceil-light`,
-          color: '#ffffff',
-          intensity: 10
         }),
         clearcoatMaterial({
           name: 'clearcoat-dark',
