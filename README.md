@@ -88,7 +88,7 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 
 ## Scenes demonstrating features
 
-#### Material show case
+#### Material show case (and a little depth of field)
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/material-test-scene.jpg)
 
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/material-test-scene/index.js.rtr)
@@ -97,7 +97,7 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 #### SDF geometries show case
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-geometries-example-scene.png)
 
-*Note: to ray trace this scene, change render mode in the app ui*
+*Note: to ray trace this scene, change render mode in the app ui, but beware that this scene is particularly resource intensive and may crash your browser*
 
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-geometries-test-scene/index.js.rtr)
 
@@ -124,7 +124,6 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 *Note: to ray trace this scene, change render mode in the app ui*
 
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-intersect-op-scene/index.js.rtr)
-
 
 
 #### SDF export mesh example
@@ -160,7 +159,7 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-domain-op-scene/index.js.rtr)
 
 
-#### SDF domain repetition example
+#### SDF domain repetition show case
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-domain-rep-example.png)
 
 *Note: to ray trace this scene, change render mode in the app ui*
@@ -222,11 +221,11 @@ $ npm install ; npm run build
 ```
 
 ## Credits
-This app would not be possible without the efforts of the following people and groups, who have freely published their work in the domains of ray tracing and signed distance functions.
+This app would not be possible without the efforts of the following people and groups, who have freely published their work in the domains of ray tracing and signed distance functions, many thanks!
 
  - [Peter Shirley](https://www.cs.utah.edu/~shirley/) for his book series ["Raytracing in one weekend"](http://in1weekend.blogspot.com/2016/01/ray-tracing-in-one-weekend.html), without which this app wouldn't exist.
 
- - Inigo Quilez, creator of [Shadertoy](https://www.shadertoy.com/) and prolific computer graphics writer & programmer. Check out his [articles](http://www.iquilezles.org/www/index.htm) on everything from SDF's, raymarching to ray tracing.
+ - Inigo Quilez, creator of [Shadertoy](https://www.shadertoy.com/) and prolific computer graphics programmer & writer. Check out his [articles](http://www.iquilezles.org/www/index.htm) on everything from SDF's, raymarching to ray tracing.
 
  - Demo scene group [Mercury](http://mercury.sexy), who's [hg_sdf](http://mercury.sexy/hg_sdf/) library powers this engine's SDF CSG boolean operations. And [Jeremy Cowles](https://github.com/jcowles), for the [WebGL port](https://github.com/jcowles/hg_sdf) of the same library.
 
