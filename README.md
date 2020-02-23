@@ -63,6 +63,7 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 
 #### SDF feature example scene 1
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-demo-scene-1.png)
+*Note: to ray trace this scene, change render mode in the app ui*
 
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-test-scene-2/index.js.rtr)
 
@@ -79,6 +80,8 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 #### SDF feature example scene 2
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-demo-scene-3.png)
 
+*Note: to ray trace this scene, change render mode in the app ui*
+
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-test-scene-3/index.js.rtr)
 
 
@@ -94,11 +97,15 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 #### SDF geometries show case
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-geometries-example-scene.png)
 
+*Note: to ray trace this scene, change render mode in the app ui*
+
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-geometries-test-scene/index.js.rtr)
 
 
 #### SDF union operators show case
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-op-union-example.png)
+
+*Note: to ray trace this scene, change render mode in the app ui*
 
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-union-op-scene/index.js.rtr)
 
@@ -106,11 +113,15 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 #### SDF difference / subtract operators show case
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-op-subtract-example.png)
 
+*Note: to ray trace this scene, change render mode in the app ui*
+
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-subtract-op-scene/index.js.rtr)
 
 
 #### SDF intersection operators show case
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-op-intersect-example.png)
+
+*Note: to ray trace this scene, change render mode in the app ui*
 
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-intersect-op-scene/index.js.rtr)
 
@@ -119,14 +130,17 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 #### SDF export mesh example
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-export-example.png)
 
+*Note: to ray trace this scene, change render mode in the app ui*
+
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-domain-op-scene/index.js.rtr)
 
-[Example exported .STL file](https://github.com/stasilo/retrace.gl/tree/master/docs/assets/sdf-export-example.stl)
-<script src="https://embed.github.com/view/3d/stasilo/retrace.gl/tree/master/docs/assets/sdf-export-example.stl"></script>
+[Example exported .STL file from the above scene](https://github.com/stasilo/retrace.gl/tree/master/docs/assets/sdf-export-example.stl)
 
 
 #### SDF glsl displacement function example
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-displacement-func-example.png)
+
+*Note: to ray trace this scene, change render mode in the app ui*
 
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-export-test/index.js.rtr)
 
@@ -134,16 +148,22 @@ You should primarily run this app on newer versions of Chrome. Newer versions of
 #### SDF displacement map example
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-displacement-map-example.png)
 
+*Note: to ray trace this scene, change render mode in the app ui*
+
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-displacement-func-test-scene/index.js.rtr)
 
 #### SDF domain op example
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-domain-op-example.png)
+
+*Note: to ray trace this scene, change render mode in the app ui*
 
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-domain-op-scene/index.js.rtr)
 
 
 #### SDF domain repetition example
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-domain-rep-example.png)
+
+*Note: to ray trace this scene, change render mode in the app ui*
 
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-repeat-op-scene/index.js.rtr)
 
