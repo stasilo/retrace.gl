@@ -343,7 +343,7 @@ var marchCubes = function(start, end, dims, bounds, potentials) {
 
     var scale     = [0,0,0];
     var shift     = [0,0,0];
-    
+
     for(var i=0; i<3; ++i) {
         scale[i] = (bounds[1][i] - bounds[0][i]) / dims[i];
         shift[i] = bounds[0][i];
@@ -412,36 +412,7 @@ function march(data, start, end, dims, bounds) {
     let potentials = new Float32Array(data);
     let result = marchCubes(start, end, dims, bounds, potentials);
 
-    console.log('MARCH RESULT: ', result);
-    console.dir(result);
-
     return result;
 }
 
 export default march;
-
-// onmessage = function(e) {
-//     var message = e.data;
-//
-//     if (message.action == 'init') {
-//
-//         potentials = new Float32Array(message.data);
-//         postMessage(true);
-//
-//     } else if (message.action == 'march') {
-//
-//         var start = message.data.start;
-//         var end = message.data.end;
-//         var dims = message.data.dims;
-//         var bounds = message.data.bounds;
-//
-//         console.log('worker starting march with: ');
-//         console.log('start: ', start);
-//         console.log('end: ', end);
-//         console.log('dim: ', dims);
-//         console.log('bounds: ', bounds);
-//
-//         var result = marchCubes(start, end, dims, bounds, potentials);
-//         postMessage(result);
-//     }
-// };

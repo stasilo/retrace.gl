@@ -7,12 +7,12 @@ scene({
         hitDepth: 4,
         tMax: 5000,
         maxSphereTracingSteps: 255,
-        resolution: 0.4,
+        resolution: 0.7,
         renderMode: 'sdf'
     },
     camera: {
-        lookFrom: {x: 54.372, y: 74.408, z: 102.255},
-        lookAt: {x: 52.432, y: 71.913, z: 99.027},
+        lookFrom: {x: -61.398, y: 76.833, z: -61.249},
+        lookAt: {x: -59.549, y: 73.905, z: -58.347},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -24,76 +24,67 @@ scene({
                 radius: 5,
                 height: 5,
                 position: {x: startPos, y: 10, z: 0},
-                material: `lambert-red`,
-                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
+                material: `white-mat`,
             })
         ),
         sdf(
             sdfSphere({
-                material: 'clearcoat-test',
+                material: 'clearcoat-mat',
                 radius: 5,
                 position: {x: startPos + 20, y: 10, z: 0},
-                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             })
         ),
         sdf(
             sdfBox({
-                material: `lambert-red`,
+                material: `white-mat`,
                 dimensions: {x: 5, y: 5, z: 5},
                 position: {x: startPos + 40, y: 10, z: 0},
-                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             }),
         ),
         sdf(
             sdfTorus({
-                material: 'clearcoat-test',
+                material: 'clearcoat-mat',
                 innerRadius: 2.5,
                 outerRadius: 5,
                 position: {x: startPos + 60, y: 10, z: 0},
-                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             }),
         ),
         sdf(
             sdfEllipsoid({
-                material: `lambert-red`,
-                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
+                material: `white-mat`,
                 radius: {
                     x: 5,
                     y: 2,
                     z: 10
                 },
                 position: {x: startPos + 80, y: 10, z: 0},
-                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             }),
         ),
 
         // front row
         sdf(
             sdfCone({
-                material: 'clearcoat-test',
+                material: 'clearcoat-mat',
                 radius: 5,
                 height: 10,
                 position: {x: startPos, y: 5, z: 20},
-                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             }),
         ),
         sdf(
             sdfPyramid({
-                material: `lambert-red`,
+                material: `white-mat`,
                 height: 10,
                 base: 10,
                 position: {x: startPos + 20, y: 5, z: 20},
-                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             }),
         ),
         sdf(
             sdfRoundedCone({
-                material: 'clearcoat-test',
+                material: 'clearcoat-mat',
                 bottomRadius: 5,
                 topRadius: 2,
                 height: 10,
                 position: {x: startPos + 40, y: 5, z: 20},
-                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             }),
         ),
         sdf(
@@ -101,25 +92,23 @@ scene({
                 radius: 5,
                 height: 5,
                 position: {x: startPos + 60, y: 5, z: 20},
-                material: `lambert-red`,
-                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
+                material: `white-mat`,
             })
         ),
         sdf(
             sdfLink({
-                material: 'clearcoat-test',
+                material: 'clearcoat-mat',
                 radius: 2,
                 thickness: 1,
                 height: 4,
                 position: {x: startPos + 80, y: 5, z: 20},
-                rotation: { x: random(Math.PI*2), y: random(Math.PI*2), z: random(Math.PI*2) },
             }),
         ),
 
         // frame
         sdf(
             sdfLine({
-                material: 'clearcoat-test',
+                material: 'clearcoat-mat',
                 start: {x: startPos - 10, y: 10, z: -15},
                 end: {x: startPos - 10, y: 10, z: 35},
                 thickness: 0.55
@@ -127,7 +116,7 @@ scene({
         ),
         sdf(
             sdfLine({
-                material: 'clearcoat-test',
+                material: 'clearcoat-mat',
                 start: {x: startPos - 10, y: 10, z: 35},
                 end: {x: startPos + 90, y: 10, z: 35},
                 thickness: 0.55
@@ -135,7 +124,7 @@ scene({
         ),
         sdf(
             sdfLine({
-                material: 'clearcoat-test',
+                material: 'clearcoat-mat',
                 start: {x: startPos + 90, y: 10, z: 35},
                 end: {x: startPos + 90, y: 10, z: -15},
                 thickness: 0.55
@@ -143,7 +132,7 @@ scene({
         ),
         sdf(
             sdfLine({
-                material: 'clearcoat-test',
+                material: 'clearcoat-mat',
                 start: {x: startPos + 90, y: 10, z: -15},
                 end: {x: startPos -10, y: 10, z: -15},
                 thickness: 0.55
@@ -152,7 +141,7 @@ scene({
 
         // floor
         plane({
-            material: 'floor-white',
+            material: 'white-mat',
             texture: {
                 name: 'check',
                 uvScale: 20
@@ -187,10 +176,6 @@ scene({
     ],
     textures: [
         texture({
-            name: 'aluminum',
-            url: 'assets/images/displacementMapTest.png'
-        }),
-        texture({
             name: 'check',
             src: `
                 float s = sin(50.*uv.x)*sin(50.*uv.y);
@@ -204,13 +189,8 @@ scene({
     ],
     materials: [
         lambertMaterial({
-            name: `floor-white`,
+            name: `white-mat`,
             color: '#ffffff',
-            albedo: [0.8, 0.8, 0.8]
-        }),
-        lambertMaterial({
-            name: `lambert-red`,
-            color: '#ff0000',
             albedo: [0.8, 0.8, 0.8]
         }),
         emissiveMaterial({
@@ -219,7 +199,7 @@ scene({
             intensity: 10
         }),
         clearcoatMaterial({
-            name: 'clearcoat-test',
+            name: 'clearcoat-mat',
             color: '#101010',
             refIdx: 1.8,
         }),

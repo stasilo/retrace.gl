@@ -4,11 +4,12 @@ scene({
         hitDepth: 8,
         tMax: 5000,
         maxSphereTracingSteps: 255,
-        resolution: 0.5
+        resolution: 0.6,
+        renderMode: 'sdf'
     },
     camera: {
-        lookFrom: {x: -17.630, y: 19.904, z: 33.115},
-        lookAt: {x: -15.521, y: 18.659, z: 29.320},
+        lookFrom: {x: 24.055, y: 21.089, z: 32.113},
+        lookAt: {x: 21.614, y: 19.748, z: 28.558},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -16,31 +17,19 @@ scene({
     background: '#000',
     geometries: [
         sdf(
-            sdfSphere({
-                material: 'lambert-white',
-                radius: 7,
-                position: {x: -8, y: 10, z: 0},
-                displacementMap: {
-                    name: 'aluminum',
-                    uvScale: 0.2,
-                    scale: 2
-                }
-            })
-        ),
-        sdf(
             sdfBox({
-                material: 'lambert-white',
+                material: 'lambert-mat',
                 dimensions: {x: 5, y: 5, z: 5},
-                position: {x: 8, y: 10, z: 0},
+                position: {x: 0, y: 10, z: 0},
                 displacementMap: {
                     name: 'aluminum',
                     uvScale: 0.2,
-                    scale: 0.7
+                    scale: 0.5
                 }
             }),
         ),
         plane({
-            material: 'lambert-white',
+            material: 'lambert-mat',
             texture: {
                 name: 'check',
                 uvScale: 20
@@ -90,21 +79,10 @@ scene({
     ],
     materials: [
         lambertMaterial({
-            name: `lambert-white`,
+            name: `lambert-mat`,
             color: '#ffffff',
             albedo: [0.8, 0.8, 0.8]
         }),
-        clearcoatMaterial({
-            name: 'clearcoat-test',
-            // color: '#ffffff',
-            color: '#101010',
-            refIdx: 1.8,
-        }),
-        // lambertMaterial({
-        //     name: `lambert-red`,
-        //     color: '#ff0000',
-        //     albedo: [0.8, 0.8, 0.8]
-        // }),
         emissiveMaterial({
             name: `ceil-light`,
             color: '#ffffff',

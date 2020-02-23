@@ -188,8 +188,6 @@ class Scene {
                     g.geometryTypes.indexOf(sdfGeometryTypes.link) > -1
                 ).length > 0;
 
-            console.log('this.sdfGeometries: ', this.sdfGeometries);
-
             // sdf op codes
 
             this.hasSdfUnionOpCode = this.sdfGeometries

@@ -11,7 +11,8 @@
         "deploy": "scp -i ~/stasilo.pem -r dist/* ec2-user@labb.stasilo.se:/var/www/lighttpd/raytracer/",
         "release": "npm run build; cp -Rp dist/* ../raytracer-pages/ ; cd ../raytracer-pages/ ; git stage . ; git commit -m 'Update demo' ; git push ; cd -",
         "docs": "jsdoc -R docs/README.md -c jsdoc.json -r",
-        "watch:docs": "npx watch 'npm run docs' src/" 
+        "watch:docs": "npx watch 'npm run docs' src/",
+        "publish:docs": "npm run docs ; cd ../retrace-docs ; git stage . ; git commit -m 'Update docs' ; git push ; cd - "
     },
     "repository": {
         "type": "git",

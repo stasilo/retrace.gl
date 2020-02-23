@@ -62,8 +62,6 @@ async function sdfExportApp({
      * raytrace draw call
      */
 
-    // console.log('scene: ', scene);
-
     const numSdfCsgs = scene.sdfGeometries.length;
     const sdfBvhOffsets = scene.sdfGeometries
         .map(geo => geo.bvhSdfOffset);
@@ -80,7 +78,6 @@ async function sdfExportApp({
         Scene: scene
     });
 
-    console.log('export shader: ', shader);
     const rayTraceGlProgram = glApp.createProgram(vertShader, shader);
 
     // full screen quad
@@ -235,16 +232,11 @@ async function sdfExportApp({
             Math.round((boundsDim[2] / base) * resolution)
         ];
 
-        // console.log('exportDims: ', exportDims);
-        // console.log('boundsDim: ', boundsDim);
-
         const exportVertexCount = (exportDims[0] + 1)
             * (exportDims[1] + 1)
             * (exportDims[2] + 1);
 
         const exportSize = Math.ceil(Math.sqrt(exportVertexCount));
-
-        // console.log('exportSize: ', exportSize);
 
         return {
             exportBoundsA,
@@ -309,8 +301,6 @@ async function sdfExportApp({
     } else {
         boundsToRender = [initialBoundParams];
     }
-
-    console.log('boundsToRender: ', boundsToRender);
 
     // raytrace framebuffer
     let cubeMarchFboColorTarget = glApp.createTexture2D(1, 1, {
@@ -406,15 +396,6 @@ async function sdfExportApp({
         } else {
             alert('SDF export failed - could not find any geometry data within bounds!');
         }
-
-        // await new Promise(resolve =>
-        //     setTimeout(
-        //         () => {
-        //             store.sdfExportProgress = i / (boundsToRender.length + 1);
-        //             resolve();
-        //         }, 10
-        //     )
-        // );
     }
 
     stlExporter.finishModel();

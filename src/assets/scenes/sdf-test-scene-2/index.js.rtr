@@ -4,7 +4,8 @@ scene({
         hitDepth: 4,
         tMax: 5000,
         maxSphereTracingSteps: 255,
-        resolution: 0.5
+        resolution: 0.6,
+        renderMode: 'sdf'
     },
     sdfExportSettings: {
         resolution: 400,
@@ -12,8 +13,8 @@ scene({
         maxCoords: {x: 60, y: 70, z: 60}
     },
     camera: {
-        lookFrom: {x: -39.262, y: 10.335, z: -26.848},
-        lookAt: {x: -35.947, y: 11.150, z: -23.892},
+        lookFrom: {x: -64.808, y: 17.269, z: -36.203},
+        lookAt: {x: -61.062, y: 17.495, z: -33.691},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -21,65 +22,23 @@ scene({
     background: '#000',
     geometries: [
         sdf(
-            // {
-            //     domain: {
-            //         domainOp: 'twist',
-            //         size: 0.1,
-            //     },
-            //     boundingBox: {
-            //         minCoords: {x: -40, y: 0, z: -40},
-            //         maxCoords: {x: 40, y: 150, z: 40}
-            //     },
-            // },
-
-
-
-
-            // {
-            //     domain: {
-            //         domainOp: 'repeat',
-            //         axis: 'z',
-            //         size: 35,
-            //     },
-            //     boundingBox: {
-            //         minCoords: {x: -20, y: 0, z: -50},
-            //         maxCoords: {x: 20, y: 40, z: 50}
-            //     },
-            //
-            //
-            //     // domain: {
-            //     //     domainOp: 'repeatBounded',
-            //     //     size: 2, //0.0001,
-            //     //     bounds: {
-            //     //         x: 9,
-            //     //         y: 0,
-            //     //         z: 4.5
-            //     //     }
-            //     // },
-            //     // // bounding box has to be set manually
-            //     // // when doing csg repetitions
-            //     // boundingBox: {
-            //     //     minCoords: {x: -100, y: 0, z: -100},
-            //     //     maxCoords: {x: 100, y: 80, z: 100}
-            //     // }
-            // },
             opSubtract(
                 opUnionRound({radius: 6.0, colorBlendAmount: 0.5},
                     opSubtract(
                         sdfSphere({
-                            material: 'clearcoat-test',
+                            material: 'clearcoat-mat',
                             radius: 10,
                             position: {x: 9, y: 9.5, z: 0}
                         }),
                         sdfSphere({
-                            material: 'clearcoat-test',
+                            material: 'clearcoat-mat',
                             radius: 10,
                             position: {x: 0, y: 9.5, z: 0},
                             displacement: 'sinus-displacement'
                         })
                     ),
                     sdfBox({
-                        material: 'clearcoat-test',
+                        material: 'clearcoat-mat',
                         dimensions: {x: 15, y: 3, z: 15},
                         position: {x: 11, y: 39, z: 9.5},
                         texture: {
@@ -109,15 +68,6 @@ scene({
                 })
             )
         ),
-        // sdf(
-        //     sdfCylinder({
-        //         radius: 5,
-        //         height: 5,
-        //         position: {x: 8, y: 10, z: 0},
-        //         rotation: { x: degToRad(45) },
-        //         material: `lambert-red`,
-        //     })
-        // ),
         plane({
             material: 'floor-white',
             texture: {
@@ -189,22 +139,10 @@ scene({
             color: '#ffffff',
             intensity: 10
         }),
-        dialectricMaterial({
-            name: 'dialectric-test',
-            // color: '#cccccc',
-            color: '#ffffff',
-            refIdx: 1.8,
-        }),
         clearcoatMaterial({
-            name: 'clearcoat-test',
+            name: 'clearcoat-mat',
             color: '#101010',
             refIdx: 1.8,
-        }),
-        metalMaterial({
-            name: 'metal-fuzz-test',
-            color: '#aaaaaa',
-            fuzz: 0.1,
-            albedo: [1.0, 1.0, 1.0]
         }),
     ]
 });

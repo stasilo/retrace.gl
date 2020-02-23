@@ -7,10 +7,10 @@ scene({
         resolution: 0.5,
         renderMode: 'sdf'
     },
-    background: ['#000', '#010101'],
+    background: '#000',
     camera: {
-        lookFrom: {x: -15.252, y: 4.639, z: 52.200},
-        lookAt: {x: -12.489, y: 5.098, z: 48.651},
+        lookFrom: {x: -6.888, y: 1.134, z: 35.941},
+        lookAt: {x: -4.380, y: 2.577, z: 32.468},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -20,7 +20,6 @@ scene({
             {
                 // bounding box has to be set manually when doing all kinds of repetitions,
                 // even bounded reps (currently)
-
                 boundingBox: {
                     minCoords: {x: -5, y: 0, z: -5},
                     maxCoords: {x: 5, y: 15, z: 5}
@@ -36,7 +35,7 @@ scene({
                         z: 2
                     }
                 },
-                material: 'floor-white',
+                material: 'lambert-white-mat',
                 // dimensions: {x: 0.5, y: 0.5, z: 0.5},
                 radius: 0.8,
                 position: {x: 0, y: 5, z: 0}
@@ -55,48 +54,50 @@ scene({
                 domain: {
                     domainOp: 'repeat',
                     axis: 'yz',
-                    size: 2
+                    size: 4
                 },
-                material: `lambert-red`,
-                dimensions: {x: 0.5, y: 0.5, z: 0.5},
+                material: `lambert-white-mat`,
+                dimensions: {x: 1, y: 1, z: 1},
                 position: {x: 10, y: 5, z: 0}
             })
             |> opIntersect(#,
                 sdfBox({
-                    material: `lambert-red`,
+                    material: `lambert-white-mat`,
                     dimensions: {x: 2, y: 5, z: 5},
                     position: {x: 10, y: 5, z: 0}
                 })
             )
         ),
 
+        // NOTE: this is an example of doing it the wrong way :)
+        // uncomment to see
 
-        sdf(
-            {
-                // bounding box has to be set manually
-                // when doing repetitions
-                //
-                // as you can see regular infinite modulo repetitions are best suited for
-                // when the repetitions are truly "infinite" - using a small bound
-                // for infinite reps will cause view point artefacts
-
-                boundingBox: {
-                    minCoords: {x: 15, y: -10, z: -10},
-                    maxCoords: {x: 25, y: 10, z: 10}
-                }
-            },
-            sdfSphere({
-                domain: {
-                    domainOp: 'repeat',
-                    axis: 'yz',
-                    size: 2
-                },
-                material: `lambert-red`,
-                dimensions: {x: 0.5, y: 0.5, z: 0.5},
-                radius: 1,
-                position: {x: 20, y: 5, z: 0}
-            }),
-        ),
+        // sdf(
+        //     {
+        //         // bounding box has to be set manually
+        //         // when doing repetitions
+        //         //
+        //         // as you can see regular infinite modulo repetitions are best suited for
+        //         // when the repetitions are truly "infinite" - using a small bound
+        //         // for infinite reps will cause view point artefacts
+        //
+        //         boundingBox: {
+        //             minCoords: {x: 15, y: -10, z: -10},
+        //             maxCoords: {x: 25, y: 10, z: 10}
+        //         }
+        //     },
+        //     sdfSphere({
+        //         domain: {
+        //             domainOp: 'repeat',
+        //             axis: 'yz',
+        //             size: 2
+        //         },
+        //         material: `lambert-white-mat`,
+        //         dimensions: {x: 0.5, y: 0.5, z: 0.5},
+        //         radius: 1,
+        //         position: {x: 20, y: 5, z: 0}
+        //     }),
+        // ),
 
         sdf(
             {
@@ -115,14 +116,14 @@ scene({
                     axis: 'yz',
                     size: 2
                 },
-                material: `lambert-red`,
+                material: `lambert-white-mat`,
                 dimensions: {x: 0.5, y: 0.5, z: 0.5},
                 position: {x: 30, y: 5, z: 0}
             }),
         ),
 
         plane({
-            material: 'floor-white',
+            material: 'lambert-white-mat',
             texture: {
                 name: 'check',
                 uvScale: 20
@@ -159,7 +160,7 @@ scene({
     ],
     materials: [
         lambertMaterial({
-            name: `floor-white`,
+            name: `lambert-white-mat`,
             color: '#ffffff',
             albedo: [0.8, 0.8, 0.8]
         }),

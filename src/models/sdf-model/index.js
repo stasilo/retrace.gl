@@ -572,7 +572,7 @@ const sdf = (...args) => {
                     dataArray[offset + 8]
                 );
 
-                console.log('PLANE DIMENSIONS: ', dimensions);
+                // ?
                 if(dimensions[1] != 0) {
                     vec3.sub(minCoords, position, vec3.fromValues(100000, 0.01, 100000));
                     vec3.add(maxCoords, position, vec3.fromValues(100000, 0.01, 100000));
@@ -608,8 +608,6 @@ const sdf = (...args) => {
         const domainOpCode = dataArray[standardSdfDataArrayLength * i + standardSdfDomainOpArrayDataOffset];
         domainOpCodes.push(domainOpCode);
     });
-
-    console.log('domainOpCodes: ', unique(domainOpCodes));
 
     if(defined(opts.boundingBox)) {
         finalBounds = {
@@ -662,8 +660,6 @@ const sdf = (...args) => {
         }
     }
 
-    console.log('sdf opcodes: ', unique(opCodes));
-
     return {
         boundingBox: finalBounds,
         includeInBvh: true,
@@ -693,12 +689,8 @@ class SdfModel {
         displacement
     }) {
         this.geoType = geoType;
-        if(geoType === 5) {
-            console.log('dimensions: ', dimensions);
-        }
 
         this.opType = sdfOperators.noOp;
-        // this.opRadius = -1;
 
         this.domain = defined(domain)
             ? domain
@@ -738,8 +730,6 @@ class SdfModel {
             ? displacementMap.scale
             : 1;
 
-        //console.log('Setting this.displacementMapScale: ', this.displacementMapScale);
-
         this.displacementMapUvScale = {
             x: 1,
             y: 1,
@@ -758,11 +748,6 @@ class SdfModel {
              }
             : -1;
 
-
-        console.log('Setting this.displacementFunc: ', this.displacementFunc);
-
-        //console.log('this.displacementMapUvScale: ', this.displacementMapUvScale);
-
         this.position = {
             x: 0,
             y: 0,
@@ -772,10 +757,6 @@ class SdfModel {
                 : [])
         };
 
-        if(geoType === 5) {
-            console.log('SDF MODEL DIMENSIONS FOR PLANE: ', dimensions);
-
-        }
         this.dimensions = {
             x: 0,
             y: 0,

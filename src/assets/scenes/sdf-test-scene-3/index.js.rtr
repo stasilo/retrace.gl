@@ -4,11 +4,12 @@ scene({
         hitDepth: 14,
         tMax: 5000,
         maxSphereTracingSteps: 255,
-        resolution: 0.6
+        resolution: 0.6,
+        renderMode: 'sdf'
     },
     camera: {
-        lookFrom: {x: 32.001, y: 27.958, z: -32.057},
-        lookAt: {x: 29.028, y: 26.090, z: -29.211},
+        lookFrom: {x: 56.195, y: 14.273, z: -18.576},
+        lookAt: {x: 51.881, y: 13.817, z: -17.309},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -17,25 +18,20 @@ scene({
     geometries: [
         sdf(
             {
+                // bounding box has to be set manually
+                // when doing domains ops for the whole csg
                 boundingBox: {
                     minCoords: {x: -70, y: 0, z: -70},
                     maxCoords: {x: 70, y: 70, z: 70}
                 }
             },
             opSubtract(
-                // sdfSphere({
-                //     material: 'dialectric-test',
-                //     // material: 'lambert-red',
-                //     // material: 'metal-fuzz-test',
-                //     radius: 10,
-                //     position: {x: 0, y: 10, z: 0}
-                // }),
                 sdfBox({
                     domain: {
                         domainOp: 'twist',
                         size: 0.1,
                     },
-                    material: 'clearcoat-red',
+                    material: 'clearcoat-mat',
                     dimensions: {x: 10, y: 10, z: 10},
                     position: {x: 0, y: 10, z: 0}
                 }),
@@ -45,34 +41,9 @@ scene({
                         axis: 'xyz',
                         size: 5
                     },
-                    material: `lambert-red`,
                     radius: 3,
                     position: {x: 0, y: 0, z: 0}
-                }),
-                // sdfBox({
-                //     domain: {
-                //         domainOp: 'repeat',
-                //         axis: 'y',
-                //         size: 5
-                //     },
-                //     // material: 'dialectric-test',
-                //     material: `lambert-red`,
-                //     // material: 'ceil-light',
-                //     dimensions: {x: 20, y: 2, z: 2},
-                //     position: {x: 0, y: 0, z: 0}
-                // }),
-                // sdfBox({
-                //     domain: {
-                //         domainOp: 'repeat',
-                //         axis: 'z',
-                //         size: 6
-                //     },
-                //     // material: 'dialectric-test',
-                //     material: `lambert-red`,
-                //     // material: 'ceil-light',
-                //     dimensions: {x: 20, y: 2, z: 2},
-                //     position: {x: 0, y: 8, z: 5}
-                // }),
+                })
             )
         ),
         plane({
@@ -126,32 +97,15 @@ scene({
             color: '#ffffff',
             albedo: [0.8, 0.8, 0.8]
         }),
-        lambertMaterial({
-            name: `lambert-red`,
-            color: '#ff0000',
-            albedo: [0.8, 0.8, 0.8]
-        }),
         emissiveMaterial({
             name: `ceil-light`,
             color: '#ffffff',
             intensity: 10
         }),
-        dialectricMaterial({
-            name: 'dialectric-test',
-            // color: '#cccccc',
-            color: '#ffffff',
-            refIdx: 1.8,
-        }),
         clearcoatMaterial({
-            name: 'clearcoat-red',
-            color: '#900000',
-            refIdx: 1.8,
-        }),
-        metalMaterial({
-            name: 'metal-fuzz-test',
+            name: 'clearcoat-mat',
             color: '#aaaaaa',
-            fuzz: 0.1,
-            albedo: [1.0, 1.0, 1.0]
-        }),
+            refIdx: 1.8,
+        })
     ]
 });

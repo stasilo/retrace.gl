@@ -6,16 +6,11 @@ class SdfXzPlane extends SdfModel {
     constructor({
         domain,
         upDirection,
-        // position,
-        // rotation,
         material,
         texture,
         displacementMap,
         displacement
     }) {
-        console.log('Constructing xz plane!!!!!!!!!!!!!!');
-        console.log('upvec: ', upDirection);
-
         super({
             geoType: sdfGeometryTypes.plane,
             domain,

@@ -37,7 +37,6 @@ class VolumeTexture {
 
         if(propsHash in cachedVolumes && defined(cache) && cache) {
             this.data = cachedVolumes[propsHash];
-            console.log('using cache!');
         } else {
             this.data = isFn(data)
                 ? data()

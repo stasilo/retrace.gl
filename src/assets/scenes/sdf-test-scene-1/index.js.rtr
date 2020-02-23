@@ -1,14 +1,18 @@
+// to raytrace this scene, change the render mode in the retrace.gl top UI bar
+// or edit renderSettings below and regenerate the scene
+
 scene({
     rendererSettings: {
         realtimeHitDepth: 2,
         hitDepth: 12,
         tMax: 5000,
         maxSphereTracingSteps: 325,
-        resolution: 0.6
+        resolution: 0.6,
+        renderMode: 'sdf'
     },
     camera: {
-        lookFrom: {x: 16.925, y: 9.020, z: 24.002},
-        lookAt: {x: 14.416, y: 8.425, z: 20.288},
+        lookFrom: {x: 17.120, y: 12.093, z: 24.291},
+        lookAt: {x: 14.611, y: 11.498, z: 20.577},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -22,7 +26,7 @@ scene({
                     size: 0.1,
                 },
                 // bounding box has to be set manually
-                // when doing bounded repetitions
+                // when doing domains ops for the whole csg
                 boundingBox: {
                     minCoords: {x: -5, y: 0, z: -5},
                     maxCoords: {x: 5, y: 15, z: 5}
@@ -106,34 +110,10 @@ scene({
             color: '#ff0000',
             albedo: [0.8, 0.8, 0.8]
         }),
-        // clearcoatMaterial({
-        //     name: 'lambert-red',
-        //     color: '#ff0000',
-        //     // color: '#101010',
-        //     refIdx: 1.8,
-        // }),
         emissiveMaterial({
             name: `ceil-light`,
             color: '#ffffff',
             intensity: 10
-        }),
-        dialectricMaterial({
-            name: 'dialectric-test',
-            // color: '#cccccc',
-            color: '#ffffff',
-            refIdx: 1.8,
-        }),
-        clearcoatMaterial({
-            name: 'clearcoat-test',
-            // color: '#ffffff',
-            color: '#101010',
-            refIdx: 1.8,
-        }),
-        metalMaterial({
-            name: 'metal-fuzz-test',
-            color: '#aaaaaa',
-            fuzz: 0.1,
-            albedo: [1.0, 1.0, 1.0]
-        }),
+        })
     ]
 });

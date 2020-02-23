@@ -1,3 +1,6 @@
+// to raytrace this scene, change the render mode in the retrace.gl top UI bar
+// or edit renderSettings below and regenerate the scene
+
 const startPos = 0;
 
 scene({
@@ -11,8 +14,8 @@ scene({
     },
     background: ['#000', '#010101'],
     camera: {
-        lookFrom: {x: -18.993, y: 10.420, z: 10.348},
-        lookAt: {x: -14.769, y: 8.809, z: 10.404},
+        lookFrom: {x: -19.244, y: 8.680, z: 22.511},
+        lookAt: {x: -15.364, y: 7.618, z: 20.447},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -27,7 +30,7 @@ scene({
                     y: 4,
                     z: startPos
                 },
-                material: 'floor-white'
+                material: 'lambert-white-mat'
 
             })
             |> opUnion(#,
@@ -42,7 +45,7 @@ scene({
                         y: 4,
                         z: startPos
                     },
-                    material: 'floor-white'
+                    material: 'lambert-white-mat'
                 })
             ),
         ),
@@ -55,7 +58,7 @@ scene({
                     y: 4,
                     z: startPos + 5
                 },
-                material: 'floor-white'
+                material: 'lambert-white-mat'
 
             })
             |> opUnionRound(({radius: 0.5}), #,
@@ -70,7 +73,7 @@ scene({
                         y: 4,
                         z: startPos + 5
                     },
-                    material: 'floor-white'
+                    material: 'lambert-white-mat'
                 })
             ),
         ),
@@ -83,7 +86,7 @@ scene({
                     y: 4,
                     z: startPos + 10
                 },
-                material: 'floor-white'
+                material: 'lambert-white-mat'
 
             })
             |> opUnionChamfer(({radius: 0.5}), #,
@@ -98,7 +101,7 @@ scene({
                         y: 4,
                         z: startPos + 10
                     },
-                    material: 'floor-white'
+                    material: 'lambert-white-mat'
                 })
             ),
         ),
@@ -111,7 +114,7 @@ scene({
                     y: 4,
                     z: startPos + 15
                 },
-                material: 'floor-white'
+                material: 'lambert-white-mat'
 
             })
             |> opUnionStairs(({radius: 0.5, steps: 3}), #,
@@ -126,7 +129,7 @@ scene({
                         y: 4,
                         z: startPos + 15
                     },
-                    material: 'floor-white'
+                    material: 'lambert-white-mat'
                 })
             ),
         ),
@@ -139,7 +142,7 @@ scene({
                     y: 4,
                     z: startPos + 20
                 },
-                material: 'floor-white'
+                material: 'lambert-white-mat'
 
             })
             |> opUnionColumns(({radius: 0.5, steps: 3}), #,
@@ -154,13 +157,13 @@ scene({
                         y: 4,
                         z: startPos + 20
                     },
-                    material: 'floor-white'
+                    material: 'lambert-white-mat'
                 })
             ),
         ),
 
         plane({
-            material: 'floor-white',
+            material: 'lambert-white-mat',
             texture: {
                 name: 'check',
                 uvScale: 40
@@ -197,7 +200,7 @@ scene({
     ],
     materials: [
         lambertMaterial({
-            name: `floor-white`,
+            name: `lambert-white-mat`,
             color: '#ffffff',
             albedo: [0.8, 0.8, 0.8]
         }),

@@ -41,33 +41,28 @@ import baseSceneSrc from '../assets/scenes/basic-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/model-test-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/material-test-scene/index.js.rtr';
 
-
-// const defaultSceneUrl = 'assets/scenes/sdf-test-scene-1/index.js.rtr';
-
-// first created scene + union demo
-// const defaultSceneUrl = 'assets/scenes/sdf-test-scene-2/index.js.rtr';
-
-// const defaultSceneUrl = 'assets/scenes/sdf-test-scene-3/index.js.rtr';
-
-// const defaultSceneUrl = 'assets/scenes/sdf-displacement-map-scene/index.js.rtr';
-// const defaultSceneUrl = 'assets/scenes/sdf-displacement-func-test-scene/index.js.rtr';
-
-// const defaultSceneUrl = 'assets/scenes/sdf-export-test/index.js.rtr';
-
-// const defaultSceneUrl = 'assets/scenes/sdf-sculpture-1/index.js.rtr';
-// const defaultSceneUrl = 'assets/scenes/sdf-sculpture-2/index.js.rtr';
-// const defaultSceneUrl = 'assets/scenes/sdf-sculpture-3/index.js.rtr';
-// const defaultSceneUrl = 'assets/scenes/sdf-sculpture-4/index.js.rtr';
-
 // const defaultSceneUrl = 'assets/scenes/sdf-geometries-test-scene/index.js.rtr';
 
 // const defaultSceneUrl = 'assets/scenes/sdf-union-op-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-subtract-op-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-intersect-op-scene/index.js.rtr';
 
-const defaultSceneUrl = 'assets/scenes/sdf-repeat-op-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sdf-test-scene-1/index.js.rtr';
+// first created scene + union demo
+// const defaultSceneUrl = 'assets/scenes/sdf-test-scene-2/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sdf-test-scene-3/index.js.rtr';
+
+// const defaultSceneUrl = 'assets/scenes/sdf-repeat-op-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-domain-op-scene/index.js.rtr';
 
+// const defaultSceneUrl = 'assets/scenes/sdf-displacement-func-test-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sdf-displacement-map-scene/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sdf-export-test/index.js.rtr';
+
+// const defaultSceneUrl = 'assets/scenes/sculptures/sdf-sculpture-1/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sculptures/sdf-sculpture-2/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sculptures/sdf-sculpture-3/index.js.rtr';
+// const defaultSceneUrl = 'assets/scenes/sculptures/sdf-sculpture-4/index.js.rtr';
 
 let instance = null;
 class Store {
@@ -124,8 +119,6 @@ class Store {
         });
 
         this.sceneStorage = new SceneStorage();
-        console.log('SAVED SCENES: ', this.sceneStorage.getAllScenes());
-        console.log('LAST EDITED SCENE: ', this.sceneStorage.getLastEditedScene());
     }
 
     setupDefaultCamera() {
@@ -142,9 +135,16 @@ class Store {
 
     @action
     async loadScene(sceneName) {
-        this._isInitialRender = true;
-        this.sceneName = sceneName;
-        this.sceneSrc = await this.sceneStorage.getScene(sceneName);
+        if(sceneName) {
+            this._isInitialRender = true;
+            this.sceneName = sceneName;
+
+            this.sceneSrc = await this.sceneStorage.getScene(sceneName);
+        } else if(definedNotNull(this.appArgs.scene)) {
+            return this.loadSceneFromUrl(this.appArgs.scene);
+        } else {
+            return this.newScene(); 
+        }
     }
 
     @action
@@ -153,15 +153,7 @@ class Store {
 
         const sceneUrl = definedNotNull(url)
             ? url
-            : definedNotNull(this.appArgs.scene)
-                ? this.appArgs.scene
-                : defaultSceneUrl;
-
-        // const sceneUrl = definedNotNull(this.appArgs.scene)
-        //     ? this.appArgs.scene
-        //     : definedNotNull(url)
-        //         ? url
-        //         : defaultSceneUrl;
+            : defaultSceneUrl;
 
         try {
             let resp = await fetch(sceneUrl, {cache: 'no-store'});

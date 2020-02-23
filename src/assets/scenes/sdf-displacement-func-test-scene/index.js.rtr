@@ -18,54 +18,15 @@ scene({
     },
     background: '#000',
     geometries: [
-        // sdf(
-        //     sdfCylinder({
-        //         radius: 5,
-        //         height: 5,
-        //         position: {x: startPos, y: 10, z: 0},
-        //         material: `lambert-red`,
-        //         displacement: 'sinus-displacement',
-        //         // rotation: { x: degToRad(45) },
-        //         // material: 'clearcoat',
-        //         // texture: {
-        //         //     name: 'check',
-        //         //     uvScale: 0.1
-        //         // },
-        //     })
-        // ),
-        // sdf(
-        //     sdfSphere({
-        //         displacement: 'sinus-displacement',
-        //         material: 'clearcoat',
-        //         radius: 10,
-        //         position: {x: startPos + 20, y: 10, z: 0},
-        //     })
-        // ),
-        // sdf(
-        //     sdfBox({
-        //         // material: 'clearcoat',
-        //         displacement: 'sinus-displacement',
-        //         material: `lambert-red`,
-        //         dimensions: {x: 5, y: 5, z: 5},
-        //         position: {x: startPos + 40, y: 10, z: 0},
-        //     }),
-        // ),
         sdf(
             sdfTorus({
-                // material: 'lambert-red',
                 material: 'clearcoat',
                 displacement: 'sinus-displacement',
-                // dimensions: {x: 5, y: 5, z: 5},
                 innerRadius: 2.5,
                 outerRadius: 5,
                 position: {x: startPos + 60, y: 10, z: 0},
-                // texture: {
-                //     name: 'check',
-                //     uvScale: 20
-                // }
             }),
         ),
-
         plane({
             material: 'floor-white',
             texture: {
@@ -104,7 +65,6 @@ scene({
             src: `
                 float offset = ${glslFloat(random(100))};
                 float d = sin(1.*(p.x+offset)) * sin(1.*(p.y+offset)) * sin(1.*(p.z+offset));
-                // float d = snoise((p+offset)*0.3);
                 dDist = d;
             `
         }
@@ -140,7 +100,6 @@ scene({
         clearcoatMaterial({
             name: 'clearcoat',
             color: '#ffffff',
-            // color: '#101010',
             refIdx: 1.8,
         }),
     ]

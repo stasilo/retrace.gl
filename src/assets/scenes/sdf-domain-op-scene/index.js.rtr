@@ -7,10 +7,10 @@ scene({
         resolution: 0.5,
         renderMode: 'sdf'
     },
-    background: ['#000', '#010101'],
+    background: '#000',
     camera: {
-        lookFrom: {x: -4.997, y: 7.947, z: 21.563},
-        lookAt: {x: -2.916, y: 7.533, z: 17.568},
+        lookFrom: {x: 13.511, y: 9.042, z: 16.513},
+        lookAt: {x: 11.623, y: 8.152, z: 12.501},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -22,7 +22,7 @@ scene({
                     domainOp: 'twist',
                     size: 0.15
                 },
-                material: `lambert-red`,
+                material: `floor-white`,
                 dimensions: {x: 2, y: 2, z: 2},
                 position: {x: 0, y: 5, z: 0}
             })
@@ -33,7 +33,7 @@ scene({
                     domainOp: 'bend',
                     size: 0.15
                 },
-                material: `lambert-red`,
+                material: `clearcoat-mat`,
                 dimensions: {x: 2, y: 2, z: 2},
                 position: {x: 10, y: 5, z: 0}
             })
@@ -84,6 +84,11 @@ scene({
             name: `ceil-light`,
             color: '#ffffff',
             intensity: 10
+        }),
+        clearcoatMaterial({
+            name: 'clearcoat-mat',
+            color: '#101010',
+            refIdx: 1.8,
         })
     ]
 });

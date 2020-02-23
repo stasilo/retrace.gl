@@ -11,8 +11,8 @@ scene({
     },
     background: ['#000', '#010101'],
     camera: {
-        lookFrom: {x: 24.317, y: 3.182, z: -11.844},
-        lookAt: {x: 19.801, y: 3.390, z: -11.772},
+        lookFrom: {x: 15.010, y: 2.300, z: -25.507},
+        lookAt: {x: 11.414, y: 2.410, z: -22.768},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
@@ -27,7 +27,7 @@ scene({
                     y: 2,
                     z: startPos
                 },
-                material: 'floor-white'
+                material: 'lambert-white-mat'
 
             })
             |> opSubtract(#,
@@ -42,7 +42,7 @@ scene({
                         y: 2,
                         z: startPos
                     },
-                    material: 'floor-white'
+                    material: 'lambert-white-mat'
                 })
             ),
         ),
@@ -55,7 +55,7 @@ scene({
                     y: 2,
                     z: startPos - 5
                 },
-                material: 'floor-white'
+                material: 'lambert-white-mat'
 
             })
             |> opSubtractRound(({radius: 0.5}), #,
@@ -70,7 +70,7 @@ scene({
                         y: 2,
                         z: startPos - 5
                     },
-                    material: 'floor-white'
+                    material: 'lambert-white-mat'
                 })
             ),
         ),
@@ -83,7 +83,7 @@ scene({
                     y: 2,
                     z: startPos - 10
                 },
-                material: 'floor-white'
+                material: 'lambert-white-mat'
 
             })
             |> opSubtractChamfer(({radius: 0.5}), #,
@@ -98,7 +98,7 @@ scene({
                         y: 2,
                         z: startPos - 10
                     },
-                    material: 'floor-white'
+                    material: 'lambert-white-mat'
                 })
             ),
         ),
@@ -111,7 +111,7 @@ scene({
                     y: 2,
                     z: startPos - 15
                 },
-                material: 'floor-white'
+                material: 'lambert-white-mat'
 
             })
             |> opSubtractStairs(({radius: 0.5, steps: 3}), #,
@@ -126,7 +126,7 @@ scene({
                         y: 2,
                         z: startPos - 15
                     },
-                    material: 'floor-white'
+                    material: 'lambert-white-mat'
                 })
             ),
         ),
@@ -139,7 +139,7 @@ scene({
                     y: 2,
                     z: startPos - 20
                 },
-                material: 'floor-white'
+                material: 'lambert-white-mat'
 
             })
             |> opSubtractColumns(({radius: 0.5, steps: 3}), #,
@@ -154,13 +154,13 @@ scene({
                         y: 2,
                         z: startPos - 20
                     },
-                    material: 'floor-white'
+                    material: 'lambert-white-mat'
                 })
             ),
         ),
 
         plane({
-            material: 'floor-white',
+            material: 'lambert-white-mat',
             texture: {
                 name: 'check',
                 uvScale: 40
@@ -197,7 +197,7 @@ scene({
     ],
     materials: [
         lambertMaterial({
-            name: `floor-white`,
+            name: `lambert-white-mat`,
             color: '#ffffff',
             albedo: [0.8, 0.8, 0.8]
         }),

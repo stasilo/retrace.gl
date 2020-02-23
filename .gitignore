@@ -6,3 +6,4 @@ backups
 *.swp
 *.icloud
 resources.txt
+src/assets/scenes/sculptures/*

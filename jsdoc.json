@@ -5,7 +5,7 @@
         "include": "./src"
     },
     "opts": {
-        "destination": "./docs/retrace",
+        "destination": "../retrace-docs/",
         "template": "./docs/template/jsdoc-template"
     },
     "templates": {

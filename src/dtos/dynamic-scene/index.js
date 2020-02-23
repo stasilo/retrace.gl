@@ -344,7 +344,6 @@ const diamond = (o) =>
  *         z: 155
  *     }
  * });
-
  */
 const volume = (o) =>
     new Volume(o);

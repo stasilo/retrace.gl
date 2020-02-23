@@ -1,6 +1,3 @@
-
-const startPos = -50;
-
 scene({
     rendererSettings: {
         realtimeHitDepth: 2,
@@ -11,67 +8,39 @@ scene({
         renderMode: 'sdf'
     },
     camera: {
-        lookFrom: {x: 0.377, y: 2.952, z: 3.779},
-        lookAt: {x: 0.195, y: 0.117, z: 0.268},
+        lookFrom: {x: -1.340, y: 0.812, z: 6.883},
+        lookAt: {x: -0.380, y: 0.222, z: 2.509},
         vfov: 45,
         aperture: 1e-8,
         velocity: 1
     },
     background: '#000',
+    sdfExportSettings: {
+        resolution: 100,
+        minCoords: {x: -2, y: -2, z: -2},
+        maxCoords: {x: 2, y: 2, z: 2}
+    },
     geometries: [
-        // sdf(
-        //     sdfCylinder({
-        //         radius: 5,
-        //         height: 5,
-        //         position: {x: startPos, y: 10, z: 0},
-        //         material: `lambert-red`,
-        //         displacement: 'sinus-displacement',
-        //         // rotation: { x: degToRad(45) },
-        //         // material: 'clearcoat',
-        //         // texture: {
-        //         //     name: 'check',
-        //         //     uvScale: 0.1
-        //         // },
-        //     })
-        // ),
-        // sdf(
-        //     sdfSphere({
-        //         displacement: 'sinus-displacement',
-        //         material: 'clearcoat',
-        //         radius: 10,
-        //         position: {x: startPos + 20, y: 10, z: 0},
-        //     })
-        // ),
-        // sdf(
-        //     sdfBox({
-        //         // material: 'clearcoat',
-        //         displacement: 'sinus-displacement',
-        //         material: `lambert-red`,
-        //         dimensions: {x: 5, y: 5, z: 5},
-        //         position: {x: startPos + 40, y: 10, z: 0},
-        //     }),
-        // ),
         sdf(
-            sdfTorus({
-                // material: 'lambert-red',
+            sdfSphere({
                 material: 'clearcoat',
                 displacement: 'sinus-displacement',
-                // dimensions: {x: 5, y: 5, z: 5},
-                innerRadius: 0.1,
-                outerRadius: 0.2,
-                position: {x: 0, y: 0, z: 0},
-                // texture: {
-                //     name: 'check',
-                //     uvScale: 20
-                // }
-            }),
+                radius: 1,
+                position: {x: 0, y: 0, z: 0}
+            })
+            |> opSubtract(#,
+                sdfTorus({
+                    innerRadius: 0.5,
+                    outerRadius: 1,
+                    position: {x: 0, y: 0, z: 0},
+                })
+            )
         ),
-
         plane({
-            material: 'floor-white',
+            material: 'lambert-mat',
             texture: {
                 name: 'check',
-                uvScale: 20
+                uvScale: 100
             },
             scale: 1000,
             position: {
@@ -81,7 +50,7 @@ scene({
             },
         }),
         plane({
-            material: 'ceil-light',
+            material: 'emissive-mat',
             scale: 30,
             position: {
                 x: 50,
@@ -90,7 +59,7 @@ scene({
             },
         }),
         plane({
-            material: 'ceil-light',
+            material: 'emissive-mat',
             scale: 30,
             position: {
                 x: -50,
@@ -112,10 +81,6 @@ scene({
     ],
     textures: [
         texture({
-            name: 'aluminum',
-            url: 'assets/images/displacementMapTest.png'
-        }),
-        texture({
             name: 'check',
             src: `
                 float s = sin(50.*uv.x)*sin(50.*uv.y);
@@ -129,19 +94,18 @@ scene({
     ],
     materials: [
         lambertMaterial({
-            name: `floor-white`,
+            name: `lambert-mat`,
             color: '#ffffff',
             albedo: [0.8, 0.8, 0.8]
         }),
         emissiveMaterial({
-            name: `ceil-light`,
+            name: `emissive-mat`,
             color: '#ffffff',
             intensity: 10
         }),
         clearcoatMaterial({
             name: 'clearcoat',
             color: '#ffffff',
-            // color: '#101010',
             refIdx: 1.8,
         }),
     ]
