@@ -1,13 +1,13 @@
 
 # retrace.gl - SDF sculpting & path tracing app
-Create programatically defined geometries with an API suited for generative art - in your browser! :tada:
+Programatically defined geometries with an API suited for generative art - in your browser! :tada:
 
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-sculpture-screen.png)
 
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-sculpture/index.js.rtr) - press *regenerate scene* to generate a new goemetry.
 
 ---
-Retrace.gl is an SDF sculptor software and physically based path tracer written in webgl2/glsl. It has a declarative scene API geared towards generative art, with support for dynamic composition of SDF CSG's (Constructive Solid Geometries composed of Signed Distance Functions), using Javascript.
+Retrace.gl is an SDF sculptor software and physically based path tracer written in webgl2/glsl. It has a declarative scene API geared towards generative art, with support for dynamic composition of SDF CSG's (Constructive Solid Geometries composed of Signed Distance Functions), using a Javascript API.
 
 You can also export your SDF composition as a regular mesh in STL-format, ready for 3d-printing:
 
@@ -15,8 +15,10 @@ You can also export your SDF composition as a regular mesh in STL-format, ready 
     <img width="40%" alt="Printed SDF mesh" src="https://github.com/stasilo/retrace.gl/raw/master/docs/assets/printed-sculpture.jpg" />
 </p>
 
+I've long had the idea of creating complex geometry programatically and generatively - so I wrote this software :) I mostly use it to 3d-print "sculptures" and render goofy images. Have fun using it!
+
 ## SDF CSG!?
-"Constructive Solid Geometries" composed of "Signed Distance Functions" sounds a bit daunting, but is a "simple" way of representing more or less complex geometry, suitable for ray marching.
+A "Constructive Solid Geometry" composed of "Signed Distance Functions" sounds a bit daunting, but is a "simple" way of representing more or less complex unions, intersections and differences of primitive geometries, suitable for ray marching.
 
 If you haven't heard about this concept before I can recommend Jamie Wong's great article ["Ray Marching and Signed Distance Functions"](http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/) which explains SDF's and the composition of them in the context of ray marching using GLSL shaders.
 
