@@ -6,7 +6,7 @@ Programatically defined (generative) geometries with an API suited for generativ
 
 [Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-sculpture/index.js.rtr)
 
-Press **regenerate scene** to generate a new goemetry. Generated one you like, have you? Save the random seed value from the ui - return to your favorites! :star:
+Press **regenerate scene** to generate a new goemetry. Generated one you like, have you? Save the random seed value from the ui - return to your favorite and export it for 3d-printing! :star:
 
 ---
 Retrace.gl is an SDF sculptor software and physically based path tracer written in webgl2/glsl. It has a declarative scene API geared towards generative art, with support for dynamic composition of SDF CSG's (Constructive Solid Geometries composed of Signed Distance Functions), using a Javascript API.
