@@ -1,10 +1,12 @@
 
 # retrace.gl - SDF sculpting & path tracing app
-Programatically defined geometries with an API suited for generative art - in your browser! :tada:
+Programatically defined (generative) geometries with an API suited for generative art - in your browser! :tada:
 
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-sculpture-screen.png)
 
-[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-sculpture/index.js.rtr) - press *regenerate scene* to generate a new goemetry.
+[Live demo](https://stasilo.github.io/raytracer-demo/?scene=assets/scenes/sdf-sculpture/index.js.rtr)
+
+Press **regenerate scene** to generate a new goemetry. Generated one you like, have you? Save the random seed value from the ui - return to your favorites! :star:
 
 ---
 Retrace.gl is an SDF sculptor software and physically based path tracer written in webgl2/glsl. It has a declarative scene API geared towards generative art, with support for dynamic composition of SDF CSG's (Constructive Solid Geometries composed of Signed Distance Functions), using a Javascript API.
