@@ -311,7 +311,12 @@ async function sdfExportApp({
         .colorTarget(0, cubeMarchFboColorTarget)
 
     const stlExporter = new StlExporter();
-    stlExporter.startModel('retrace-sdf-export.stl');
+
+    const exportName = store.sceneName
+        ? store.sceneName
+        : 'retrace-sdf-export';
+
+    stlExporter.startModel(`${exportName}-${store.currentRandomSeed}`);
 
     let exportFailed = false;
     for(const [i, bounds] of boundsToRender.entries()) {

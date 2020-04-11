@@ -11,11 +11,12 @@ const canvasId = 'gl-img-canvas';
 
 const SaveEditControls = observer(() => {
     const store = getStore();
+    const sceneName = `${store.sceneName ? store.sceneName : 'retrace-scene'}-${store.currentRandomSeed}`;
 
     return (
         <div className="header-item save-controls">
             <button
-                onClick={() => saveCanvas.saveJPEG(canvasId, 'render')}
+                onClick={() => saveCanvas.saveJPEG(canvasId, sceneName)}
                 disabled={store.renderInProgress}
             >
                 save as image

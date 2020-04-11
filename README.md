@@ -1,6 +1,6 @@
 
 # retrace.gl - SDF sculpting & path tracing app
-Programatically defined (generative) geometries with an API suited for generative art - in your browser! :tada:
+Programatically defined geometries with an API suited for generative art - in your browser! :tada:
 
 ![retrace](https://github.com/stasilo/retrace.gl/raw/master/docs/assets/sdf-sculpture-screen.png)
 
@@ -14,7 +14,7 @@ Retrace.gl is an SDF sculptor software and physically based path tracer written 
 You can also export your SDF composition as a regular mesh in STL-format, ready for 3d-printing:
 
 <p align="center">
-    <img width="40%" alt="Printed SDF mesh" src="https://github.com/stasilo/retrace.gl/raw/master/docs/assets/printed-sculpture.jpg" />
+    <img width="600px" alt="Printed SDF mesh" src="https://github.com/stasilo/retrace.gl/raw/master/docs/assets/printed-sculpture.jpg" />
 </p>
 
 I've long had the idea of creating complex geometry programatically and generatively - so I wrote this software :) I mostly use it to 3d-print "sculptures" and render goofy images. Have fun using it!
