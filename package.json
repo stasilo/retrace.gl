@@ -72,7 +72,7 @@
         "lodash.chunk": "^4.2.0",
         "mobx-react-lite": "^1.3.1",
         "mouse-position": "^2.1.0",
-        "node-sass": "^4.11.0",
+        "node-sass": "^7.0.0",
         "normals": "^1.1.0",
         "obj-mtl-loader": "0.0.5",
         "optimize-css-assets-webpack-plugin": "^4.0.3",
