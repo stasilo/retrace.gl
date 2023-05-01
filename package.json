@@ -66,7 +66,7 @@
         "glslify-loader": "^2.0.0",
         "hex-rgb": "^3.0.0",
         "html-webpack-plugin": "^3.2.0",
-        "http-server": "^0.11.1",
+        "http-server": "^14.1.1",
         "keycode": "^2.2.0",
         "loaders.gl": "^0.3.5",
         "lodash.chunk": "^4.2.0",
