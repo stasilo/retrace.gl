@@ -2,9 +2,10 @@ ace.define("ace/theme/red",["require","exports","module","ace/lib/dom"], functio
 
 exports.isDark = true;
 exports.cssClass = "ace-red";
+exports.$id = "ace/theme/red";
 exports.cssText =
 '   .ace-red .ace_gutter {  '  +
-'     background: #1A2233;  '  +
+'     background: #1e2024;  '  +
 '     color: rgb(114,126,139)  '  +
 '   }  '  +
 '     '  +
@@ -14,7 +15,7 @@ exports.cssText =
 '   }  '  +
 '     '  +
 '   .ace-red {  '  +
-'     background-color: #1A2233;  '  +
+'     background: #1e2024;  '  +
 '     color: #CAD9E3  '  +
 '   }  '  +
 '     '  +
@@ -144,7 +145,6 @@ exports.cssText =
 '     color: #ffffff  '  +
 '  }  ' ;
 
-// var dom = acequire("../lib/dom");
-var dom = acequire("../../../node_modules/brace/lib/dom");
+var dom = acequire("../lib/dom");
 dom.importCssString(exports.cssText, exports.cssClass);
 });

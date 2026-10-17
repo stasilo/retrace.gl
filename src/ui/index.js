@@ -30,6 +30,24 @@ const UI = observer(() => {
     return (
         <Hotkeys
             keyName="alt+r,alt+e,alt+g,alt+h"
+            // ace renders its input as an offscreen textarea, and react-hot-keys'
+            // default filter drops every key event coming from one - which killed
+            // these shortcuts whenever the editor had focus. Let ace's input
+            // through, keep ignoring ordinary form fields.
+            filter={(event) => {
+                const target = event.target || event.srcElement;
+
+                if(target.classList
+                    && target.classList.contains('ace_text-input'))
+                {
+                    return true;
+                }
+
+                return !(target.isContentEditable
+                    || target.tagName == 'INPUT'
+                    || target.tagName == 'SELECT'
+                    || target.tagName == 'TEXTAREA');
+            }}
             onKeyUp={store.handleUiKeyShortcut}
         >
             <Header>

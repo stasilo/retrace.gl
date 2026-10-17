@@ -1,13 +1,12 @@
 import React, {Fragment, useEffect} from 'react';
-import brace from 'brace';
-import 'brace/mode/javascript';
-import 'brace/mode/glsl';
+// react-ace >= 7 renders with ace-builds, which keeps its own module registry -
+// anything registered via brace is invisible to it, so load everything from here.
+import 'ace-builds/src-noconflict/ace';
+import 'ace-builds/src-noconflict/mode-javascript';
+import 'ace-builds/src-noconflict/mode-glsl';
 
 // https://tmtheme-editor.herokuapp.com/#!/editor/local/Abdal%20Black%20Hackers%202
-import 'brace/theme/red';
-// import '../../../assets/editor-themes/red.js';
-
-// import 'brace/theme/twilight';
+import '../../../assets/editor-themes/red.js';
 
 import AceEditor from 'react-ace';
 
@@ -55,19 +54,10 @@ const Editor = observer((props) => {
                     onFocus={() => store.editorFocused = true}
                     onBlur={() => store.editorFocused = false}
 
+                    // alt+r/e/g/h are handled globally in ui/index.js so they
+                    // fire whether or not the editor has focus - binding them
+                    // here too would run each one twice.
                     commands={[{
-                        name: 'hideEditor',
-                        bindKey: {win: 'Alt-h', mac: 'Option-h'},
-                        exec: () => store.handleUiKeyShortcut('alt+h')
-                    }, {
-                        name: 'renderScene',
-                        bindKey: {win: 'Alt-r', mac: 'Option-r'},
-                        exec: () => store.handleUiKeyShortcut('alt+r')
-                    }, {
-                        name: 'regenerateScene',
-                        bindKey: {win: 'Alt-g', mac: 'Option-g'},
-                        exec: () => store.handleUiKeyShortcut('alt+g')
-                    }, {
                         name: 'toggleComment',
                         bindKey: {win: 'Alt-Shift-7', mac: 'Option-Shift-7'},
                         exec: 'togglecomment'
