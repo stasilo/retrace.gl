@@ -1,0 +1,167 @@
+
+const startPos = -50;
+
+scene({
+    rendererSettings: {
+        realtimeHitDepth: 2,
+        hitDepth: 8,
+        tMax: 5000,
+        maxSphereTracingSteps: 255,
+        resolution: 0.5,
+        renderMode: 'sdf'
+    },
+    camera: {
+        lookFrom: {x: 22.468, y: 18.273, z: -41.646},
+        lookAt: {x: 21.559, y: 17.271, z: -37.335},
+        vfov: 45,
+        aperture: 1e-8,
+        velocity: 1
+    },
+    background: '#000',
+    sdfExportSettings: {
+        resolution: 200,
+        minCoords: {x: -50, y: -50, z: -50},
+        maxCoords: {x: 50, y: 50, z: 50}
+    },
+    geometries: [
+        sdf(
+            {
+                boundingBox: {
+                    minCoords: {x: -25, y: -25, z: -25},
+                    maxCoords: {x: 25, y: 25, z: 25}
+                }
+            },
+            sdfSphere({
+                material: 'clearcoat',
+                displacement: 'sinus-displacement',
+                radius: 10,
+                position: {x: 10, y: 10, z: 0},
+            }),
+        ),
+        plane({
+            material: 'lambert-white',
+            texture: {
+                name: 'check',
+                uvScale: 20
+            },
+            scale: 1000,
+            position: {
+                x: 0,
+                y: 0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: 50,
+                y: 80.0,
+                z: 0
+            },
+        }),
+        plane({
+            material: 'ceil-light',
+            scale: 30,
+            position: {
+                x: -50,
+                y: 80.0,
+                z: 0
+            },
+        })
+    ],
+    displacements: [
+        {
+            name: 'sinus-displacement',
+            src: `
+                // float offset = ${glslFloat(random(100))};
+                // float d = sin(1.*(p.x+offset)) * sin(1.*(p.y+offset)) * sin(1.*(p.z+offset));
+                // dDist = d;
+
+                float x = texture({data-tex}, vec2(0, abs(p.x)/38.)).x;
+                float y = texture({data-tex}, vec2(0, abs(p.y)/38.)).x;
+                float z = texture({data-tex}, vec2(0, abs(p.z)/38.)).x;
+
+                dDist = snoise(vec3((x*2.3)*(y*2.3)*(z*2.3), p.x*0.05, p.z*0.05)*0.6)*1.8;
+
+                // dDist = snoise(vec3((x*3.)*(y*3.), p.x*0.2, p.z*0.2)*0.6)*1.2;
+            `
+        }
+    ],
+    textures: [
+        dataTexture({
+            name: 'data-tex',
+            size: {x: 1, y: 15000},
+            // data: audioFreqDataLoader('/assets/sounds/fire-sound.mp3', {
+            //     startTime: 1,
+            //     endTime: 10
+            // }),
+            data: (async () => {
+                const rawTimeDataFull = await audioFreqDataLoader('/assets/sounds/fire-sound.mp3', {
+                    // startTime: 10,
+                    // endTime: 15
+                    startTime: 16,
+                    endTime: 18
+                });
+
+                // return rawTimeDataFull;
+
+                const rawTimeData = rawTimeDataFull.slice(0, 8000);
+
+                let interpTimeData = rawTimeData.reduce((data, v, i) => {
+                    if(i === 0) {
+                        data.push(v);
+                        return data;
+                    }
+
+                    if(i === rawTimeData.length) {
+                        return data;
+                    }
+
+                    const v1 = data[data.length - 1];
+                    const v2 = v;
+
+                    range(150).forEach(i =>
+                        data.push(parseInt(lerp(v1, v2, i/150)))
+                    );
+
+                    // data.push(v2);
+
+                    return data;
+                }, []);
+
+                console.log('interp data: ', interpTimeData);
+
+                return new Uint8Array(interpTimeData);
+            })()
+        }),
+        texture({
+            name: 'check',
+            src: `
+                float s = sin(50.*uv.x)*sin(50.*uv.y);
+                if(s < 0.) {
+                    tColor = vec4(${normedColorStr('#aaaaaa')}, 1.0);
+                } else {
+                    tColor = vec4(${normedColorStr('#aa0000')}, 1.0);
+                }
+            `
+        })
+    ],
+    materials: [
+        lambertMaterial({
+            name: `lambert-white`,
+            color: '#ffffff',
+            albedo: [0.8, 0.8, 0.8]
+        }),
+        emissiveMaterial({
+            name: `ceil-light`,
+            color: '#ffffff',
+            intensity: 10
+        }),
+        clearcoatMaterial({
+            name: 'clearcoat',
+            color: '#ffffff',
+            refIdx: 1.8,
+        }),
+    ]
+});

@@ -54,7 +54,7 @@ async function raytraceApp({
     // }
 
     const materialData = scene.materials.getMaterialData();
-    const sceneTextures = scene.textures.getTextures();
+    const sceneSdfDisplacementList = scene.displacements;
 
     const sdfData = scene.sdfGeometryData;
     const {bvhData, geometryData} = buildSceneBvh(scene);
@@ -82,6 +82,13 @@ async function raytraceApp({
 
     let accumFbo = glApp.createFramebuffer()
         .colorTarget(0, accumFboColorTarget);
+
+    // update texture names in dynamic/injected glsl sources
+    if(sceneSdfDisplacementList.length > 0) {
+        sceneSdfDisplacementList.updateTextureNamesInSrc(scene.textures);
+    }
+
+    const sceneTextures = scene.textures.getTextures();
 
     /*
      * raytrace draw call
@@ -216,6 +223,8 @@ async function raytraceApp({
                 texture.renderDynamicTexture();
             } else if(texture.image) {
                 texture.createImageTexture();
+            } else if(texture.isDataTexture) {
+                texture.createDataTexture();
             } else if(texture.isVolumeTexture) {
                 texture.createVolumeTexture();
             }

@@ -22,6 +22,29 @@ class DisplacementList {
             : [];
     }
 
+    updateTextureNamesInSrc(textureList) {
+        const textures = textureList.getTextures();
+        if(!textures.length) {
+            return;
+        }
+
+        this.elements = this.elements.map(displacement => {
+            if(!displacement.src) {
+                return displacement;
+            }
+
+            let updatedSrc = displacement.src;
+            textures.forEach((texture, i) => {
+                updatedSrc = updatedSrc.replace(new RegExp(`{${texture.name}}`, 'g'), `uSceneTex${texture.id}`);
+            });
+
+            displacement.src = updatedSrc;
+
+            return displacement;
+        });
+
+    }
+
     getSrc(id, src) {
         return `
             void displacement${id}(vec3 p, out float dDist) {

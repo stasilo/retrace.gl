@@ -27,6 +27,7 @@ const shaderSampleCount = 1;
 const defaultMaxSampleCount = 10;
 
 import baseSceneSrc from '../assets/scenes/basic-scene/index.js.rtr';
+// import baseSceneSrc from '../assets/scenes/sdf-displacement-func-test-scene/index.js.rtr';
 
 // const defaultSceneUrl = 'assets/scenes/basic-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/example-scene/index.js.rtr';
@@ -59,10 +60,36 @@ import baseSceneSrc from '../assets/scenes/basic-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-displacement-map-scene/index.js.rtr';
 // const defaultSceneUrl = 'assets/scenes/sdf-export-test/index.js.rtr';
 
-// const defaultSceneUrl = 'assets/scenes/sculptures/sdf-sculpture-1/index.js.rtr';
-// const defaultSceneUrl = 'assets/scenes/sculptures/sdf-sculpture-2/index.js.rtr';
-// const defaultSceneUrl = 'assets/scenes/sculptures/sdf-sculpture-3/index.js.rtr';
-// const defaultSceneUrl = 'assets/scenes/sculptures/sdf-sculpture-4/index.js.rtr';
+// torus arms
+// import baseSceneSrc from '../assets/scenes/sculptures/sdf-sculpture-1/index.js.rtr';
+
+// dancers
+// import baseSceneSrc from '../assets/scenes/sculptures/sdf-sculpture-2/index.js.rtr';
+
+// blob
+// import baseSceneSrc from '../assets/scenes/sculptures/sdf-sculpture-3/index.js.rtr';
+
+// melted sticks
+// import baseSceneSrc from '../assets/scenes/sculptures/sdf-sculpture-4/index.js.rtr';
+
+// pringles tree
+// import baseSceneSrc from '../assets/scenes/sculptures/sdf-sculpture-box-lines/index.js.rtr';
+
+// egg square
+// import baseSceneSrc from '../assets/scenes/sculptures/sdf-egg-square-sculpture/index.js.rtr';
+
+
+
+// pine trees
+// import baseSceneSrc from '../assets/scenes/sculptures/sdf-spruce-sculpture/index.js.rtr';
+
+// 3d painting
+//import baseSceneSrc from '../assets/scenes/sculptures/sdf-3d-painting-sculpture/index.js.rtr';
+
+
+// audio data displacement
+// import baseSceneSrc from '../assets/scenes/sdf-displacement-func-dynamic-test-scene/index.js.rtr';
+
 
 let instance = null;
 class Store {
@@ -142,8 +169,8 @@ class Store {
             this.sceneSrc = await this.sceneStorage.getScene(sceneName);
         } else if(definedNotNull(this.appArgs.scene)) {
             return this.loadSceneFromUrl(this.appArgs.scene);
-        } else {
-            return this.newScene(); 
+        } else {
+            return this.newScene();
         }
     }
 
@@ -390,12 +417,14 @@ class Store {
             .exec(this.sceneSrc);
         const noOfSpacesBeforeCamera = indentMatches[1].length;
 
+        const cameraSrcDef = this._camera.getCurrentSceneSrcDefinition({
+            cameraIndent: noOfSpacesBeforeCamera
+        });
+
         this.sceneSrc = this.sceneSrc
             .replace(
-                /camera:\s*{((\n|.)*?\s+)}/,
-                this._camera.getCurrentSceneSrcDefinition({
-                    cameraIndent: noOfSpacesBeforeCamera
-                })
+                /camera:\s*{((\n|.)*?[\t\s]+)}/,
+                cameraSrcDef
             );
     }
 

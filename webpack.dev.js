@@ -22,7 +22,7 @@ module.exports = {
     module: {
         rules: [
             {
-                test: /\.(js|.rtr)$/, // /\.js$/,
+                test: /\.(js|.rtr|.mjs)$/, // /\.js$/,
                 exclude: /node_modules/,
                 // loader: 'babel-loader',
                 // options: {
@@ -35,7 +35,11 @@ module.exports = {
                 //}
                 loader: 'babel-loader',
                 options: {
-                    presets: ['@babel/env', '@babel/preset-react'],
+                    // presets: ['@babel/env', '@babel/preset-react'],
+                    presets: [["@babel/preset-env", {
+                        useBuiltIns: "usage", // or "entry"
+                        corejs: 3,
+                    }], '@babel/preset-react'],
                     plugins: [
                         ['@babel/plugin-proposal-decorators', {legacy: true}],
                         ['@babel/plugin-proposal-class-properties', {loose: true}],

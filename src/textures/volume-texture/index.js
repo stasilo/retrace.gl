@@ -20,7 +20,7 @@ class VolumeTexture {
         const {name, size, data, options, cache} = props;
 
         if(!definedNotNull(size)) {
-            throw `No volume texture data supplied for texture "${name}"`;
+            throw `No volume texture size supplied for texture "${name}"`;
         }
 
         if(!definedNotNull(data)) {

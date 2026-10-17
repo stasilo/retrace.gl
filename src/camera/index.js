@@ -239,7 +239,7 @@ class Camera {
             `${innerIndentation}lookFrom: {x: ${lookFrom[0]}, y: ${lookFrom[1]}, z: ${lookFrom[2]}},\n` +
             `${innerIndentation}lookAt: {x: ${lookAt[0]}, y: ${lookAt[1]}, z: ${lookAt[2]}},\n` +
             `${innerIndentation}vfov: ${this.vfov},\n` +
-            `${innerIndentation}aperture: ${this.aperture},\n` +
+            `${innerIndentation}aperture: ${this.aperture},\n` +
             `${innerIndentation}velocity: ${this.velocity}\n` +
         `${indentation}}`;
     }

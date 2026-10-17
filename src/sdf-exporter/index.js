@@ -194,6 +194,8 @@ async function sdfExportApp({
                 texture.renderDynamicTexture();
             } else if(texture.image) {
                 texture.createImageTexture();
+            } else if(texture.isDataTexture) {
+                texture.createDataTexture();
             } else if(texture.isVolumeTexture) {
                 texture.createVolumeTexture();
             }

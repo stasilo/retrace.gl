@@ -6,6 +6,7 @@ import ObjModel from '../../models/obj-model';
 import Sphere from '../../models/sphere';
 import Volume from '../../models/volume';
 import Texture from '../../textures/texture';
+import DataTexture from '../../textures/data-texture';
 import VolumeTexture from '../../textures/volume-texture';
 
 import LambertMaterial from '../../materials/lambert';
@@ -103,7 +104,7 @@ class Scene {
             this.textures = await new TextureList(textures);
 
             this.hasTextures = this.textures.elements
-                .filter(t => t instanceof Texture)
+                .filter(t => t instanceof Texture || t instanceof DataTexture)
                 .length > 0;
             this.hasVolumeTextures = this.textures.elements
                 .filter(t => t instanceof VolumeTexture)

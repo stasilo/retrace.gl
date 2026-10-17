@@ -43,12 +43,10 @@ const getGlInstances = () => {
         document.body.appendChild(glImgCanvas);
 
         glApp = PicoGL.createApp(glCanvas)
-            .noDepthTest()
             .depthMask(false)
-            .noStencilTest()
-            .noScissorTest()
-            // enable EXT_color_buffer_float extension
-            .floatRenderTargets()
+            .disable(PicoGL.DEPTH_TEST)
+            .disable(PicoGL.STENCIL_TEST)
+            .disable(PicoGL.SCISSOR_TEST)
             .clearColor(0, 0, 0, 1);
             // .scissorTest()
             // .scissor(0, 0, canvas.width, canvas.height)

@@ -28,6 +28,7 @@ import Diamond from '../../models/diamond';
 import Volume from '../../models/volume';
 
 import Texture from '../../textures/texture';
+import DataTexture from '../../textures/data-texture';
 import VolumeTexture from '../../textures/volume-texture';
 
 import MetalMaterial from '../../materials/metal';
@@ -75,6 +76,10 @@ import  {
 } from '../../models/sdf-model';
 
 import {
+    audioFreqDataLoader as _audioFreqDataLoader
+} from '../../audio-freq-data-loader';
+
+import {
     deterministicRandom as _random,
     deterministicRandomInt as _randomInt,
     deterministicRandomBool as _randomBool,
@@ -93,6 +98,8 @@ import {
     radToDeg as _radToDeg,
     clamp as _clamp,
     lerp as _lerp,
+    pluckMin as _pluckMin,
+    pluckMax as _pluckMax,
     tileSeamless3d as _tileSeamless3d,
 } from '../../utils';
 
@@ -100,6 +107,9 @@ import {
 // needed as webpack imported module names are transpiled
 // into names like '_xxxxx_js__WEBPACK_IMPORTED_MODULE_5__'
 // ...also and add some syntactic sugar :)
+
+// TODO: docstring
+const audioFreqDataLoader = _audioFreqDataLoader;
 
 /**
  * 3d coordinates / 3d vector
@@ -904,6 +914,8 @@ const opIntersectColumns = sdfOpIntersectColumns;
 const texture = (o) =>
     new Texture(o);
 
+const dataTexture = (o) =>
+    new DataTexture(o);
 /**
  *
  * Represents a volume texture (sampling data for an inhomogeneous volume)
@@ -1176,7 +1188,7 @@ const glslFloat = _glslFloat;
 const normedColorStr = _normedColorStr;
 
 /**
- * Convert degress to radians.
+ * Convert degrees to radians.
  *
  * @static
  * @function
@@ -1219,6 +1231,10 @@ const clamp = _clamp;
  * @return {number} - The interpolated value
  */
 const lerp = _lerp;
+
+
+const pluckMin = _pluckMin;
+const pluckMax = _pluckMax;
 
 /**
  * Blend edges in a 3d array (useful for tiling volume textures).

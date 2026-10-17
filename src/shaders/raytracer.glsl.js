@@ -11,6 +11,7 @@ import {
 } from '../models/sdf-model';
 
 import Texture from '../textures/texture';
+import DataTexture from '../textures/data-texture';
 import VolumeTexture from '../textures/volume-texture';
 
 import simplexNoise from './lib/noise/simplex.glsl';
@@ -270,7 +271,7 @@ const getSource = ({options, Scene}) =>
      */
 
     ${Scene.textures.getTextures().map(texture =>
-        texture instanceof Texture
+        texture instanceof Texture || texture instanceof DataTexture
             ? `uniform sampler2D uSceneTex${texture.id};`
             : `uniform sampler3D uSceneTex${texture.id};`
     ).join('\n')}
@@ -1962,7 +1963,6 @@ const getSource = ({options, Scene}) =>
             p *= rotateX(rotation.x);
             p *= rotateY(rotation.y);
             p *= rotateZ(rotation.z);
-
             // if(rotation.x != 0.) {
             //     p *= rotateX(rotation.x);
             // }
@@ -2140,11 +2140,13 @@ const getSource = ({options, Scene}) =>
             while(!finished) {
             // for(int i = 0; i < 20; i++) {
                 sdfData = getPackedSdf(sdfDataTexOffset + SDF_DATA_TEX_CSG_HEADER_OFFSET_SIZE);
-                vec3 p = samplePoint - sdfData.position;
+                vec3 p = samplePoint;
 
                 applySdfRotation(sdfData.rotation, /* => out */ p);
                 applySdfDomainOperation(csgHeader, /* => out */ p);
                 applySdfDomainOperation(sdfData.domainOp, /* => out */ p);
+
+                p -= sdfData.position;
 
                 if(geoIndex == 0) {
                     opType = sdfData.opType;
@@ -2439,7 +2441,7 @@ const getSource = ({options, Scene}) =>
                 geoIndex += 1;
             }
 
-            // bend/twist and maybe certain other ops 
+            // bend/twist and maybe certain other ops
             // give artefacts (not sure why - maybe float size is maxed?)
             // multiplying with a smaller factor  fixes it.
             return d1*0.7;

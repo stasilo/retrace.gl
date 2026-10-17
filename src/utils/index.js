@@ -77,7 +77,7 @@ const subRange = (rangeA, rangeB) =>
         ).length == 0
     );
 
-// array manipulation
+// array helpers
 
 const reverse = ([x, ...xs]) => typeof x !== 'undefined'
     ? [...reverse(xs), x]
@@ -101,6 +101,30 @@ const shuffle = (array) =>
 
 const unique = (arr) =>
     [... new Set(arr)];
+
+const pluckMin = (arr) => {
+    let min = arr[0];
+
+    arr.forEach(v => {
+        if(v < min) {
+            min = v;
+        }
+    });
+
+    return min;
+}
+
+const pluckMax = (arr) => {
+    let max = arr[0];
+
+    arr.forEach(v => {
+        if(v > max) {
+            max = v;
+        }
+    });
+
+    return max;
+}
 
 // random no stuff
 
@@ -375,6 +399,8 @@ export {
     flatten,
     shuffle,
     unique,
+    pluckMin,
+    pluckMax,
 
     random,
     randomInt,

@@ -1,5 +1,4 @@
 import React, {Fragment} from 'react';
-import ReactDOM from 'react-dom';
 import Hotkeys from 'react-hot-keys';
 
 import {observer} from 'mobx-react-lite';
